@@ -1,0 +1,672 @@
+<!DOCTYPE html>
+<html lang="sk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Registrácia QuizBrothers</title>
+    <link rel="stylesheet" href="style.css">
+    <style>
+        /* Špecifické štýly pre rezerváciu */
+        body { padding: 20px; }
+        
+        /* LAYOUT */
+        .main-container { display: flex; justify-content: center; align-items: flex-start; gap: 20px; max-width: 1200px; margin: 0 auto 50px auto; }
+        .sidebar { flex: 1; background: white; padding: 20px; border-radius: 15px; box-shadow: 0 4px 15px rgba(34,36,84,0.1); min-height: 300px; }
+        .form-container { flex: 1.5; background: white; padding: 30px; border-radius: 15px; box-shadow: 0 4px 20px rgba(34,36,84,0.15); text-align: center; border-top: 5px solid #222454; }
+        
+        .left-panel { border-top: 5px solid #222454; }
+        .right-panel { border-top: 5px solid #27ae60; }
+        .team-list { list-style: none; padding: 0; margin: 0; }
+        .team-item { padding: 10px; border-bottom: 1px solid #f0f0f0; display: flex; justify-content: space-between; align-items: center; font-weight: bold; font-size: 14px; }
+        .badge-count { background: #eee; padding: 2px 8px; border-radius: 10px; font-size: 12px; color: #555; }
+        .badge-confirmed { background: #d5f5e3; color: #27ae60; }
+
+        h1 { color: #222454; margin-bottom: 5px; }
+        .quiz-date-info { font-size: 1.2em; font-weight: bold; color: #222454; margin-bottom: 5px; }
+        .deadline-info { color: #e74c3c; font-weight: bold; font-size: 14px; margin-bottom: 20px; }
+        
+        .capacity-box { background: #f0f0f5; padding: 15px; border-radius: 10px; margin-bottom: 25px; border: 1px solid rgba(34,36,84,0.2); }
+        .capacity-number { font-size: 2em; font-weight: bold; display: block; transition: color 0.3s; }
+        .cap-safe { color: #27ae60; } .cap-warn { color: #e67e22; } .cap-crit { color: #c0392b; }
+        
+        label { display: block; text-align: left; margin: 15px 0 5px; font-weight: bold; color: #222454; }
+        select, input { width: 100%; padding: 12px; border: 2px solid rgba(34,36,84,0.3); border-radius: 8px; font-size: 16px; box-sizing: border-box; }
+        select:focus, input:focus { outline: none; border-color: #222454; }
+        
+        button.btn-submit { width: 100%; background: #222454; color: white; border: none; padding: 15px; font-size: 18px; font-weight: bold; border-radius: 8px; margin-top: 25px; cursor: pointer; transition: 0.2s; }
+        button.btn-submit:hover { background: #2d2f6a; }
+        button:disabled { background: #ccc; cursor: not-allowed; }
+
+        /* ADMIN SEKCIA */
+        #adminSection { display: none; border-top: 5px solid #222454; padding-top: 20px; margin-top: 50px; background: #f5f5f7; padding-bottom: 50px; }
+        .admin-config { max-width: 900px; margin: 0 auto 30px auto; background: #222454; color: white; padding: 20px; border-radius: 10px; display: flex; flex-wrap: wrap; gap: 20px; justify-content: space-between; align-items: center; }
+        .config-block { display: flex; flex-direction: column; gap: 5px; }
+        .config-block label { color: #aaa; font-size: 10px; margin: 0; text-transform: uppercase; }
+        .btn-action { background: #27ae60; color: white; border: none; padding: 8px 15px; cursor: pointer; font-weight: bold; border-radius: 4px; }
+        .btn-stop { background: #c0392b; color: white; border: none; padding: 8px 15px; cursor: pointer; font-weight: bold; border-radius: 4px; border: 1px solid #999; }
+        
+        .room-map { position: relative; width: 960px; height: 600px; background: #e0e0e0; border: 4px solid #444; margin: 20px auto; border-radius: 4px; box-shadow: 0 10px 30px rgba(0,0,0,0.2); }
+        .table { position: absolute; display: flex; justify-content: center; align-items: center; flex-direction: column; border: 2px solid #555; cursor: pointer; font-weight: bold; font-size: 11px; user-select: none; color: #333; text-align: center; line-height: 1; z-index: 10; background: #fff; box-shadow: 2px 2px 5px rgba(0,0,0,0.2); }
+        .status-reserved { background-color: #ffb347; border-color: #d35400; } .status-confirmed { background-color: #2ecc71; border-color: #27ae60; } .status-free { background-color: #fff; opacity: 0.7; }
+        .cap-info { font-size: 9px; font-weight: normal; margin-top: 2px; }
+        .rect { width: 110px; height: 55px; border-radius: 4px; } .circle { width: 75px; height: 75px; border-radius: 50%; } .circle-small { width: 55px; height: 55px; border-radius: 50%; }
+        .admin-login-btn { display: block; margin: 50px auto; color: #222454; background: none; border: none; text-decoration: underline; cursor: pointer; }
+
+        .pin-manager { max-width: 900px; margin: 40px auto; background: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 15px rgba(34,36,84,0.1); }
+        .pin-table { width: 100%; border-collapse: collapse; margin-top: 15px; }
+        .pin-table th, .pin-table td { border: 1px solid rgba(34,36,84,0.2); padding: 10px; text-align: left; }
+        .pin-table th { background-color: #f0f0f5; color: #222454; }
+        .admin-input { padding: 5px; text-align: center; border: 1px solid rgba(34,36,84,0.3); border-radius: 4px; } .w-small { width: 60px; } .w-med { width: 100px; }
+        .btn-save-pin { background: #27ae60; color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-weight: bold; font-size: 12px; }
+        .btn-delete-team { background: #c0392b; color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-size: 12px; margin-left: 5px;}
+
+        .add-team-form { background: #f9f9f9; padding: 15px; margin-top: 20px; border: 1px dashed rgba(34,36,84,0.3); border-radius: 5px; display: flex; gap: 10px; align-items: flex-end;}
+        .form-group { flex: 1; } .form-group label { font-size: 11px; margin-bottom: 2px; color:#222454; }
+        .btn-add { background: #222454; color: white; border: none; padding: 10px 20px; border-radius: 4px; cursor: pointer; font-weight: bold; height: 42px; transition: 0.2s; }
+        .btn-add:hover { background: #2d2f6a; }
+
+        @media (max-width: 900px) {
+            .main-container { flex-direction: column; } .form-container { order: 1; } .right-panel { order: 2; } .left-panel { order: 3; }
+            .add-team-form { flex-direction: column; } .btn-add { width: 100%; }
+            .admin-config { flex-direction: column; align-items: stretch; text-align: center; }
+        }
+        
+        #loadingOverlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: white; z-index: 9999; display: flex; justify-content: center; align-items: center; font-size: 20px; color: #222454; font-weight: bold; }
+    </style>
+</head>
+<body>
+
+    <header>
+        <div class="nav-container">
+            <a href="index.html" class="logo">
+                <img src="logo.png" alt="QuizBrothers Logo">
+                <span>Quiz<span>Brothers</span></span>
+            </a>
+            <div class="menu-toggle" onclick="document.getElementById('nav-list').classList.toggle('show')">☰</div>
+            <nav>
+                <ul id="nav-list">
+                    <li><a href="index.html">Domov</a></li>
+                    <li><a href="rezervacia.html" class="active">Rezervácia stola</a></li>
+                    <li><a href="aplikacia.html">Aplikácia</a></li>
+                    <li><a href="onas.html">O nás</a></li>
+                </ul>
+            </nav>
+        </div>
+    </header>
+
+    <div id="loadingOverlay">Načítavam systém...</div>
+
+    <h1 style="text-align:center; margin-top:10px;">Registrácia QuizBrothers</h1>
+    
+    <div style="text-align:center;">
+        <div id="publicQuizDate" class="quiz-date-info">Načítavam...</div>
+        <div id="publicDeadlineInfo" class="deadline-info"></div>
+    </div>
+
+    <div class="main-container">
+        <div class="sidebar left-panel">
+            <h3 style="color:#222454;">⏳ Rezervované (do 15:00)</h3>
+            <ul id="listReserved" class="team-list"></ul>
+        </div>
+
+        <div class="form-container">
+            <div class="capacity-box">
+                <span>Zostáva voľných miest:</span>
+                <span id="displayCapacity" class="capacity-number cap-safe">...</span>
+                <small>Celková kapacita: 83</small>
+            </div>
+
+            <form id="quizForm" onsubmit="window.handleFormSubmit(event)">
+                <label>Vyber svoj tím:</label>
+                <select id="teamSelect" onchange="handleTeamChange()">
+                    <option value="new">Nový tím / Vybrať tím</option>
+                </select>
+                <small id="teamReservedInfo" style="color:#222454; display:none; font-weight:bold; margin-top:5px; display:block;"></small>
+
+                <div id="newTeamInput" style="display:block;">
+                    <label>Názov nového tímu:</label>
+                    <input type="text" id="customTeamName" placeholder="Zadaj názov tímu">
+                </div>
+
+                <label>Počet hráčov:</label>
+                <input type="number" id="playerCount" min="1" max="15" value="4">
+
+                <label id="pinLabel" style="color:#27ae60;">Vytvor si PIN kód:</label>
+                <input type="password" id="teamPin" placeholder="Napr. 123" required>
+                <small id="pinHelp" style="color:#666; display:block; margin-top:5px;">Tento PIN budeš potrebovať pre zmeny.</small>
+                
+                <button type="submit" id="submitBtn" class="btn-submit">Potvrdiť účasť</button>
+            </form>
+            <p id="formMessage" style="color: green; font-weight: bold; margin-top: 15px;"></p>
+        </div>
+
+        <div class="sidebar right-panel">
+            <h3 style="color:#27ae60;">✅ Potvrdené tímy</h3>
+            <ul id="listConfirmed" class="team-list"></ul>
+        </div>
+    </div>
+
+    <button class="admin-login-btn" onclick="toggleAdmin()">ADMIN LOGIN</button>
+
+    <div id="adminSection">
+        <div class="admin-config">
+            <div><h3 style="margin:0; color:#27ae60;">🔧 Admin Panel</h3></div>
+            <div class="config-block">
+                <label>Dátum Kvízu:</label>
+                <div style="display:flex; gap:5px;">
+                    <input type="date" id="adminQuizDate" style="padding:5px;">
+                    <button class="btn-action" onclick="saveQuizDate()">Uložiť</button>
+                </div>
+            </div>
+            <div class="config-block">
+                <label>Status:</label>
+                <button class="btn-stop" onclick="stopRegistration()">⛔ STOP / NEURČENÉ</button>
+            </div>
+            <div class="config-block">
+                <label>Admin PIN:</label>
+                <div style="display:flex; gap:5px;">
+                    <input type="text" id="newMasterPin" placeholder="Nový PIN" style="width:80px; padding:5px; text-align:center;">
+                    <button class="btn-action" onclick="saveMasterPin()">Zmeniť</button>
+                </div>
+            </div>
+            <div class="config-block">
+                <label>Deadline (čas):</label>
+                <div style="display:flex; gap:5px;">
+                    <input type="time" id="adminDeadlineTime" style="padding:5px;">
+                    <button class="btn-action" onclick="saveDeadlineTime()">Uložiť</button>
+                </div>
+            </div>
+            
+            <button onclick="uploadDefaults()" style="background:#222454; color:white; border:none; padding:8px 15px; cursor:pointer; font-weight:bold; border-radius:4px; margin-left:10px;">🚀 NAHRAŤ PREDVOLENÉ TÍMY</button>
+            
+            <button onclick="resetAllData()" style="background:#e74c3c; color:white; border:none; padding:8px 15px; cursor:pointer; font-weight:bold; border-radius:4px;">⚠️ FULL WIPE</button>
+        </div>
+
+        <div class="pin-manager">
+            <h3>✅ Potvrdené tímy - Správa</h3>
+            <table class="pin-table">
+                <thead><tr><th>Tím</th><th>Počet hráčov</th><th>Status</th><th>Akcie</th></tr></thead>
+                <tbody id="adminConfirmedTableBody"></tbody>
+            </table>
+            <p style="text-align:center; color:#666; margin-top:15px; font-size:12px;">Tímy, ktoré potvrdili účasť. Môžeš upraviť počet hráčov alebo odstrániť tím.</p>
+        </div>
+
+        <div class="pin-manager">
+            <h3>🔐 Správa Tímov</h3>
+            <table class="pin-table">
+                <thead><tr><th>Tím</th><th>Predvolená Kap.</th><th>PIN</th><th>Akcie</th></tr></thead>
+                <tbody id="adminPinTableBody"></tbody>
+            </table>
+            <div class="add-team-form">
+                <div class="form-group"><label>Názov:</label><input type="text" id="addTeamName"></div>
+                <div class="form-group"><label>Kapacita:</label><input type="number" id="addTeamCap" value="4"></div>
+                <div class="form-group"><label>PIN:</label><input type="text" id="addTeamPin" value="000"></div>
+                <button class="btn-add" onclick="addNewTeam()">+ Pridať tím</button>
+            </div>
+        </div>
+
+        <div class="room-map">
+            <div id="t1" class="table rect status-reserved" style="top:60px; left:80px;" onclick="adminEdit(this)">PUŠKY<div class="cap-info">? os.</div></div>
+            <div id="t2" class="table rect status-reserved" style="top:60px; left:210px;" onclick="adminEdit(this)">GURU TEAM<div class="cap-info">? os.</div></div>
+            <div id="t3" class="table rect status-reserved" style="top:60px; left:340px;" onclick="adminEdit(this)">PIČI ZLA<div class="cap-info">? os.</div></div>
+            <div id="t4" class="table rect status-reserved" style="top:60px; left:470px;" onclick="adminEdit(this)">MUŠKY<div class="cap-info">? os.</div></div>
+            <div id="t5" class="table circle status-reserved" style="top:250px; left:120px;" onclick="adminEdit(this)">STIBU<div class="cap-info">? os.</div></div>
+            <div id="t6" class="table circle status-reserved" style="top:250px; left:240px;" onclick="adminEdit(this)">SPROSTÁCI<div class="cap-info">? os.</div></div>
+            <div id="t7" class="table circle status-reserved" style="top:250px; left:360px;" onclick="adminEdit(this)">FÉNIXOV RÁD<div class="cap-info">? os.</div></div>
+            <div id="t8" class="table circle-small status-reserved" style="top:260px; left:480px;" onclick="adminEdit(this)">GEN Z<div class="cap-info">? os.</div></div>
+            <div id="t9" class="table circle-small status-reserved" style="top:230px; left:570px;" onclick="adminEdit(this)">NEVÍDALI<div class="cap-info">? os.</div></div>
+            <div id="t10" class="table circle-small status-reserved" style="top:100px; left:700px;" onclick="adminEdit(this)">ŽOLÍCI<div class="cap-info">? os.</div></div>
+            <div id="t11" class="table circle-small status-reserved" style="top:80px; left:830px;" onclick="adminEdit(this)">FONTÁNA<div class="cap-info">? os.</div></div>
+            <div id="t12" class="table circle status-free" style="top:330px; left:760px;" onclick="adminEdit(this)">Voľný<div class="cap-info">0 os.</div></div>
+            <div id="t13" class="table rect status-free" style="top:450px; left:680px;" onclick="adminEdit(this)">Voľný<div class="cap-info">0 os.</div></div>
+            <div id="t14" class="table rect status-free" style="top:500px; left:850px;" onclick="adminEdit(this)">Voľný<div class="cap-info">0 os.</div></div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getFirestore, collection, doc, setDoc, getDoc, updateDoc, onSnapshot, deleteDoc, writeBatch } 
+        from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+        // ========================================================
+        // ⚠️ VLOŽ SEM SVOJE FIREBASE CONFIG ÚDAJE ⚠️
+        // ========================================================
+        const firebaseConfig = {
+            apiKey: "AIzaSyCgKeENYtYJWf2_DZOw4irg6GPLq3XKhEc",
+            authDomain: "quizbrothers-rezervacia.firebaseapp.com",
+            projectId: "quizbrothers-rezervacia",
+            storageBucket: "quizbrothers-rezervacia.firebasestorage.app",
+            messagingSenderId: "193476216369",
+            appId: "1:193476216369:web:8e0d59dd8282cb53ba3710",
+            measurementId: "G-0LKTHWLKH5"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+
+        let teamsData = []; 
+        let globalSettings = { quizDate: null, masterPin: "9999" };
+        const MAX_CAPACITY = 83;
+        const DEADLINE_HOUR = 16;
+        const DEADLINE_MINUTE = 30;
+
+        // ZOZNAM PRE PRVÉ NAHRATIE (SEED)
+        const defaultTeamsList = [
+            { id: "Mušky", default: 7, pin: "111" },
+            { id: "Pušky", default: 7, pin: "222" },
+            { id: "Piči Zla", default: 7, pin: "333" },
+            { id: "Guru Team", default: 7, pin: "444" },
+            { id: "Stibu", default: 6, pin: "555" },
+            { id: "Gen Z", default: 4, pin: "666" },
+            { id: "Fontána", default: 3, pin: "777" },
+            { id: "Fénixov rád", default: 5, pin: "888" },
+            { id: "Sprostáci", default: 5, pin: "101" },
+            { id: "Žolíci", default: 3, pin: "102" },
+            { id: "Nevídali", default: 3, pin: "103" }
+        ];
+
+        // LISTENERS
+        onSnapshot(collection(db, "teams"), (snapshot) => {
+            teamsData = [];
+            snapshot.forEach(doc => { teamsData.push({ id: doc.id, ...doc.data() }); });
+            updateDashboard(); renderAdminPinTable(); populateTeamSelect(); updateMapVisuals();
+            document.getElementById('loadingOverlay').style.display = 'none';
+        });
+
+        onSnapshot(doc(db, "config", "settings"), (docSnap) => {
+            if (docSnap.exists()) {
+                const data = docSnap.data();
+                globalSettings = {
+                    quizDate: data.quizDate || null,
+                    masterPin: data.masterPin || "9999",
+                    deadlineHour: data.deadlineHour || 16,
+                    deadlineMinute: data.deadlineMinute || 30
+                };
+                updateHeaderDate(); checkDeadline();
+                if(document.getElementById('adminQuizDate')) document.getElementById('adminQuizDate').value = globalSettings.quizDate || "";
+                if(document.getElementById('adminDeadlineTime')) {
+                    const hour = String(globalSettings.deadlineHour).padStart(2, '0');
+                    const minute = String(globalSettings.deadlineMinute).padStart(2, '0');
+                    document.getElementById('adminDeadlineTime').value = `${hour}:${minute}`;
+                }
+            } else {
+                setDoc(doc(db, "config", "settings"), { quizDate: null, masterPin: "9999", deadlineHour: 16, deadlineMinute: 30 });
+            }
+        });
+
+        // WINDOW FUNCTIONS
+        window.handleTeamChange = function() {
+            const select = document.getElementById('teamSelect');
+            const customInputDiv = document.getElementById('newTeamInput');
+            const countInput = document.getElementById('playerCount');
+            const pinLabel = document.getElementById('pinLabel');
+            const pinHelp = document.getElementById('pinHelp');
+            const teamPinInput = document.getElementById('teamPin');
+            const teamReservedInfo = document.getElementById('teamReservedInfo');
+            teamPinInput.value = "";
+            
+            if (select.value === 'new') {
+                customInputDiv.style.display = 'block'; countInput.value = 4;
+                pinLabel.innerText = "Vytvor si PIN kód:"; pinLabel.style.color = "#27ae60";
+                pinHelp.innerText = "Zapamätaj si ho pre budúce zmeny.";
+                teamReservedInfo.style.display = 'none';
+            } else {
+                customInputDiv.style.display = 'none';
+                const team = teamsData.find(t => t.id === select.value);
+                if (team) {
+                    // Zobrazenie rezervovaného počtu (default hodnota)
+                    if (team.isStatic && !team.confirmed) {
+                        teamReservedInfo.style.display = 'block';
+                        teamReservedInfo.innerText = `⏳ Rezervovaný počet: ${team.default} os.`;
+                        teamReservedInfo.style.color = '#222454';
+                    } else if (team.confirmed) {
+                        teamReservedInfo.style.display = 'block';
+                        teamReservedInfo.innerText = `✅ Potvrdený počet: ${team.current} os.`;
+                        teamReservedInfo.style.color = '#27ae60';
+                    } else {
+                        teamReservedInfo.style.display = 'none';
+                    }
+                    countInput.value = team.current || team.default || 4;
+                } else {
+                    teamReservedInfo.style.display = 'none';
+                }
+                pinLabel.innerText = `Zadaj PIN pre tím ${select.value}:`; pinLabel.style.color = "#27ae60";
+                pinHelp.innerText = "Ak si zabudol PIN, kontaktuj organizátora.";
+            }
+        }
+
+        window.handleFormSubmit = async function(e) {
+            e.preventDefault();
+            if (!checkDeadline()) return;
+            const teamSelect = document.getElementById('teamSelect').value;
+            const count = parseInt(document.getElementById('playerCount').value);
+            const enteredPin = document.getElementById('teamPin').value;
+
+            let currentTeamCount = 0;
+            if (teamSelect !== 'new') {
+                const existing = teamsData.find(t => t.id === teamSelect);
+                if(existing) currentTeamCount = existing.current;
+            } else {
+                const newName = document.getElementById('customTeamName').value;
+                const existing = teamsData.find(t => t.id === newName);
+                if(existing) currentTeamCount = existing.current;
+            }
+
+            const currentOccupied = calculateOccupied();
+            const diff = count - currentTeamCount;
+            if (diff > 0 && (currentOccupied + diff) > MAX_CAPACITY) { alert("Kapacita je plná."); return; }
+
+            try {
+                if (teamSelect !== 'new') {
+                    const team = teamsData.find(t => t.id === teamSelect);
+                    if (!team) {
+                        alert("❌ Tím nebol nájdený!");
+                        return;
+                    }
+                    if (!enteredPin) {
+                        alert("❌ Zadaj PIN!");
+                        return;
+                    }
+                    if (enteredPin !== team.pin && enteredPin !== globalSettings.masterPin) {
+                        alert("❌ Nesprávny PIN!");
+                        return;
+                    }
+                    await updateDoc(doc(db, "teams", team.id), { current: count, confirmed: true });
+                    document.getElementById('formMessage').innerText = `✅ Tím ${team.id} potvrdený!`;
+                    document.getElementById('formMessage').style.color = 'green';
+                } else {
+                    const newName = document.getElementById('customTeamName').value.trim();
+                    if (!newName) {
+                        alert("❌ Zadaj názov tímu!");
+                        return;
+                    }
+                    if (!enteredPin) {
+                        alert("❌ Zadaj PIN!");
+                        return;
+                    }
+                    const existing = teamsData.find(t => t.id === newName);
+                    if (existing) {
+                        if (existing.pin !== enteredPin && enteredPin !== globalSettings.masterPin) {
+                            alert("❌ Tím už existuje. Zlý PIN.");
+                            return;
+                        }
+                        await updateDoc(doc(db, "teams", newName), { current: count, confirmed: true });
+                        document.getElementById('formMessage').innerText = `✅ Tím ${newName} upravený!`;
+                        document.getElementById('formMessage').style.color = 'green';
+                    } else {
+                        await setDoc(doc(db, "teams", newName), {
+                            default: count, current: count, pin: enteredPin, confirmed: true, isStatic: false, tableId: ""
+                        });
+                        document.getElementById('formMessage').innerText = `✅ Tím ${newName} zaregistrovaný!`;
+                        document.getElementById('formMessage').style.color = 'green';
+                    }
+                }
+                document.getElementById('quizForm').reset();
+                window.handleTeamChange();
+            } catch (err) {
+                console.error("Chyba pri odosielaní:", err);
+                alert("❌ Chyba: " + err.message);
+                document.getElementById('formMessage').innerText = "❌ Chyba pri odosielaní: " + err.message;
+                document.getElementById('formMessage').style.color = 'red';
+            }
+        }
+
+        function calculateOccupied() { return teamsData.reduce((sum, t) => sum + t.current, 0); }
+
+        function populateTeamSelect() {
+            const select = document.getElementById('teamSelect');
+            select.innerHTML = '<option value="new">Nový tím / Vybrať tím</option>';
+            teamsData.filter(t => t.isStatic).forEach(t => {
+                let opt = document.createElement('option');
+                opt.value = t.id; opt.innerText = t.id; select.appendChild(opt);
+            });
+        }
+
+        function updateDashboard() {
+            const occupied = calculateOccupied();
+            const remaining = MAX_CAPACITY - occupied;
+            const display = document.getElementById('displayCapacity');
+            display.innerText = `${remaining} / ${MAX_CAPACITY}`;
+            display.className = "capacity-number"; 
+            if (remaining <= 0) { display.innerText = "PLNO"; display.classList.add('cap-crit'); disableForm("PLNO"); }
+            else if (remaining < 10) display.classList.add('cap-crit');
+            else if (remaining <= 20) display.classList.add('cap-warn');
+            else display.classList.add('cap-safe');
+
+            const listReserved = document.getElementById('listReserved');
+            const listConfirmed = document.getElementById('listConfirmed');
+            listReserved.innerHTML = ""; listConfirmed.innerHTML = "";
+            teamsData.forEach(t => {
+                const li = document.createElement('li'); li.className = 'team-item';
+                if (t.confirmed) {
+                    li.innerHTML = `${t.id} <span class="badge-count badge-confirmed">${t.current} ✔</span>`;
+                    listConfirmed.appendChild(li);
+                } else if (t.isStatic) {
+                    li.innerHTML = `${t.id} <span class="badge-count">${t.default}</span>`;
+                    listReserved.appendChild(li);
+                }
+            });
+            checkDeadline();
+        }
+
+        function checkDeadline() {
+            const btn = document.getElementById('submitBtn');
+            if (!globalSettings.quizDate) { if(btn) { btn.disabled = true; btn.innerText = "Čaká sa na spustenie"; } return false; }
+            const now = new Date();
+            const deadline = new Date(`${globalSettings.quizDate}T${DEADLINE_HOUR}:${DEADLINE_MINUTE}:00`);
+            if (now > deadline) { if(btn) { btn.disabled = true; btn.innerText = "Registrácia ukončená"; } return false; }
+            const remaining = MAX_CAPACITY - calculateOccupied();
+            if(btn && remaining > 0) { btn.disabled = false; btn.innerText = "Potvrdiť účasť"; }
+            return true;
+        }
+
+        function disableForm(msg) { const btn = document.getElementById('submitBtn'); if(btn) { btn.disabled = true; btn.innerText = msg; } }
+
+        function updateHeaderDate() {
+            const dateEl = document.getElementById('publicQuizDate');
+            const deadEl = document.getElementById('publicDeadlineInfo');
+            if (globalSettings.quizDate) {
+                const d = new Date(globalSettings.quizDate);
+                const hour = globalSettings.deadlineHour || 16;
+                const minute = globalSettings.deadlineMinute || 30;
+                dateEl.innerText = `Kvíz sa koná: ${d.getDate()}.${d.getMonth()+1}.${d.getFullYear()}`;
+                dateEl.style.color = "#222454";
+                deadEl.innerText = `⚠️ Registrácia do: ${d.getDate()}.${d.getMonth()+1}. ${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`;
+            } else {
+                dateEl.innerText = "Termín najbližšieho kvízu zatiaľ nie je určený.";
+                dateEl.style.color = "#666"; deadEl.innerText = "";
+            }
+        }
+
+        window.toggleAdmin = function() {
+            const pin = prompt("Admin PIN:");
+            if (pin === globalSettings.masterPin) {
+                document.getElementById('adminSection').style.display = 'block';
+                renderAdminPinTable(); window.scrollTo(0, document.body.scrollHeight);
+            } else { alert("Zlý PIN"); }
+        }
+
+        window.saveQuizDate = async function() {
+            const val = document.getElementById('adminQuizDate').value;
+            if(val) await updateDoc(doc(db, "config", "settings"), { quizDate: val });
+        }
+        window.stopRegistration = async function() {
+            if(confirm("Zastaviť registráciu?")) {
+                await updateDoc(doc(db, "config", "settings"), { quizDate: null });
+                document.getElementById('adminQuizDate').value = "";
+            }
+        }
+        window.saveMasterPin = async function() {
+            const val = document.getElementById('newMasterPin').value;
+            if(val.length > 2) { await updateDoc(doc(db, "config", "settings"), { masterPin: val }); alert("OK"); }
+        }
+        window.saveDeadlineTime = async function() {
+            const timeValue = document.getElementById('adminDeadlineTime').value;
+            if (!timeValue) {
+                alert("❌ Zadaj čas!");
+                return;
+            }
+            const [hour, minute] = timeValue.split(':').map(Number);
+            if (isNaN(hour) || isNaN(minute) || hour < 0 || hour > 23 || minute < 0 || minute > 59) {
+                alert("❌ Neplatný čas!");
+                return;
+            }
+            try {
+                await updateDoc(doc(db, "config", "settings"), { 
+                    deadlineHour: hour, 
+                    deadlineMinute: minute 
+                });
+                alert(`✅ Deadline čas bol nastavený na ${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}!`);
+            } catch (err) {
+                console.error("Chyba pri ukladaní:", err);
+                alert("❌ Chyba pri ukladaní: " + err.message);
+            }
+        }
+
+        // FUNKCIA NA NAHRATIE PREDVOLENÝCH TÍMOV
+        window.uploadDefaults = async function() {
+            if(!confirm("Nahrať 11 stálych tímov do DB? (Len ak je prázdna)")) return;
+            const batch = writeBatch(db);
+            defaultTeamsList.forEach(team => {
+                const ref = doc(db, "teams", team.id);
+                batch.set(ref, {
+                    default: team.default, current: team.default, pin: team.pin, confirmed: false, isStatic: true, tableId: ""
+                });
+            });
+            await batch.commit(); alert("Tímy nahraté!");
+        }
+
+        window.renderAdminPinTable = function() {
+            // Tabuľka pre potvrdené tímy
+            const confirmedTbody = document.getElementById('adminConfirmedTableBody');
+            confirmedTbody.innerHTML = "";
+            const confirmedTeams = teamsData.filter(t => t.confirmed);
+            if (confirmedTeams.length === 0) {
+                confirmedTbody.innerHTML = '<tr><td colspan="4" style="text-align:center; color:#999; padding:20px;">Žiadne potvrdené tímy</td></tr>';
+            } else {
+                confirmedTeams.forEach((t) => {
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = `
+                        <td><strong>${t.id}</strong> ${!t.isStatic ? '<span style="color:#999; font-size:11px;">(Nový)</span>' : ''}</td>
+                        <td><input type="number" class="admin-input w-small" id="confirmed_count_${t.id}" value="${t.current}" min="1" max="15" style="width:60px;"></td>
+                        <td><span style="color:#27ae60; font-weight:bold;">✅ Potvrdený</span></td>
+                        <td>
+                            <button class="btn-save-pin" onclick="window.updateConfirmedTeam('${t.id}')" style="margin-right:5px;">💾 Uložiť</button>
+                            <button class="btn-delete-team" onclick="window.removeConfirmedTeam('${t.id}')">🗑️ Odstrániť</button>
+                        </td>`;
+                    confirmedTbody.appendChild(tr);
+                });
+            }
+
+            // Tabuľka pre všetky tímy (správa)
+            const tbody = document.getElementById('adminPinTableBody');
+            tbody.innerHTML = "";
+            teamsData.forEach((t) => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td>${t.id} ${!t.isStatic ? '(Nový)' : ''} ${t.confirmed ? '<span style="color:#27ae60;">✓</span>' : ''}</td>
+                    <td><input type="number" class="admin-input w-small" id="cap_${t.id}" value="${t.default}"></td>
+                    <td><input type="text" class="admin-input w-med" id="pin_${t.id}" value="${t.pin}"></td>
+                    <td><button class="btn-save-pin" onclick="window.saveAdminTeam('${t.id}')">Uložiť</button>
+                    <button class="btn-delete-team" onclick="window.deleteTeam('${t.id}')">Zmazať</button></td>`;
+                tbody.appendChild(tr);
+            });
+        }
+        
+        window.updateConfirmedTeam = async function(id) {
+            const team = teamsData.find(t => t.id === id);
+            if (!team) {
+                alert("❌ Tím nebol nájdený!");
+                return;
+            }
+            const newCount = parseInt(document.getElementById(`confirmed_count_${id}`).value);
+            if (isNaN(newCount) || newCount < 1 || newCount > 15) {
+                alert("❌ Počet hráčov musí byť medzi 1 a 15!");
+                return;
+            }
+            try {
+                await updateDoc(doc(db, "teams", id), { current: newCount });
+                alert(`✅ Počet hráčov pre tím "${id}" bol aktualizovaný na ${newCount}!`);
+            } catch (err) {
+                console.error("Chyba pri aktualizácii:", err);
+                alert("❌ Chyba pri aktualizácii: " + err.message);
+            }
+        }
+        
+        window.removeConfirmedTeam = async function(id) {
+            const team = teamsData.find(t => t.id === id);
+            if (!team) {
+                alert("❌ Tím nebol nájdený!");
+                return;
+            }
+            
+            // Pre statické tímy - vrátiť do rezervovaných (zmeniť status)
+            if (team.isStatic) {
+                if (!confirm(`⚠️ Vrátiť tím "${id}" späť medzi rezervované?\n\nTím má ${team.current} hráčov a bol potvrdený.\n\nPočet sa zmení na predvolený (${team.default} os.).`)) {
+                    return;
+                }
+                try {
+                    await updateDoc(doc(db, "teams", id), { 
+                        confirmed: false, 
+                        current: team.default 
+                    });
+                    alert(`✅ Tím "${id}" bol vrátený medzi rezervované!`);
+                } catch (err) {
+                    console.error("Chyba pri aktualizácii:", err);
+                    alert("❌ Chyba pri vrátení tímu: " + err.message);
+                }
+            } else {
+                // Pre nové tímy - úplné odstránenie
+                if (!confirm(`⚠️ Naozaj chceš odstrániť tím "${id}"?\n\nTím má ${team.current} hráčov a bol potvrdený.\n\nTáto akcia je nevratná!`)) {
+                    return;
+                }
+                try {
+                    await deleteDoc(doc(db, "teams", id));
+                    alert(`✅ Tím "${id}" bol úspešne odstránený!`);
+                } catch (err) {
+                    console.error("Chyba pri mazaní:", err);
+                    alert("❌ Chyba pri odstraňovaní tímu: " + err.message);
+                }
+            }
+        }
+        window.saveAdminTeam = async function(id) {
+            const cap = parseInt(document.getElementById(`cap_${id}`).value);
+            const pin = document.getElementById(`pin_${id}`).value;
+            const t = teamsData.find(x => x.id === id);
+            let updates = { default: cap, pin: pin };
+            if (!t.confirmed) updates.current = cap;
+            await updateDoc(doc(db, "teams", id), updates); alert("Uložené");
+        }
+        window.deleteTeam = async function(id) { if(confirm("Zmazať " + id + "?")) await deleteDoc(doc(db, "teams", id)); }
+        window.addNewTeam = async function() {
+            const name = document.getElementById('addTeamName').value;
+            const cap = parseInt(document.getElementById('addTeamCap').value);
+            const pin = document.getElementById('addTeamPin').value;
+            if(name && cap && pin) {
+                await setDoc(doc(db, "teams", name), { default: cap, current: cap, pin: pin, confirmed: false, isStatic: true, tableId: "" });
+                document.getElementById('addTeamName').value = "";
+            }
+        }
+        window.resetAllData = async function() {
+            if(!confirm("⚠️ FULL WIPE?")) return;
+            const batch = writeBatch(db);
+            teamsData.forEach(t => {
+                const ref = doc(db, "teams", t.id);
+                if (!t.isStatic) batch.delete(ref);
+                else batch.update(ref, { current: t.default, confirmed: false });
+            });
+            await batch.commit(); alert("Reset hotový.");
+        }
+        window.adminEdit = function(el) { alert("Mapu upravuješ cez zoznam tímov nižšie."); }
+        function updateMapVisuals() {
+             // Mapovanie stolov zatiaľ vizuálne, dáta sa menia cez zoznam
+        }
+    </script>
+
+    <footer>
+        <img src="logo.png" alt="QuizBrothers Logo" class="footer-logo">
+        <div>&copy; 2026 QuizBrothers. Všetky práva vyhradené.</div>
+    </footer>
+    <script src="admin.js"></script>
+</body>
+</html>

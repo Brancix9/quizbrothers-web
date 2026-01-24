@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="sk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Aplikácia - QuizBrothers</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <header>
+        <div class="nav-container">
+            <a href="index.html" class="logo">
+                <img src="logo.png" alt="QuizBrothers Logo">
+                <span>Quiz<span>Brothers</span></span>
+            </a>
+            <div class="menu-toggle" onclick="toggleMenu()">☰</div>
+            <nav>
+                <ul id="nav-list">
+                    <li><a href="index.html">Domov</a></li>
+                    <li><a href="rezervacia.html">Rezervácia stola</a></li>
+                    <li><a href="aplikacia.html" class="active">Aplikácia</a></li>
+                    <li><a href="onas.html">O nás</a></li>
+                </ul>
+            </nav>
+        </div>
+    </header>
+
+    <div class="container">
+        <h1 style="text-align: center; margin-bottom: 20px;">Naša aplikácia</h1>
+        
+        <!-- Stiahnutie aplikácie -->
+        <div style="text-align: center; margin-bottom: 50px;">
+            <div style="display: flex; justify-content: center; align-items: center; gap: 40px; flex-wrap: wrap; margin-bottom: 30px;">
+                <div>
+                    <img src="qr-code.png" alt="QR kód na stiahnutie aplikácie" style="max-width: 250px; width: 100%; border-radius: 10px; box-shadow: 0 4px 15px rgba(34,36,84,0.2);">
+                    <p style="margin-top: 15px; color: #666; font-size: 0.9em;">Naskenujte QR kód</p>
+                </div>
+                <div style="text-align: left;">
+                    <h2 style="color: #222454; margin-bottom: 15px;">Stiahnuť aplikáciu</h2>
+                    <p style="margin-bottom: 20px; font-size: 1.1em;">Aplikácia je dostupná na Google Play</p>
+                    <a href="https://play.google.com/store/apps/details?id=sk.quizbrother.app" target="_blank" class="btn btn-primary" style="display: inline-block;">
+                        📱 Stiahnuť z Google Play
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Prečo vlastná aplikácia -->
+        <div class="card" style="margin-bottom: 40px; text-align: left;">
+            <h2 style="color: #222454; margin-bottom: 20px;">Prečo vlastná aplikácia?</h2>
+            <p style="font-size: 1.1em; line-height: 1.8;">
+                Keďže žiadna z dostupných aplikácií na trhu nedokázala spraviť to, čo sme potrebovali, tak sme si spravili vlastnú. Kvízy teda fungujú úplne rovnako ako fungovali bez nej, avšak je to oveľa efektívnejšie. V aplikácii je zabudovaná aj detekcia podvádzania, takže to ani neskúšajte lebo prídete o body 😂. Cez aplikáciu vám tiež budeme posielať dôležité oznámenia ako napr. dátum ďalšieho kvízu.
+            </p>
+        </div>
+
+        <!-- Ako funguje -->
+        <div style="margin-bottom: 50px;">
+            <h2 style="text-align: center; color: #222454; margin-bottom: 30px;">Ako funguje aplikácia?</h2>
+            <div class="card-grid">
+                <div class="card">
+                    <h3>📲 Hlasovanie mobilom</h3>
+                    <p>Žiadne papiere. Odpovede posielaš priamo cez appku.</p>
+                </div>
+                <div class="card">
+                    <h3>⚡ Okamžité vyhodnotenie</h3>
+                    <p>Aplikácia dokáže zobraziť rôzne typy otázok a tvoju odpoveď náš systém vyhodnotí okamžite.</p>
+                </div>
+                <div class="card">
+                    <h3>🛡️ Ochrana proti podvádzaniu</h3>
+                    <p>Zabudovaná detekcia podvádzania zabezpečuje férovú hru pre všetkých.</p>
+                </div>
+                <div class="card">
+                    <h3>🔔 Dôležité oznámenia</h3>
+                    <p>Dostávajte upozornenia na dátum ďalšieho kvízu a ďalšie dôležité informácie.</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Postup -->
+        <div class="card" style="background: linear-gradient(135deg, rgba(34,36,84,0.05) 0%, rgba(39,174,96,0.05) 100%); border: 2px solid rgba(34,36,84,0.1);">
+            <h2 style="color: #222454; margin-bottom: 30px; text-align: center;">Ako postupovať?</h2>
+            <ol style="font-size: 1.1em; line-height: 2.2; padding-left: 20px; max-width: 800px; margin: 0 auto;">
+                <li style="margin-bottom: 15px;"><strong>Stiahnite si aplikáciu</strong> - použite QR kód vyššie alebo odkaz na Google Play</li>
+                <li style="margin-bottom: 15px;"><strong>Nainštalujte</strong> aplikáciu na svoj Android telefón</li>
+                <li style="margin-bottom: 15px;"><strong>Vypnite dáta a pripojte sa v bare na našu lokálnu sieť QuizBrothers</strong></li>
+                <li style="margin-bottom: 15px;"><strong>Zadajte názov svojho tímu alebo kliknite na tlačidlo "Vybrať tím"</strong> - nájdite svoj tím v zozname a pripojte sa</li>
+                <li style="margin-bottom: 15px;"><strong>HOTOVO</strong> - môžete začať hrať! 🎉</li>
+            </ol>
+        </div>
+    </div>
+
+    <footer>
+        <img src="logo.png" alt="QuizBrothers Logo" class="footer-logo">
+        <div>&copy; 2026 QuizBrothers</div>
+    </footer>
+
+    <script>function toggleMenu() { document.getElementById('nav-list').classList.toggle('show'); }</script>
+    <script src="admin.js"></script>
+</body>
+</html>

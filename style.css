@@ -1,0 +1,348 @@
+/* style.css - Dizajn pre QuizBrothers */
+/* Hlavn? farby: Fialov? #222454, Biela, Zelen? #27ae60 */
+
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    margin: 0; padding: 0;
+    background-color: #f5f5f7; color: #333;
+    line-height: 1.6;
+}
+
+/* --- MENU (NAVIG?CIA) --- */
+header {
+    background: #222454; color: white; padding: 1rem 0;
+    position: sticky; top: 0; z-index: 1000; box-shadow: 0 4px 20px rgba(0,0,0,0.25);
+}
+.nav-container {
+    max-width: 1200px; margin: 0 auto; padding: 0 20px;
+    display: flex; justify-content: space-between; align-items: center;
+}
+.logo { 
+    font-size: 1.5rem; 
+    font-weight: bold; 
+    color: #27ae60; 
+    text-decoration: none; 
+    text-transform: uppercase; 
+    letter-spacing: 1px; 
+    display: flex; 
+    align-items: center; 
+    gap: 10px; 
+}
+.logo img { 
+    height: 40px; 
+    width: auto; 
+}
+.logo span { color: white; }
+
+/* Footer logo */
+.footer-logo { 
+    height: 30px; 
+    width: auto; 
+    margin-bottom: 10px; 
+    opacity: 0.8; 
+}
+
+nav ul { list-style: none; padding: 0; margin: 0; display: flex; }
+nav ul li { margin-left: 20px; }
+nav ul li a { color: white; text-decoration: none; font-weight: 500; transition: color 0.3s; }
+nav ul li a:hover, nav ul li a.active { color: #27ae60; }
+
+/* Hamburger pre mobily */
+.menu-toggle { display: none; font-size: 1.5rem; cursor: pointer; }
+
+/* --- OBSAH STR?NOK --- */
+.container { max-width: 1100px; margin: 40px auto; padding: 0 20px; }
+
+/* Hero Sekcia (?vod) */
+.hero {
+    background: linear-gradient(rgba(34, 36, 84, 0.96), rgba(34, 36, 84, 0.96)), url('https://source.unsplash.com/1600x900/?pub,quiz');
+    background-size: cover; background-position: center;
+    color: white; text-align: center; padding: 60px 20px; border-radius: 0 0 20px 20px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.25);
+}
+.hero-logo {
+    height: 60px;
+    width: auto;
+    margin-bottom: 15px;
+    filter: drop-shadow(0 4px 8px rgba(0,0,0,0.3));
+}
+.hero h1 { font-size: 2.5rem; margin-bottom: 8px; color: #2ecc71; font-weight: 800; text-shadow: 0 1px 3px rgba(46, 204, 113, 0.2), 0 0 8px rgba(46, 204, 113, 0.15); }
+.hero p { font-size: 1.1rem; margin-bottom: 20px; }
+
+/* Tla?idl? */
+.btn {
+    display: inline-block; padding: 12px 30px; border-radius: 50px;
+    text-decoration: none; font-weight: bold; margin: 5px; transition: transform 0.2s, background 0.2s;
+}
+.btn-primary { background: #27ae60; color: white; }
+.btn-primary:hover { background: #229954; transform: scale(1.05); }
+.btn-secondary { background: transparent; border: 2px solid white; color: white; }
+.btn-secondary:hover { background: rgba(255,255,255,0.1); transform: scale(1.05); }
+.btn:hover { transform: scale(1.05); }
+
+/* Karty (Aplik?cia, O n?s) */
+.card-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; }
+.card { background: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 15px rgba(34,36,84,0.1); text-align: center; }
+.card img { max-width: 100%; border-radius: 5px; margin-bottom: 15px; }
+.card h3 { color: #222454; }
+
+/* Nadpisy */
+h1, h2 { color: #222454; }
+
+/* Fakty a t?ma kv?zu */
+.facts-layout {
+    display: flex;
+    gap: 30px;
+    align-items: center;
+    flex-wrap: wrap;
+    justify-content: center;
+}
+
+.fact-card {
+    flex: 1;
+    min-width: 200px;
+    max-width: 250px;
+}
+
+.quiz-topic-card {
+    flex: 1.5;
+    min-width: 300px;
+    text-align: center;
+    padding: 30px;
+    background: white;
+    border-radius: 10px;
+    box-shadow: 0 4px 15px rgba(34,36,84,0.1);
+}
+
+.quiz-topic-card h2 {
+    color: #222454;
+    margin-bottom: 15px;
+    font-size: 1.8rem;
+}
+
+.topic-text {
+    font-size: 1.2em;
+    color: #666;
+    margin-bottom: 20px;
+    font-weight: 500;
+}
+
+.facebook-link {
+    display: inline-block;
+    color: #27ae60;
+    text-decoration: none;
+    font-weight: bold;
+    margin-top: 10px;
+    transition: color 0.3s;
+}
+
+.facebook-link:hover {
+    color: #229954;
+    text-decoration: underline;
+}
+
+/* P?ti?ka */
+footer { 
+    background: #222454; 
+    color: #aaa; 
+    text-align: center; 
+    padding: 20px; 
+    margin-top: 50px; 
+    font-size: 0.9rem; 
+    display: flex; 
+    flex-direction: column; 
+    align-items: center; 
+    gap: 10px; 
+}
+
+/* --- RESPONZIVITA --- */
+@media (max-width: 768px) {
+    .menu-toggle { display: block; }
+    nav ul {
+        display: none; flex-direction: column; width: 100%; position: absolute;
+        top: 60px; left: 0; background: #222454; text-align: center; padding: 20px 0;
+    }
+    nav ul.show { display: flex; }
+    nav ul li { margin: 10px 0; }
+    .hero h1 { font-size: 1.8rem; }
+    .hero-logo { height: 50px; }
+    .logo img { height: 30px; }
+    .logo span { font-size: 1.2rem; }
+    .footer-logo { height: 25px; }
+    
+    /* Responz?vne fakty */
+    .facts-layout {
+        flex-direction: column;
+    }
+    .fact-card, .quiz-topic-card {
+        max-width: 100% !important;
+        margin-bottom: 20px;
+    }
+    .quiz-topic-card {
+        min-width: 100%;
+    }
+    
+    /* Responz?vne QR k?d */
+    .container > div[style*="display: flex"] {
+        flex-direction: column !important;
+        gap: 20px !important;
+    }
+    .container > div[style*="display: flex"] > div {
+        text-align: center !important;
+    }
+}
+
+/* --- ADMIN M?D --- */
+#admin-activate-btn {
+    position: fixed;
+    bottom: 10px;
+    right: 10px;
+    width: 30px;
+    height: 30px;
+    border-radius: 4px;
+    background: rgba(34, 36, 84, 0.6);
+    color: #999;
+    border: 1px solid rgba(255,255,255,0.2);
+    font-size: 12px;
+    cursor: pointer;
+    z-index: 9998;
+    transition: all 0.2s;
+    opacity: 0.5;
+}
+
+#admin-activate-btn:hover {
+    background: rgba(34, 36, 84, 0.8);
+    opacity: 1;
+    color: #27ae60;
+}
+
+.admin-mode .editable-text {
+    cursor: text;
+    transition: all 0.2s;
+}
+
+.admin-mode .editable-text:hover {
+    background: rgba(39, 174, 96, 0.05) !important;
+}
+
+#admin-edit-panel {
+    position: fixed;
+    top: 80px;
+    right: 20px;
+    width: 320px;
+    background: white;
+    border-radius: 10px;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+    z-index: 10000;
+    max-height: calc(100vh - 120px);
+    overflow-y: auto;
+}
+
+.admin-panel-header {
+    background: #222454;
+    color: white;
+    padding: 15px 20px;
+    border-radius: 10px 10px 0 0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.admin-panel-header h3 {
+    margin: 0;
+    font-size: 16px;
+    color: white;
+}
+
+.admin-close-btn {
+    background: rgba(255,255,255,0.2);
+    color: white;
+    border: none;
+    padding: 5px 12px;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 12px;
+    transition: background 0.2s;
+}
+
+.admin-close-btn:hover {
+    background: rgba(255,255,255,0.3);
+}
+
+.admin-panel-content {
+    padding: 20px;
+}
+
+.admin-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-top: 15px;
+}
+
+.admin-save-btn, .admin-reset-btn, .admin-password-btn, .admin-clear-btn {
+    padding: 10px 15px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-weight: bold;
+    font-size: 14px;
+    transition: transform 0.2s, opacity 0.2s;
+}
+
+.admin-password-btn {
+    background: #3498db;
+    color: white;
+}
+
+.admin-password-btn:hover {
+    background: #2980b9;
+    transform: scale(1.02);
+}
+
+.admin-save-btn {
+    background: #27ae60;
+    color: white;
+}
+
+.admin-save-btn:hover {
+    background: #229954;
+    transform: scale(1.02);
+}
+
+.admin-reset-btn {
+    background: #f39c12;
+    color: white;
+}
+
+.admin-reset-btn:hover {
+    background: #e67e22;
+    transform: scale(1.02);
+}
+
+.admin-clear-btn {
+    background: #e74c3c;
+    color: white;
+}
+
+.admin-clear-btn:hover {
+    background: #c0392b;
+    transform: scale(1.02);
+}
+
+@media (max-width: 768px) {
+    #admin-edit-panel {
+        width: calc(100% - 40px);
+        right: 20px;
+        left: 20px;
+        top: 70px;
+    }
+    
+    #admin-activate-btn {
+        width: 25px;
+        height: 25px;
+        font-size: 10px;
+        bottom: 8px;
+        right: 8px;
+    }
+}

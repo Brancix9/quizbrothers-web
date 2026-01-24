@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="sk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>QuizBrothers - Domov</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <header>
+        <div class="nav-container">
+            <a href="index.html" class="logo">
+                <img src="logo.png" alt="QuizBrothers Logo">
+                <span>Quiz<span>Brothers</span></span>
+            </a>
+            <div class="menu-toggle" onclick="toggleMenu()">☰</div>
+            <nav>
+                <ul id="nav-list">
+                    <li><a href="index.html" class="active">Domov</a></li>
+                    <li><a href="rezervacia.html">Rezervácia stola</a></li>
+                    <li><a href="aplikacia.html">Aplikácia</a></li>
+                    <li><a href="onas.html">O nás</a></li>
+                </ul>
+            </nav>
+        </div>
+    </header>
+
+    <div class="hero">
+        <img src="logo.png" alt="QuizBrothers Logo" class="hero-logo">
+        <h1>Najbližší kvíz - 7. február</h1>
+        <p>Pre účasť je potrebné si rezervovať stôl a mať nainštalovanú najnovšiu aktualizáciu našej aplikácie.</p>
+        <a href="rezervacia.html" class="btn btn-primary">Rezervovať stôl</a>
+        <a href="aplikacia.html" class="btn btn-secondary">Stiahnuť Appku</a>
+    </div>
+
+    <div class="container" style="margin-top: 60px;">
+        <div class="facts-layout">
+            <!-- Ľavý fakt -->
+            <div class="card fact-card">
+                <h3>📅 Ako často je kvíz ?</h3>
+                <p>Každé dva týždne v piatok alebo v sobotu Lukia's Lounge & More, Šafárikova 8 v Rožňave</p>
+            </div>
+            
+            <!-- Stred - Téma kvízu -->
+            <div class="quiz-topic-card">
+                <h2>Téma najbližšieho kvízu ?</h2>
+                <p class="topic-text">Zatiaľ nevieme alebo sme neaktualizovali😂</p>
+                <a href="https://facebook.com/quizbrothers" target="_blank" class="facebook-link">
+                    📘 Hlasuj na Facebooku
+                </a>
+            </div>
+            
+            <!-- Pravý fakt -->
+            <div class="card fact-card">
+                <h3>🧀 Vedeli ste že..?</h3>
+                <p>Najviac kradnutá potravina na svete je SYR.</p>
+            </div>
+        </div>
+    </div>
+
+    <footer>
+        <img src="logo.png" alt="QuizBrothers Logo" class="footer-logo">
+        <div>&copy; 2026 QuizBrothers. Všetky práva vyhradené.</div>
+    </footer>
+
+    <script>
+        function toggleMenu() {
+            document.getElementById('nav-list').classList.toggle('show');
+        }
+    </script>
+    <script src="admin.js"></script>
+</body>
+</html>
