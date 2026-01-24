@@ -576,7 +576,18 @@
         onSnapshot(collection(db, "teams"), (snapshot) => {
             teamsData = [];
             snapshot.forEach(doc => { teamsData.push({ id: doc.id, ...doc.data() }); });
-            updateDashboard(); renderAdminPinTable(); populateTeamSelect(); updateMapVisuals();
+            
+            // GUARD: Ak má input pole v admin sekcii focus, neobnov tabuľku
+            const activeElement = document.activeElement;
+            const isEditingInTable = activeElement && (activeElement.tagName === 'INPUT' || activeElement.tagName === 'TEXTAREA') && 
+                                    (activeElement.closest('#adminConfirmedTableBody, #adminPinTableBody'));
+            
+            if (!isEditingInTable) {
+                updateDashboard(); 
+                renderAdminPinTable(); 
+                populateTeamSelect(); 
+                updateMapVisuals();
+            }
             hideLoadingOverlay();
         }, (error) => {
             console.error("Chyba pri načítaní tímov:", error);
@@ -900,6 +911,14 @@
         }
 
         window.renderAdminPinTable = function() {
+            // GUARD: Ak má input pole focus, nekeď renderovať (user zadáva údaje)
+            const activeElement = document.activeElement;
+            if (activeElement && (activeElement.tagName === 'INPUT' || activeElement.tagName === 'TEXTAREA') && 
+                activeElement.closest('#adminConfirmedTableBody, #adminPinTableBody')) {
+                // Preskočiť render ak user edituje pole v tabuľke
+                return;
+            }
+            
             // Tabuľka pre potvrdené tímy
             const confirmedTbody = document.getElementById('adminConfirmedTableBody');
             confirmedTbody.innerHTML = "";
