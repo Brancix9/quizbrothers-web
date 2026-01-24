@@ -337,11 +337,18 @@
                 <p style="color: #27ae60; margin-bottom: 15px;">💡 Klikni na akýkoľvek text na stránke a začni ho editovať!</p>
                 <div class="admin-actions">
                     <button onclick="window.qbAdmin.saveAll()" class="admin-save-btn">💾 Uložiť všetky zmeny</button>
-                    <button onclick="window.qbAdmin.resetPage()" class="admin-reset-btn">🔄 Resetovať túto stránku</button>
-                    <button onclick="window.qbAdmin.clearAll()" class="admin-clear-btn">🗑️ Vymazať všetko</button>
-                    <button onclick="window.qbAdmin.resetFirebaseData()" class="admin-reset-btn" style="background: #e74c3c; margin-top: 10px;">🔥 RESET FIREBASE</button>
                     <button onclick="window.qbAdmin.logout()" class="admin-logout-btn">🚪 Odhlásiť sa</button>
                 </div>
+                
+                <details style="margin-top: 15px; padding: 10px; border: 1px solid #e74c3c; border-radius: 5px; background: #ffe0e0;">
+                    <summary style="cursor: pointer; color: #c0392b; font-weight: bold;">⚠️ Nebezpečné operácie (Klikni pre otvorenie)</summary>
+                    <div style="margin-top: 10px; padding-top: 10px; border-top: 1px solid #e74c3c;">
+                        <p style="color: #c0392b; font-size: 12px; margin: 5px 0;">Opatrne! Tieto akcie nie je ľahké vrátiť späť.</p>
+                        <button onclick="window.qbAdmin.resetPage()" class="admin-reset-btn" style="width: 100%; margin-bottom: 8px;">🔄 Resetovať túto stránku</button>
+                        <button onclick="window.qbAdmin.clearAll()" class="admin-clear-btn" style="width: 100%; margin-bottom: 8px;">🗑️ Vymazať všetko</button>
+                        <button onclick="window.qbAdmin.resetFirebaseData()" class="admin-reset-btn" style="background: #c0392b; width: 100%;">🔥 RESET FIREBASE</button>
+                    </div>
+                </details>
             </div>
         `;
         document.body.appendChild(panel);
@@ -460,7 +467,12 @@
                         }
                     });
                     
-                    el.addEventListener('blur', async function() {
+                    el.addEventListener('blur', async function(e) {
+                        // GUARD: Neignoruj blur ak je event spôsobený input/textarea elementami
+                        if (e.relatedTarget && (e.relatedTarget.tagName === 'INPUT' || e.relatedTarget.tagName === 'TEXTAREA')) {
+                            return;
+                        }
+                        
                         this.style.outline = '';
                         this.style.backgroundColor = '';
                         // Automatické uloženie pri strate fokusu

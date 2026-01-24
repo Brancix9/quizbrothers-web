@@ -757,6 +757,13 @@
         }
 
         function updateDashboard() {
+            // GUARD: Ak má input pole focus, neaktualizuj - čekaj až sa odhlásis z poľa
+            const activeElement = document.activeElement;
+            if (activeElement && (activeElement.tagName === 'INPUT' || activeElement.tagName === 'TEXTAREA' || activeElement.tagName === 'SELECT')) {
+                // Preskočiť update ak má aktívne input pole
+                return;
+            }
+            
             const occupied = calculateOccupied();
             const remaining = MAX_CAPACITY - occupied;
             const display = document.getElementById('displayCapacity');
