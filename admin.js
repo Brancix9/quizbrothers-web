@@ -354,14 +354,14 @@
         if (textIdsInitialized) return;
         
         // WHITELIST prvkov ktoré SMÚ byť editovateľné
-        // Vylučuj všetky dynamické prvky
-        const editableSelectors = 'h1, .hero h1, .hero p';
+        // Vrátane všetkých nadpisov a paragrafov ALE vylučujeme dynamické prvky
+        const editableSelectors = 'h1, h2, h3, p:not(#formMessage):not(#adminLoginPrompt p):not(#pinHelp):not(#teamReservedInfo)';
         const editableElements = document.querySelectorAll(editableSelectors);
         const elementsToIgnore = [
             'displayCapacity', 'listReserved', 'listConfirmed', 'teamReservedInfo',
             'pinLabel', 'pinHelp', 'pinSection', 'newTeamInput', 'submitBtn',
             'formMessage', 'adminSection', 'admin-edit-panel', 'admin-login-modal',
-            'publicQuizDate', 'publicDeadlineInfo'
+            'publicQuizDate', 'publicDeadlineInfo', 'adminLoginPrompt'
         ];
         
         let validIndex = 0;
@@ -371,7 +371,14 @@
             if (el.id && elementsToIgnore.includes(el.id)) {
                 return;
             }
+            
+            // Vylúč prvky v headeri, footeri, admin paneli
             if (el.closest('header') || el.closest('footer') || el.closest('#admin-edit-panel') || el.closest('#admin-login-modal')) {
+                return;
+            }
+            
+            // Vylúč prvky vo formulároch a admin sekcii
+            if (el.closest('form') || el.closest('#adminSection')) {
                 return;
             }
             
@@ -394,13 +401,13 @@
         }
         
         // WHITELIST prvkov ktoré SMÚ byť editovateľné
-        const editableSelectors = 'h1, .hero h1, .hero p';
+        const editableSelectors = 'h1, h2, h3, p:not(#formMessage):not(#adminLoginPrompt p):not(#pinHelp):not(#teamReservedInfo)';
         const editableElements = document.querySelectorAll(editableSelectors);
         const elementsToIgnore = [
             'displayCapacity', 'listReserved', 'listConfirmed', 'teamReservedInfo',
             'pinLabel', 'pinHelp', 'pinSection', 'newTeamInput', 'submitBtn',
             'formMessage', 'adminSection', 'admin-edit-panel', 'admin-login-modal',
-            'publicQuizDate', 'publicDeadlineInfo'
+            'publicQuizDate', 'publicDeadlineInfo', 'adminLoginPrompt'
         ];
         
         editableElements.forEach((el) => {
@@ -408,7 +415,14 @@
             if (el.id && elementsToIgnore.includes(el.id)) {
                 return;
             }
+            
+            // Vylúč prvky v headeri, footeri, admin paneli
             if (el.closest('header') || el.closest('footer') || el.closest('#admin-edit-panel') || el.closest('#admin-login-modal')) {
+                return;
+            }
+            
+            // Vylúč prvky vo formulároch a admin sekcii
+            if (el.closest('form') || el.closest('#adminSection')) {
                 return;
             }
             
