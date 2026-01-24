@@ -42,6 +42,12 @@ header {
     opacity: 0.8; 
 }
 
+/* Responz?vne obr?zky */
+img {
+    max-width: 100%;
+    height: auto;
+}
+
 nav ul { list-style: none; padding: 0; margin: 0; display: flex; }
 nav ul li { margin-left: 20px; }
 nav ul li a { color: white; text-decoration: none; font-weight: 500; transition: color 0.3s; }
@@ -52,6 +58,11 @@ nav ul li a:hover, nav ul li a.active { color: #27ae60; }
 
 /* --- OBSAH STR?NOK --- */
 .container { max-width: 1100px; margin: 40px auto; padding: 0 20px; }
+
+/* Z?kladn? responz?vne ?pravy */
+* {
+    box-sizing: border-box;
+}
 
 /* Hero Sekcia (?vod) */
 .hero {
@@ -73,6 +84,8 @@ nav ul li a:hover, nav ul li a.active { color: #27ae60; }
 .btn {
     display: inline-block; padding: 12px 30px; border-radius: 50px;
     text-decoration: none; font-weight: bold; margin: 5px; transition: transform 0.2s, background 0.2s;
+    font-size: 1rem;
+    white-space: nowrap;
 }
 .btn-primary { background: #27ae60; color: white; }
 .btn-primary:hover { background: #229954; transform: scale(1.05); }
@@ -84,7 +97,8 @@ nav ul li a:hover, nav ul li a.active { color: #27ae60; }
 .card-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; }
 .card { background: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 15px rgba(34,36,84,0.1); text-align: center; }
 .card img { max-width: 100%; border-radius: 5px; margin-bottom: 15px; }
-.card h3 { color: #222454; }
+.card h3 { color: #222454; font-size: 1.2rem; }
+.card p { font-size: 0.95rem; }
 
 /* Nadpisy */
 h1, h2 { color: #222454; }
@@ -157,29 +171,141 @@ footer {
 
 /* --- RESPONZIVITA --- */
 @media (max-width: 768px) {
-    .menu-toggle { display: block; }
+    /* Navig?cia */
+    .nav-container {
+        padding: 0 15px;
+    }
+    .menu-toggle { 
+        display: block; 
+        font-size: 1.8rem;
+        padding: 5px;
+    }
     nav ul {
-        display: none; flex-direction: column; width: 100%; position: absolute;
-        top: 60px; left: 0; background: #222454; text-align: center; padding: 20px 0;
+        display: none; 
+        flex-direction: column; 
+        width: 100%; 
+        position: absolute;
+        top: 60px; 
+        left: 0; 
+        background: #222454; 
+        text-align: center; 
+        padding: 20px 0;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.3);
     }
     nav ul.show { display: flex; }
-    nav ul li { margin: 10px 0; }
-    .hero h1 { font-size: 1.8rem; }
-    .hero-logo { height: 50px; }
+    nav ul li { 
+        margin: 10px 0; 
+        width: 100%;
+    }
+    nav ul li a {
+        display: block;
+        padding: 10px;
+    }
+    
+    /* Logo */
+    .logo { 
+        font-size: 1.2rem;
+        gap: 8px;
+    }
     .logo img { height: 30px; }
     .logo span { font-size: 1.2rem; }
-    .footer-logo { height: 25px; }
     
-    /* Responz?vne fakty */
+    /* Kontajnery */
+    .container {
+        margin: 20px auto;
+        padding: 0 15px;
+    }
+    
+    /* Hero sekcia */
+    .hero {
+        padding: 40px 15px;
+        border-radius: 0 0 15px 15px;
+    }
+    .hero h1 { 
+        font-size: 1.8rem; 
+        margin-bottom: 10px;
+        line-height: 1.2;
+    }
+    .hero p { 
+        font-size: 1rem; 
+        margin-bottom: 25px;
+        padding: 0 10px;
+    }
+    .hero-logo { 
+        height: 50px; 
+        margin-bottom: 20px;
+    }
+    
+    /* Tla?idl? */
+    .btn {
+        padding: 10px 20px;
+        font-size: 0.9rem;
+        margin: 5px 3px;
+        display: block;
+        width: calc(100% - 6px);
+        max-width: 280px;
+        margin-left: auto;
+        margin-right: auto;
+    }
+    
+    /* Karty */
+    .card-grid { 
+        grid-template-columns: 1fr;
+        gap: 15px;
+    }
+    .card {
+        padding: 15px;
+    }
+    .card h3 {
+        font-size: 1.1rem;
+        margin-bottom: 10px;
+    }
+    .card p {
+        font-size: 0.9rem;
+    }
+    
+    /* Nadpisy */
+    h1 {
+        font-size: 1.8rem;
+        margin-bottom: 15px;
+    }
+    h2 {
+        font-size: 1.5rem;
+        margin-bottom: 15px;
+    }
+    h3 {
+        font-size: 1.2rem;
+    }
+    
+    /* Fakty a t?ma kv?zu */
     .facts-layout {
         flex-direction: column;
+        gap: 20px;
     }
     .fact-card, .quiz-topic-card {
         max-width: 100% !important;
-        margin-bottom: 20px;
+        min-width: 100% !important;
+        margin-bottom: 0;
     }
     .quiz-topic-card {
-        min-width: 100%;
+        padding: 20px 15px;
+    }
+    .quiz-topic-card h2 {
+        font-size: 1.5rem;
+        margin-bottom: 12px;
+    }
+    .topic-text {
+        font-size: 1.1em;
+        margin-bottom: 15px;
+    }
+    
+    /* Footer */
+    .footer-logo { 
+        height: 25px; 
+    }
+    footer {
+        padding: 15px;
+        font-size: 0.85rem;
     }
     
     /* Responz?vne QR k?d */
@@ -189,6 +315,106 @@ footer {
     }
     .container > div[style*="display: flex"] > div {
         text-align: center !important;
+        width: 100%;
+    }
+    
+    /* Text a zoznamy */
+    p {
+        font-size: 0.95rem;
+        line-height: 1.6;
+    }
+    ol, ul {
+        padding-left: 20px;
+    }
+    ol li, ul li {
+        margin-bottom: 8px;
+        font-size: 0.95rem;
+    }
+}
+
+/* Ve?mi mal? telef?ny */
+@media (max-width: 480px) {
+    .nav-container {
+        padding: 0 10px;
+    }
+    
+    .logo {
+        font-size: 1rem;
+        gap: 6px;
+    }
+    .logo img {
+        height: 25px;
+    }
+    .logo span {
+        font-size: 1rem;
+    }
+    
+    .container {
+        padding: 0 10px;
+        margin: 15px auto;
+    }
+    
+    .hero {
+        padding: 30px 10px;
+    }
+    .hero h1 {
+        font-size: 1.5rem;
+    }
+    .hero p {
+        font-size: 0.9rem;
+    }
+    .hero-logo {
+        height: 40px;
+    }
+    
+    .btn {
+        padding: 10px 18px;
+        font-size: 0.85rem;
+        max-width: 100%;
+    }
+    
+    h1 {
+        font-size: 1.6rem;
+    }
+    h2 {
+        font-size: 1.3rem;
+    }
+    
+    .card {
+        padding: 12px;
+    }
+    .card h3 {
+        font-size: 1rem;
+    }
+    .card p {
+        font-size: 0.85rem;
+    }
+    
+    .quiz-topic-card {
+        padding: 15px 10px;
+    }
+    .quiz-topic-card h2 {
+        font-size: 1.3rem;
+    }
+    .topic-text {
+        font-size: 1em;
+    }
+    
+    footer {
+        padding: 12px;
+        font-size: 0.8rem;
+    }
+    
+    /* Text a zoznamy pre mal? telef?ny */
+    p {
+        font-size: 0.9rem;
+    }
+    ol li, ul li {
+        font-size: 0.9rem;
+        margin-bottom: 6px;
+    }
+    ol {
+        padding-left: 18px;
     }
 }
 
