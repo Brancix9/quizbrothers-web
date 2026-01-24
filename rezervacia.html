@@ -305,7 +305,7 @@
 
                 <div id="pinSection">
                     <label id="pinLabel" style="color:#27ae60;">Vytvor si PIN kód:</label>
-                    <input type="password" id="teamPin" placeholder="Napr. 123" required>
+                    <input type="text" id="teamPin" inputmode="numeric" pattern="[0-9]*" placeholder="Napr. 123" required>
                     <small id="pinHelp" style="color:#666; display:block; margin-top:5px;">Tento PIN budeš potrebovať pre zmeny.</small>
                 </div>
                 
@@ -344,7 +344,7 @@
             <div class="config-block">
                 <label>Admin PIN:</label>
                 <div style="display:flex; gap:5px;">
-                    <input type="text" id="newMasterPin" placeholder="Nový PIN" style="width:80px; padding:5px; text-align:center;">
+                    <input type="text" id="newMasterPin" inputmode="numeric" pattern="[0-9]*" placeholder="Nový PIN" style="width:80px; padding:5px; text-align:center;">
                     <button class="btn-action" onclick="saveMasterPin()">Zmeniť</button>
                 </div>
             </div>
@@ -379,7 +379,7 @@
             <div class="add-team-form">
                 <div class="form-group"><label>Názov:</label><input type="text" id="addTeamName"></div>
                 <div class="form-group"><label>Kapacita:</label><input type="number" id="addTeamCap" value="4"></div>
-                <div class="form-group"><label>PIN:</label><input type="text" id="addTeamPin" value="000"></div>
+                <div class="form-group"><label>PIN:</label><input type="text" id="addTeamPin" inputmode="numeric" pattern="[0-9]*" value="000"></div>
                 <button class="btn-add" onclick="addNewTeam()">+ Pridať tím</button>
             </div>
         </div>
@@ -900,7 +900,7 @@
                 tr.innerHTML = `
                     <td>${t.id} ${!t.isStatic ? '(Nový)' : ''} ${t.confirmed ? '<span style="color:#27ae60;">✓</span>' : ''}</td>
                     <td><input type="number" class="admin-input w-small" id="cap_${t.id}" value="${t.default}"></td>
-                    <td><input type="text" class="admin-input w-med" id="pin_${t.id}" value="${t.pin}"></td>
+                    <td><input type="text" class="admin-input w-med" id="pin_${t.id}" inputmode="numeric" pattern="[0-9]*" value="${t.pin}"></td>
                     <td><button class="btn-save-pin" onclick="window.saveAdminTeam('${t.id}')" style="margin-right:10px;">Uložiť</button>
                     <button class="btn-delete-team" onclick="window.deleteTeam('${t.id}')">Zmazať</button></td>`;
                 tbody.appendChild(tr);

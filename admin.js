@@ -257,27 +257,7 @@
         const pageName = getPageName();
         if (savedTexts[pageName]) {
             Object.keys(savedTexts[pageName]).forEach(id => {
-                // Skús najprv element s data-text-id (admin móde)
-                let element = document.querySelector(`[data-text-id="${id}"]`);
-                
-                // Ak neexistuje, skús nájsť element podľa id-čka
-                if (!element) {
-                    // ID má formát "text-rezervacia.html-0"
-                    // Pokúšame sa nájsť element podľa poradového čísla na stránke
-                    const editableSelectors = 'h1, h2, h3, p, span, a, li, .card p, .card h3, .hero h1, .hero p';
-                    const elements = document.querySelectorAll(editableSelectors);
-                    
-                    elements.forEach((el, index) => {
-                        if (el.closest('header') || el.closest('footer') || el.closest('#admin-edit-panel')) {
-                            return;
-                        }
-                        const testId = `text-${pageName}-${index}`;
-                        if (testId === id) {
-                            element = el;
-                        }
-                    });
-                }
-                
+                const element = document.querySelector(`[data-text-id="${id}"]`);
                 if (element) {
                     element.textContent = savedTexts[pageName][id];
                 }
@@ -331,6 +311,27 @@
         document.body.appendChild(panel);
     }
     
+    // Inicializácia text ID-čiek (volá sa vždy pri načítaní)
+    function initializeTextIds() {
+        const editableSelectors = 'h1, h2, h3, p, span, a, li, .card p, .card h3, .hero h1, .hero p';
+        const elements = document.querySelectorAll(editableSelectors);
+        let validIndex = 0;
+        
+        elements.forEach((el) => {
+            // Preskočiť prvky v menu a footeri (môžeš pridať výnimky)
+            if (el.closest('header') || el.closest('footer') || el.closest('#admin-edit-panel')) {
+                return;
+            }
+            
+            // Ak element ešte nemá data-text-id, pridaj mu ho
+            if (!el.getAttribute('data-text-id')) {
+                const textId = `text-${getPageName()}-${validIndex}`;
+                el.setAttribute('data-text-id', textId);
+                validIndex++;
+            }
+        });
+    }
+    
     // Umožnenie editácie textov
     function makeTextsEditable() {
         const editableSelectors = 'h1, h2, h3, p, span, a, li, .card p, .card h3, .hero h1, .hero p';
@@ -342,7 +343,7 @@
                 return;
             }
             
-            const textId = `text-${getPageName()}-${index}`;
+            const textId = el.getAttribute('data-text-id') || `text-${getPageName()}-${index}`;
             el.setAttribute('data-text-id', textId);
             el.setAttribute('contenteditable', 'true');
             el.classList.add('editable-text');
@@ -553,6 +554,9 @@
     // --- OPRAVA SPÚŠŤANIA S onAuthStateChanged ---
     const startAdmin = async function() {
         await initFirebase();
+        
+        // Vždy inicializuj text ID-čka (aby boli dostupné aj bez admin módu)
+        initializeTextIds();
         
         // Zawždy vytvor tlačidlo
         setTimeout(() => {
