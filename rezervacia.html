@@ -7,7 +7,10 @@
     <link rel="stylesheet" href="style.css">
     <style>
         /* Špecifické štýly pre rezerváciu */
-        body { padding: 20px; }
+        body { margin: 0; padding: 0; }
+        
+        /* Wrapper pre obsah (okrem headeru) */
+        .content-wrapper { padding: 20px; }
         
         /* LAYOUT */
         .main-container { display: flex; justify-content: center; align-items: flex-start; gap: 20px; max-width: 1200px; margin: 0 auto 50px auto; }
@@ -53,11 +56,16 @@
         .admin-login-btn { display: block; margin: 50px auto; color: #222454; background: none; border: none; text-decoration: underline; cursor: pointer; }
 
         .pin-manager { max-width: 95%; width: 95%; margin: 40px auto; background: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 15px rgba(34,36,84,0.1); }
+        .pin-manager h4 { margin-top: 0; }
+        .pin-manager label { display: block; margin-top: 10px; margin-bottom: 5px; font-weight: bold; color: #222454; font-size: 13px; }
         .pin-table { width: 100%; border-collapse: collapse; margin-top: 15px; table-layout: auto; }
         .pin-table th, .pin-table td { border: 1px solid rgba(34,36,84,0.2); padding: 12px; text-align: left; }
         .pin-table th { background-color: #f0f0f5; color: #222454; font-weight: bold; }
         .pin-table td { word-wrap: break-word; }
-        .admin-input { padding: 5px; text-align: center; border: 1px solid rgba(34,36,84,0.3); border-radius: 4px; } .w-small { width: 60px; } .w-med { width: 100px; }
+        .admin-input { padding: 8px; border: 1px solid rgba(34,36,84,0.3); border-radius: 4px; font-family: inherit; font-size: 14px; } 
+        .admin-input:focus { outline: none; border-color: #222454; }
+        textarea.admin-input { text-align: left; resize: vertical; }
+        .w-small { width: 60px; } .w-med { width: 100px; }
         .btn-save-pin { background: #27ae60; color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-weight: bold; font-size: 12px; }
         .btn-delete-team { background: #c0392b; color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-size: 12px; margin-left: 5px;}
 
@@ -67,13 +75,125 @@
         .btn-add:hover { background: #2d2f6a; }
 
         @media (max-width: 900px) {
-            .main-container { flex-direction: column; } .form-container { order: 1; } .right-panel { order: 2; } .left-panel { order: 3; }
-            .add-team-form { flex-direction: column; } .btn-add { width: 100%; }
-            .admin-config { flex-direction: column; align-items: stretch; text-align: center; max-width: 98%; width: 98%; }
-            .pin-manager { max-width: 98%; width: 98%; margin: 20px auto; padding: 15px; }
-            .pin-table { font-size: 14px; }
-            .pin-table th, .pin-table td { padding: 8px; }
-            .room-map { max-width: 98%; width: 98%; height: auto; min-height: 400px; }
+            .content-wrapper { padding: 10px; }
+            
+            h1 { text-align: center; font-size: 1.5rem; }
+            
+            .main-container { 
+                flex-direction: column; 
+                max-width: 100%;
+                margin: 20px auto;
+                gap: 15px;
+            } 
+            .form-container { 
+                order: 1; 
+                width: 100%;
+                max-width: 100%;
+                padding: 20px;
+            } 
+            .right-panel { 
+                order: 2; 
+                width: 100%;
+                max-width: 100%;
+            } 
+            .left-panel { 
+                order: 3; 
+                width: 100%;
+                max-width: 100%;
+            }
+            .sidebar {
+                width: 100%;
+                max-width: 100%;
+            }
+            
+            .add-team-form { flex-direction: column; } 
+            .btn-add { width: 100%; }
+            
+            .admin-config { 
+                flex-direction: column; 
+                align-items: stretch; 
+                text-align: center; 
+                max-width: 98%; 
+                width: 98%; 
+                margin: 20px auto;
+            }
+            .pin-manager { 
+                max-width: 98%; 
+                width: 98%; 
+                margin: 20px auto; 
+                padding: 15px; 
+            }
+            .pin-table { 
+                font-size: 14px; 
+                width: 100%;
+            }
+            .pin-table th, .pin-table td { 
+                padding: 8px; 
+                font-size: 12px;
+            }
+            .room-map { 
+                max-width: 98%; 
+                width: 98%; 
+                height: auto; 
+                min-height: 400px; 
+                margin: 20px auto;
+            }
+            
+            #adminSection {
+                padding: 20px 10px;
+            }
+        }
+        
+        @media (max-width: 480px) {
+            .content-wrapper { padding: 5px; }
+            
+            h1 { font-size: 1.3rem; margin-bottom: 10px; }
+            
+            .main-container {
+                margin: 10px auto;
+                gap: 10px;
+            }
+            
+            .form-container, .sidebar {
+                padding: 15px;
+            }
+            
+            .quiz-date-info {
+                font-size: 1rem;
+            }
+            
+            .deadline-info {
+                font-size: 12px;
+            }
+            
+            .capacity-box {
+                padding: 12px;
+            }
+            
+            .capacity-number {
+                font-size: 1.5em;
+            }
+            
+            .admin-config {
+                padding: 15px;
+            }
+            
+            .pin-manager {
+                padding: 12px;
+            }
+            
+            .pin-table {
+                font-size: 11px;
+            }
+            
+            .pin-table th, .pin-table td {
+                padding: 6px;
+                font-size: 11px;
+            }
+            
+            .room-map {
+                min-height: 300px;
+            }
         }
         
         #loadingOverlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: white; z-index: 9999; display: flex; justify-content: center; align-items: center; font-size: 20px; color: #222454; font-weight: bold; }
@@ -101,6 +221,7 @@
 
     <div id="loadingOverlay">Načítavam systém...</div>
 
+    <div class="content-wrapper">
     <h1 style="text-align:center; margin-top:10px;">Registrácia QuizBrothers</h1>
     
     <div style="text-align:center;">
@@ -226,6 +347,126 @@
             <div id="t13" class="table rect status-free" style="top:450px; left:680px;" onclick="adminEdit(this)">Voľný<div class="cap-info">0 os.</div></div>
             <div id="t14" class="table rect status-free" style="top:500px; left:850px;" onclick="adminEdit(this)">Voľný<div class="cap-info">0 os.</div></div>
         </div>
+
+        <!-- Web Content Editor -->
+        <div class="pin-manager">
+            <h3>📝 Web Content Editor</h3>
+            <p style="text-align:center; color:#666; margin-bottom:20px; font-size:12px;">Upravte textový obsah na všetkých stránkach webu. Zmeny sa uložia do Firestore.</p>
+            
+            <div style="display: flex; gap: 20px; flex-wrap: wrap;">
+                <!-- Home Page Content -->
+                <div style="flex: 1; min-width: 300px;">
+                    <h4 style="color: #222454; border-bottom: 2px solid #222454; padding-bottom: 10px; margin-bottom: 15px;">🏠 Domov (index.html)</h4>
+                    <label>Hero - Nadpis:</label>
+                    <input type="text" id="edit_home_hero_title" class="admin-input" style="width: 100%; margin-bottom: 10px;">
+                    <label>Hero - Popis:</label>
+                    <textarea id="edit_home_hero_description" class="admin-input" style="width: 100%; min-height: 60px; margin-bottom: 10px;"></textarea>
+                    <label>Tlačidlo - Rezervovať:</label>
+                    <input type="text" id="edit_home_btn_reserve" class="admin-input" style="width: 100%; margin-bottom: 10px;">
+                    <label>Tlačidlo - Stiahnuť:</label>
+                    <input type="text" id="edit_home_btn_download" class="admin-input" style="width: 100%; margin-bottom: 10px;">
+                    <label>Fakt 1 - Nadpis:</label>
+                    <input type="text" id="edit_home_fact1_title" class="admin-input" style="width: 100%; margin-bottom: 10px;">
+                    <label>Fakt 1 - Text:</label>
+                    <textarea id="edit_home_fact1_text" class="admin-input" style="width: 100%; min-height: 60px; margin-bottom: 10px;"></textarea>
+                    <label>Téma kvízu - Nadpis:</label>
+                    <input type="text" id="edit_home_quiz_topic_title" class="admin-input" style="width: 100%; margin-bottom: 10px;">
+                    <label>Téma kvízu - Text:</label>
+                    <textarea id="edit_home_quiz_topic_text" class="admin-input" style="width: 100%; min-height: 60px; margin-bottom: 10px;"></textarea>
+                    <label>Téma kvízu - Link text:</label>
+                    <input type="text" id="edit_home_quiz_topic_link" class="admin-input" style="width: 100%; margin-bottom: 10px;">
+                    <label>Fakt 2 - Nadpis:</label>
+                    <input type="text" id="edit_home_fact2_title" class="admin-input" style="width: 100%; margin-bottom: 10px;">
+                    <label>Fakt 2 - Text:</label>
+                    <textarea id="edit_home_fact2_text" class="admin-input" style="width: 100%; min-height: 60px; margin-bottom: 10px;"></textarea>
+                    <button class="btn-save-pin" onclick="saveWebContent('home')" style="width: 100%; margin-top: 10px;">💾 Uložiť Domov</button>
+                </div>
+
+                <!-- About Page Content -->
+                <div style="flex: 1; min-width: 300px;">
+                    <h4 style="color: #222454; border-bottom: 2px solid #222454; padding-bottom: 10px; margin-bottom: 15px;">ℹ️ O nás (onas.html)</h4>
+                    <label>Kto sme - Nadpis:</label>
+                    <input type="text" id="edit_about_who_title" class="admin-input" style="width: 100%; margin-bottom: 10px;">
+                    <label>Kto sme - Text:</label>
+                    <textarea id="edit_about_who_text" class="admin-input" style="width: 100%; min-height: 80px; margin-bottom: 10px;"></textarea>
+                    <label>Prečo prísť - Nadpis:</label>
+                    <input type="text" id="edit_about_why_title" class="admin-input" style="width: 100%; margin-bottom: 10px;">
+                    <label>Podnadpis 1:</label>
+                    <input type="text" id="edit_about_why_subtitle1" class="admin-input" style="width: 100%; margin-bottom: 10px;">
+                    <label>Text 1:</label>
+                    <textarea id="edit_about_why_text1" class="admin-input" style="width: 100%; min-height: 60px; margin-bottom: 10px;"></textarea>
+                    <label>Podnadpis 2:</label>
+                    <input type="text" id="edit_about_why_subtitle2" class="admin-input" style="width: 100%; margin-bottom: 10px;">
+                    <label>Text 2:</label>
+                    <textarea id="edit_about_why_text2" class="admin-input" style="width: 100%; min-height: 60px; margin-bottom: 10px;"></textarea>
+                    <label>Podnadpis 3:</label>
+                    <input type="text" id="edit_about_why_subtitle3" class="admin-input" style="width: 100%; margin-bottom: 10px;">
+                    <label>Text 3:</label>
+                    <textarea id="edit_about_why_text3" class="admin-input" style="width: 100%; min-height: 60px; margin-bottom: 10px;"></textarea>
+                    <label>Naša cesta - Nadpis:</label>
+                    <input type="text" id="edit_about_journey_title" class="admin-input" style="width: 100%; margin-bottom: 10px;">
+                    <label>Cesta - Text 1:</label>
+                    <textarea id="edit_about_journey_text1" class="admin-input" style="width: 100%; min-height: 40px; margin-bottom: 10px;"></textarea>
+                    <label>Cesta - Text 2:</label>
+                    <textarea id="edit_about_journey_text2" class="admin-input" style="width: 100%; min-height: 40px; margin-bottom: 10px;"></textarea>
+                    <label>Cesta - Text 3:</label>
+                    <textarea id="edit_about_journey_text3" class="admin-input" style="width: 100%; min-height: 40px; margin-bottom: 10px;"></textarea>
+                    <label>Záverečný text:</label>
+                    <textarea id="edit_about_final_text" class="admin-input" style="width: 100%; min-height: 60px; margin-bottom: 10px;"></textarea>
+                    <button class="btn-save-pin" onclick="saveWebContent('about')" style="width: 100%; margin-top: 10px;">💾 Uložiť O nás</button>
+                </div>
+
+                <!-- App Page Content -->
+                <div style="flex: 1; min-width: 300px;">
+                    <h4 style="color: #222454; border-bottom: 2px solid #222454; padding-bottom: 10px; margin-bottom: 15px;">📱 Aplikácia (aplikacia.html)</h4>
+                    <label>Hlavný nadpis:</label>
+                    <input type="text" id="edit_app_main_title" class="admin-input" style="width: 100%; margin-bottom: 10px;">
+                    <label>QR kód text:</label>
+                    <input type="text" id="edit_app_qr_text" class="admin-input" style="width: 100%; margin-bottom: 10px;">
+                    <label>Stiahnuť - Nadpis:</label>
+                    <input type="text" id="edit_app_download_title" class="admin-input" style="width: 100%; margin-bottom: 10px;">
+                    <label>Stiahnuť - Popis:</label>
+                    <textarea id="edit_app_download_description" class="admin-input" style="width: 100%; min-height: 60px; margin-bottom: 10px;"></textarea>
+                    <label>Tlačidlo stiahnuť:</label>
+                    <input type="text" id="edit_app_download_btn" class="admin-input" style="width: 100%; margin-bottom: 10px;">
+                    <label>Prečo vlastná - Nadpis:</label>
+                    <input type="text" id="edit_app_why_title" class="admin-input" style="width: 100%; margin-bottom: 10px;">
+                    <label>Prečo vlastná - Text:</label>
+                    <textarea id="edit_app_why_text" class="admin-input" style="width: 100%; min-height: 80px; margin-bottom: 10px;"></textarea>
+                    <label>Ako funguje - Nadpis:</label>
+                    <input type="text" id="edit_app_how_title" class="admin-input" style="width: 100%; margin-bottom: 10px;">
+                    <label>Funkcia 1 - Nadpis:</label>
+                    <input type="text" id="edit_app_feature1_title" class="admin-input" style="width: 100%; margin-bottom: 10px;">
+                    <label>Funkcia 1 - Text:</label>
+                    <textarea id="edit_app_feature1_text" class="admin-input" style="width: 100%; min-height: 50px; margin-bottom: 10px;"></textarea>
+                    <label>Funkcia 2 - Nadpis:</label>
+                    <input type="text" id="edit_app_feature2_title" class="admin-input" style="width: 100%; margin-bottom: 10px;">
+                    <label>Funkcia 2 - Text:</label>
+                    <textarea id="edit_app_feature2_text" class="admin-input" style="width: 100%; min-height: 50px; margin-bottom: 10px;"></textarea>
+                    <label>Funkcia 3 - Nadpis:</label>
+                    <input type="text" id="edit_app_feature3_title" class="admin-input" style="width: 100%; margin-bottom: 10px;">
+                    <label>Funkcia 3 - Text:</label>
+                    <textarea id="edit_app_feature3_text" class="admin-input" style="width: 100%; min-height: 50px; margin-bottom: 10px;"></textarea>
+                    <label>Funkcia 4 - Nadpis:</label>
+                    <input type="text" id="edit_app_feature4_title" class="admin-input" style="width: 100%; margin-bottom: 10px;">
+                    <label>Funkcia 4 - Text:</label>
+                    <textarea id="edit_app_feature4_text" class="admin-input" style="width: 100%; min-height: 50px; margin-bottom: 10px;"></textarea>
+                    <label>Ako postupovať - Nadpis:</label>
+                    <input type="text" id="edit_app_steps_title" class="admin-input" style="width: 100%; margin-bottom: 10px;">
+                    <label>Krok 1:</label>
+                    <textarea id="edit_app_step1" class="admin-input" style="width: 100%; min-height: 40px; margin-bottom: 10px;"></textarea>
+                    <label>Krok 2:</label>
+                    <textarea id="edit_app_step2" class="admin-input" style="width: 100%; min-height: 40px; margin-bottom: 10px;"></textarea>
+                    <label>Krok 3:</label>
+                    <textarea id="edit_app_step3" class="admin-input" style="width: 100%; min-height: 40px; margin-bottom: 10px;"></textarea>
+                    <label>Krok 4:</label>
+                    <textarea id="edit_app_step4" class="admin-input" style="width: 100%; min-height: 40px; margin-bottom: 10px;"></textarea>
+                    <label>Krok 5:</label>
+                    <textarea id="edit_app_step5" class="admin-input" style="width: 100%; min-height: 40px; margin-bottom: 10px;"></textarea>
+                    <button class="btn-save-pin" onclick="saveWebContent('app')" style="width: 100%; margin-top: 10px;">💾 Uložiť Aplikácia</button>
+                </div>
+            </div>
+        </div>
     </div>
 
     <script type="module">
@@ -270,12 +511,23 @@
             { id: "Nevídali", default: 3, pin: "103" }
         ];
 
+        // Funkcia na skrytie loading overlay
+        function hideLoadingOverlay() {
+            const overlay = document.getElementById('loadingOverlay');
+            if (overlay) {
+                overlay.style.display = 'none';
+            }
+        }
+
         // LISTENERS
         onSnapshot(collection(db, "teams"), (snapshot) => {
             teamsData = [];
             snapshot.forEach(doc => { teamsData.push({ id: doc.id, ...doc.data() }); });
             updateDashboard(); renderAdminPinTable(); populateTeamSelect(); updateMapVisuals();
-            document.getElementById('loadingOverlay').style.display = 'none';
+            hideLoadingOverlay();
+        }, (error) => {
+            console.error("Chyba pri načítaní tímov:", error);
+            hideLoadingOverlay();
         });
 
         onSnapshot(doc(db, "config", "settings"), (docSnap) => {
@@ -297,7 +549,16 @@
             } else {
                 setDoc(doc(db, "config", "settings"), { quizDate: null, masterPin: "9999", deadlineHour: 16, deadlineMinute: 30 });
             }
+            hideLoadingOverlay();
+        }, (error) => {
+            console.error("Chyba pri načítaní nastavení:", error);
+            hideLoadingOverlay();
         });
+
+        // Fallback timeout - skryje loading overlay po 5 sekundách aj keď sa Firebase nenačíta
+        setTimeout(() => {
+            hideLoadingOverlay();
+        }, 5000);
 
         // WINDOW FUNCTIONS
         window.handleTeamChange = function() {
@@ -666,7 +927,136 @@
         function updateMapVisuals() {
              // Mapovanie stolov zatiaľ vizuálne, dáta sa menia cez zoznam
         }
+
+        // WEB CONTENT EDITOR FUNCTIONS
+        function loadWebContentToEditor(page) {
+            const contentDoc = doc(db, "web_content", page);
+            getDoc(contentDoc).then((docSnap) => {
+                if (docSnap.exists()) {
+                    const data = docSnap.data();
+                    Object.keys(data).forEach(key => {
+                        const inputId = `edit_${key}`;
+                        const input = document.getElementById(inputId);
+                        if (input) {
+                            input.value = data[key];
+                        }
+                    });
+                } else {
+                    // If document doesn't exist, initialize with default values
+                    initializeDefaultContent(page);
+                }
+            });
+        }
+
+        function initializeDefaultContent(page) {
+            const defaults = {
+                home: {
+                    home_hero_title: "Najbližší kvíz - 7. február",
+                    home_hero_description: "Pre účasť je potrebné si rezervovať stôl a mať nainštalovanú najnovšiu aktualizáciu našej aplikácie.",
+                    home_btn_reserve: "Rezervovať stôl",
+                    home_btn_download: "Stiahnuť Appku",
+                    home_fact1_title: "📅 Ako často je kvíz ?",
+                    home_fact1_text: "Každé dva týždne v piatok alebo v sobotu Lukia's Lounge & More, Šafárikova 8 v Rožňave",
+                    home_quiz_topic_title: "Téma najbližšieho kvízu ?",
+                    home_quiz_topic_text: "Zatiaľ nevieme alebo sme neaktualizovali😂",
+                    home_quiz_topic_link: "📘 Hlasuj na Facebooku",
+                    home_fact2_title: "🧀 Vedeli ste že..?",
+                    home_fact2_text: "Najviac kradnutá potravina na svete je SYR."
+                },
+                about: {
+                    about_who_title: "Kto sme?",
+                    about_who_text: "Sme bratia Branči a Marcel a kvízy sú našou srdcovkou už od roku 2018. To, čo začalo ako voľnočasový projekt v bare Fontána s kamošom Jarom Strelkom, prerástlo do komunity, ktorá sa už roky pravidelne stretáva pri vedomostných súbojoch.",
+                    about_why_title: "Prečo prísť na náš kvíz?",
+                    about_why_subtitle1: "Zábava pri jednom stole",
+                    about_why_text1: "Naše otázky sú všeobecné a férové. Nechceme, aby ste sypali z rukáva letopočty, ale aby ste sa v tíme poradili, zapojili logiku a spoločne prišli na odpoveď. Ten pocit, keď niečo tušíte a nakoniec je to správne, je na nezaplatenie.",
+                    about_why_subtitle2: "Dobrá nálada aj súťaživosť",
+                    about_why_text2: "V Lukia's Lounge & More to každé dva týždne žije. Je to priateľské, uvoľnené, ale keď ide do tuhého a na stole sú fľaše kvalitného alkoholu pre víťazov, atmosféra vie poriadne zhustnúť!",
+                    about_why_subtitle3: "Ideme s dobou",
+                    about_why_text3: "Nie sme len moderátori s papiermi. Sme technickí nadšenci a pre naše kvízy sme vyvinuli vlastnú aplikáciu (dostupnú na Google Play), ktorá posúva zážitok z hry na úplne inú úroveň.",
+                    about_journey_title: "Naša cesta v skratke",
+                    about_journey_text1: "<strong>2018 – 2020:</strong> Štartovacia čiara v bare Fontána.",
+                    about_journey_text2: "<strong>2020 – 2023:</strong> Presun do Šugáru a kvízovanie cez náročné obdobia.",
+                    about_journey_text3: "<strong>2024 – súčasnosť:</strong> Naša nová základňa v Lukia's Lounge & More.",
+                    about_final_text: "Príďte si vyvetrať hlavu, niečo nové sa naučiť a ukázať, že váš tím na to má. Vidíme sa pri ďalšom kole!"
+                },
+                app: {
+                    app_main_title: "Naša aplikácia",
+                    app_qr_text: "Naskenujte QR kód",
+                    app_download_title: "Stiahnuť aplikáciu",
+                    app_download_description: "Aplikácia je dostupná na Google Play",
+                    app_download_btn: "📱 Stiahnuť z Google Play",
+                    app_why_title: "Prečo vlastná aplikácia?",
+                    app_why_text: "Keďže žiadna z dostupných aplikácií na trhu nedokázala spraviť to, čo sme potrebovali, tak sme si spravili vlastnú. Kvízy teda fungujú úplne rovnako ako fungovali bez nej, avšak je to oveľa efektívnejšie. V aplikácii je zabudovaná aj detekcia podvádzania, takže to ani neskúšajte lebo prídete o body 😂. Cez aplikáciu vám tiež budeme posielať dôležité oznámenia ako napr. dátum ďalšieho kvízu.",
+                    app_how_title: "Ako funguje aplikácia?",
+                    app_feature1_title: "📲 Hlasovanie mobilom",
+                    app_feature1_text: "Žiadne papiere. Odpovede posielaš priamo cez appku.",
+                    app_feature2_title: "⚡ Okamžité vyhodnotenie",
+                    app_feature2_text: "Aplikácia dokáže zobraziť rôzne typy otázok a tvoju odpoveď náš systém vyhodnotí okamžite.",
+                    app_feature3_title: "🛡️ Ochrana proti podvádzaniu",
+                    app_feature3_text: "Zabudovaná detekcia podvádzania zabezpečuje férovú hru pre všetkých.",
+                    app_feature4_title: "🔔 Dôležité oznámenia",
+                    app_feature4_text: "Dostávajte upozornenia na dátum ďalšieho kvízu a ďalšie dôležité informácie.",
+                    app_steps_title: "Ako postupovať?",
+                    app_step1: "<strong>Stiahnite si aplikáciu</strong> - použite QR kód vyššie alebo odkaz na Google Play",
+                    app_step2: "<strong>Nainštalujte</strong> aplikáciu na svoj Android telefón",
+                    app_step3: "<strong>Vypnite dáta a pripojte sa v bare na našu lokálnu sieť QuizBrothers</strong>",
+                    app_step4: "<strong>Zadajte názov svojho tímu alebo kliknite na tlačidlo \"Vybrať tím\"</strong> - nájdite svoj tím v zozname a pripojte sa",
+                    app_step5: "<strong>HOTOVO</strong> - môžete začať hrať! 🎉"
+                }
+            };
+
+            if (defaults[page]) {
+                Object.keys(defaults[page]).forEach(key => {
+                    const inputId = `edit_${key}`;
+                    const input = document.getElementById(inputId);
+                    if (input) {
+                        input.value = defaults[page][key];
+                    }
+                });
+            }
+        }
+
+        window.saveWebContent = async function(page) {
+            const contentDoc = doc(db, "web_content", page);
+            const updateData = {};
+            const prefix = page === 'home' ? 'home' : page === 'about' ? 'about' : 'app';
+            
+            // Get all input fields for this page
+            const allInputs = document.querySelectorAll('[id^="edit_"]');
+            allInputs.forEach(input => {
+                const key = input.id.replace('edit_', '');
+                if (key.startsWith(prefix + '_')) {
+                    updateData[key] = input.value;
+                }
+            });
+
+            try {
+                await setDoc(contentDoc, updateData, { merge: true });
+                alert(`✅ Obsah pre ${page === 'home' ? 'Domov' : page === 'about' ? 'O nás' : 'Aplikácia'} bol uložený!`);
+            } catch (err) {
+                console.error("Chyba pri ukladaní:", err);
+                alert("❌ Chyba pri ukladaní: " + err.message);
+            }
+        }
+
+        // Load content when admin section is shown
+        const originalToggleAdmin = window.toggleAdmin;
+        window.toggleAdmin = function() {
+            const pin = prompt("Admin PIN:");
+            if (pin === globalSettings.masterPin) {
+                document.getElementById('adminSection').style.display = 'block';
+                renderAdminPinTable();
+                // Load web content into editor
+                loadWebContentToEditor('home');
+                loadWebContentToEditor('about');
+                loadWebContentToEditor('app');
+                window.scrollTo(0, document.body.scrollHeight);
+            } else {
+                alert("Zlý PIN");
+            }
+        }
     </script>
+    </div>
 
     <footer>
         <img src="logo.png" alt="QuizBrothers Logo" class="footer-logo">

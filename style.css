@@ -22,8 +22,7 @@ header {
     font-weight: bold; 
     color: #27ae60; 
     text-decoration: none; 
-    text-transform: uppercase; 
-    letter-spacing: 1px; 
+    letter-spacing: 0.5px; 
     display: flex; 
     align-items: center; 
     gap: 10px; 
@@ -174,11 +173,16 @@ footer {
     /* Navig?cia */
     .nav-container {
         padding: 0 15px;
+        position: relative;
     }
     .menu-toggle { 
         display: block; 
         font-size: 1.8rem;
         padding: 5px;
+        position: absolute;
+        right: 15px;
+        top: 50%;
+        transform: translateY(-50%);
     }
     nav ul {
         display: none; 
@@ -202,10 +206,14 @@ footer {
         padding: 10px;
     }
     
-    /* Logo */
+    /* Logo - vycentrovan? na stred */
     .logo { 
         font-size: 1.2rem;
         gap: 8px;
+        margin: 0 auto;
+        position: absolute;
+        left: 50%;
+        transform: translateX(-50%);
     }
     .logo img { height: 30px; }
     .logo span { font-size: 1.2rem; }
@@ -336,11 +344,18 @@ footer {
 @media (max-width: 480px) {
     .nav-container {
         padding: 0 10px;
+        position: relative;
+    }
+    
+    .menu-toggle {
+        right: 10px;
     }
     
     .logo {
         font-size: 1rem;
         gap: 6px;
+        left: 50%;
+        transform: translateX(-50%);
     }
     .logo img {
         height: 25px;

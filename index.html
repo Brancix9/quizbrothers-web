@@ -28,33 +28,33 @@
 
     <div class="hero">
         <img src="logo.png" alt="QuizBrothers Logo" class="hero-logo">
-        <h1>Najbližší kvíz - 7. február</h1>
-        <p>Pre účasť je potrebné si rezervovať stôl a mať nainštalovanú najnovšiu aktualizáciu našej aplikácie.</p>
-        <a href="rezervacia.html" class="btn btn-primary">Rezervovať stôl</a>
-        <a href="aplikacia.html" class="btn btn-secondary">Stiahnuť Appku</a>
+        <h1 id="home_hero_title">Najbližší kvíz - 7. február</h1>
+        <p id="home_hero_description">Pre účasť je potrebné si rezervovať stôl a mať nainštalovanú najnovšiu aktualizáciu našej aplikácie.</p>
+        <a href="rezervacia.html" class="btn btn-primary" id="home_btn_reserve">Rezervovať stôl</a>
+        <a href="aplikacia.html" class="btn btn-secondary" id="home_btn_download">Stiahnuť Appku</a>
     </div>
 
     <div class="container" style="margin-top: 60px;">
         <div class="facts-layout">
             <!-- Ľavý fakt -->
             <div class="card fact-card">
-                <h3>📅 Ako často je kvíz ?</h3>
-                <p>Každé dva týždne v piatok alebo v sobotu Lukia's Lounge & More, Šafárikova 8 v Rožňave</p>
+                <h3 id="home_fact1_title">📅 Ako často je kvíz ?</h3>
+                <p id="home_fact1_text">Každé dva týždne v piatok alebo v sobotu Lukia's Lounge & More, Šafárikova 8 v Rožňave</p>
             </div>
             
             <!-- Stred - Téma kvízu -->
             <div class="quiz-topic-card">
-                <h2>Téma najbližšieho kvízu ?</h2>
-                <p class="topic-text">Zatiaľ nevieme alebo sme neaktualizovali😂</p>
-                <a href="https://facebook.com/quizbrothers" target="_blank" class="facebook-link">
+                <h2 id="home_quiz_topic_title">Téma najbližšieho kvízu ?</h2>
+                <p class="topic-text" id="home_quiz_topic_text">Zatiaľ nevieme alebo sme neaktualizovali😂</p>
+                <a href="https://facebook.com/quizbrothers" target="_blank" class="facebook-link" id="home_quiz_topic_link">
                     📘 Hlasuj na Facebooku
                 </a>
             </div>
             
             <!-- Pravý fakt -->
             <div class="card fact-card">
-                <h3>🧀 Vedeli ste že..?</h3>
-                <p>Najviac kradnutá potravina na svete je SYR.</p>
+                <h3 id="home_fact2_title">🧀 Vedeli ste že..?</h3>
+                <p id="home_fact2_text">Najviac kradnutá potravina na svete je SYR.</p>
             </div>
         </div>
     </div>
@@ -64,6 +64,45 @@
         <div>&copy; 2026 QuizBrothers. Všetky práva vyhradené.</div>
     </footer>
 
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getFirestore, doc, getDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyCgKeENYtYJWf2_DZOw4irg6GPLq3XKhEc",
+            authDomain: "quizbrothers-rezervacia.firebaseapp.com",
+            projectId: "quizbrothers-rezervacia",
+            storageBucket: "quizbrothers-rezervacia.firebasestorage.app",
+            messagingSenderId: "193476216369",
+            appId: "1:193476216369:web:8e0d59dd8282cb53ba3710",
+            measurementId: "G-0LKTHWLKH5"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+
+        function loadWebContent() {
+            const contentDoc = doc(db, "web_content", "home");
+            onSnapshot(contentDoc, (docSnap) => {
+                if (docSnap.exists()) {
+                    const data = docSnap.data();
+                    if (data.home_hero_title) document.getElementById('home_hero_title').textContent = data.home_hero_title;
+                    if (data.home_hero_description) document.getElementById('home_hero_description').textContent = data.home_hero_description;
+                    if (data.home_btn_reserve) document.getElementById('home_btn_reserve').textContent = data.home_btn_reserve;
+                    if (data.home_btn_download) document.getElementById('home_btn_download').textContent = data.home_btn_download;
+                    if (data.home_fact1_title) document.getElementById('home_fact1_title').textContent = data.home_fact1_title;
+                    if (data.home_fact1_text) document.getElementById('home_fact1_text').textContent = data.home_fact1_text;
+                    if (data.home_quiz_topic_title) document.getElementById('home_quiz_topic_title').textContent = data.home_quiz_topic_title;
+                    if (data.home_quiz_topic_text) document.getElementById('home_quiz_topic_text').textContent = data.home_quiz_topic_text;
+                    if (data.home_quiz_topic_link) document.getElementById('home_quiz_topic_link').textContent = data.home_quiz_topic_link;
+                    if (data.home_fact2_title) document.getElementById('home_fact2_title').textContent = data.home_fact2_title;
+                    if (data.home_fact2_text) document.getElementById('home_fact2_text').textContent = data.home_fact2_text;
+                }
+            });
+        }
+
+        loadWebContent();
+    </script>
     <script>
         function toggleMenu() {
             document.getElementById('nav-list').classList.toggle('show');
