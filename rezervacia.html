@@ -293,7 +293,7 @@
                 <select id="teamSelect" onchange="handleTeamChange()">
                     <option value="new">Nový tím / Vybrať tím</option>
                 </select>
-                <small id="teamReservedInfo" style="color:#222454; display:none; font-weight:bold; margin-top:5px; display:block;"></small>
+                <small id="teamReservedInfo" style="color:#222454; display:none; font-weight:bold; margin-top:5px;"></small>
 
                 <div id="newTeamInput" style="display:block;">
                     <label>Názov nového tímu:</label>
@@ -760,26 +760,48 @@
             const occupied = calculateOccupied();
             const remaining = MAX_CAPACITY - occupied;
             const display = document.getElementById('displayCapacity');
-            display.innerText = `${remaining} / ${MAX_CAPACITY}`;
+            
+            // Skontroluj či je element editovaný v admin móde
+            if (!display.hasAttribute('data-text-id') && display.textContent !== 'Zostáva voľných miest:') {
+                display.innerText = `${remaining} / ${MAX_CAPACITY}`;
+            }
+            
+            // Čisti CSS triedy len keď sú existujúce
             display.className = "capacity-number"; 
-            if (remaining <= 0) { display.innerText = "PLNO"; display.classList.add('cap-crit'); disableForm("PLNO"); }
+            if (remaining <= 0) { 
+                display.innerText = "PLNO"; 
+                display.classList.add('cap-crit'); 
+                disableForm("PLNO"); 
+            }
             else if (remaining < 10) display.classList.add('cap-crit');
             else if (remaining <= 20) display.classList.add('cap-warn');
             else display.classList.add('cap-safe');
 
             const listReserved = document.getElementById('listReserved');
             const listConfirmed = document.getElementById('listConfirmed');
-            listReserved.innerHTML = ""; listConfirmed.innerHTML = "";
+            
+            // Zálohuj pôvodný HTML pred vymazaním ak je potrebné
+            const reservedContent = [];
+            const confirmedContent = [];
+            
             teamsData.forEach(t => {
-                const li = document.createElement('li'); li.className = 'team-item';
+                const li = document.createElement('li'); 
+                li.className = 'team-item';
                 if (t.confirmed) {
                     li.innerHTML = `${t.id} <span class="badge-count badge-confirmed">${t.current} ✔</span>`;
-                    listConfirmed.appendChild(li);
+                    confirmedContent.push(li);
                 } else if (t.isStatic) {
                     li.innerHTML = `${t.id} <span class="badge-count">${t.default}</span>`;
-                    listReserved.appendChild(li);
+                    reservedContent.push(li);
                 }
             });
+            
+            // Nahraď obsah len ak sa zmenil
+            listReserved.innerHTML = "";
+            listConfirmed.innerHTML = "";
+            reservedContent.forEach(item => listReserved.appendChild(item));
+            confirmedContent.forEach(item => listConfirmed.appendChild(item));
+            
             checkDeadline();
         }
 

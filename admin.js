@@ -311,15 +311,19 @@
         document.body.appendChild(panel);
     }
     
-    // Inicializácia text ID-čiek (volá sa vždy pri načítaní)
+    // Inicializácia text ID-čiek (volá sa RAZ pri prvom loadovaní)
+    let textIdsInitialized = false;
     function initializeTextIds() {
+        // Volaj len raz za behu aplikácie
+        if (textIdsInitialized) return;
+        
         const editableSelectors = 'h1, h2, h3, p, span, a, li, .card p, .card h3, .hero h1, .hero p';
         const elements = document.querySelectorAll(editableSelectors);
         let validIndex = 0;
         
         elements.forEach((el) => {
-            // Preskočiť prvky v menu a footeri (môžeš pridať výnimky)
-            if (el.closest('header') || el.closest('footer') || el.closest('#admin-edit-panel')) {
+            // Preskočiť prvky v menu a footeri a admin paneli
+            if (el.closest('header') || el.closest('footer') || el.closest('#admin-edit-panel') || el.closest('#admin-login-modal')) {
                 return;
             }
             
@@ -330,54 +334,77 @@
                 validIndex++;
             }
         });
+        
+        textIdsInitialized = true;
     }
     
     // Umožnenie editácie textov
     function makeTextsEditable() {
+        // Zavolaj inicializáciu ak ešte nebola zavolaná
+        if (!textIdsInitialized) {
+            initializeTextIds();
+        }
+        
         const editableSelectors = 'h1, h2, h3, p, span, a, li, .card p, .card h3, .hero h1, .hero p';
         const elements = document.querySelectorAll(editableSelectors);
         
-        elements.forEach((el, index) => {
-            // Preskočiť prvky v menu a footeri (môžeš pridať výnimky)
-            if (el.closest('header') || el.closest('footer') || el.closest('#admin-edit-panel')) {
+        elements.forEach((el) => {
+            // Preskočiť prvky v menu a footeri a admin paneli
+            if (el.closest('header') || el.closest('footer') || el.closest('#admin-edit-panel') || el.closest('#admin-login-modal')) {
                 return;
             }
             
-            const textId = el.getAttribute('data-text-id') || `text-${getPageName()}-${index}`;
-            el.setAttribute('data-text-id', textId);
-            el.setAttribute('contenteditable', 'true');
-            el.classList.add('editable-text');
-            
-            // Uloženie pôvodného textu ak ešte nie je uložený
-            const pageName = getPageName();
-            if (!savedTexts[pageName]) savedTexts[pageName] = {};
-            if (!savedTexts[pageName][textId]) {
-                savedTexts[pageName][textId] = el.textContent.trim();
+            // Použij existujúci data-text-id alebo ho vytvor
+            let textId = el.getAttribute('data-text-id');
+            if (!textId) {
+                // Toto by sa nemalo stať, ale pre istotu
+                textId = `text-${getPageName()}-${Math.random().toString(36).substr(2, 9)}`;
+                el.setAttribute('data-text-id', textId);
             }
             
-            // Event listenery
-            el.addEventListener('focus', function() {
-                this.style.outline = '2px solid #27ae60';
-                this.style.backgroundColor = 'rgba(39, 174, 96, 0.1)';
-                // Na mobiloch minimalizuj panel pri editovaní
-                if (window.innerWidth <= 768) {
-                    const panel = document.getElementById('admin-edit-panel');
-                    if (panel && !panel.classList.contains('admin-panel-minimized')) {
-                        toggleMinimize();
-                    }
+            // Ak element ešte nie je editovateľný, nastav ho
+            if (!el.classList.contains('editable-text')) {
+                el.setAttribute('contenteditable', 'true');
+                el.classList.add('editable-text');
+                
+                // Uloženie pôvodného textu ak ešte nie je uložený
+                const pageName = getPageName();
+                if (!savedTexts[pageName]) savedTexts[pageName] = {};
+                if (!savedTexts[pageName][textId]) {
+                    savedTexts[pageName][textId] = el.textContent.trim();
                 }
-            });
-            
-            el.addEventListener('blur', async function() {
-                this.style.outline = '';
-                this.style.backgroundColor = '';
-                // Automatické uloženie pri strate fokusu
-                const currentText = this.textContent.trim();
-                if (currentText !== savedTexts[pageName][textId]) {
-                    savedTexts[pageName][textId] = currentText;
-                    await saveToStorage();
+                
+                // Event listenery - pridaj len raz
+                if (!el.hasAttribute('data-listener-attached')) {
+                    el.addEventListener('focus', function() {
+                        this.style.outline = '2px solid #27ae60';
+                        this.style.backgroundColor = 'rgba(39, 174, 96, 0.1)';
+                        // Na mobiloch minimalizuj panel pri editovaní
+                        if (window.innerWidth <= 768) {
+                            const panel = document.getElementById('admin-edit-panel');
+                            if (panel && !panel.classList.contains('admin-panel-minimized')) {
+                                window.qbAdmin.toggleMinimize();
+                            }
+                        }
+                    });
+                    
+                    el.addEventListener('blur', async function() {
+                        this.style.outline = '';
+                        this.style.backgroundColor = '';
+                        // Automatické uloženie pri strate fokusu
+                        const currentText = this.textContent.trim();
+                        const tId = this.getAttribute('data-text-id');
+                        const pName = getPageName();
+                        if (!savedTexts[pName]) savedTexts[pName] = {};
+                        if (currentText !== savedTexts[pName][tId]) {
+                            savedTexts[pName][tId] = currentText;
+                            await saveToStorage();
+                        }
+                    });
+                    
+                    el.setAttribute('data-listener-attached', 'true');
                 }
-            });
+            }
         });
     }
     
