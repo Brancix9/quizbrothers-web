@@ -288,7 +288,7 @@
                 <small>Celková kapacita: 83</small>
             </div>
 
-            <form id="quizForm" onsubmit="window.handleFormSubmit(event)">
+            <form id="quizForm" onsubmit="window.handleFormSubmit(event); return false;">
                 <label>Vyber svoj tím:</label>
                 <select id="teamSelect" name="teamSelect" onchange="handleTeamChange()">
                     <option value="new">Nový tím / Vybrať tím</option>
@@ -305,7 +305,7 @@
 
                 <div id="pinSection">
                     <label id="pinLabel" style="color:#27ae60;">Vytvor si PIN kód:</label>
-                    <input type="text" id="teamPin" name="teamPin" inputmode="numeric" pattern="[0-9]*" placeholder="Napr. 123" required>
+                    <input type="text" id="teamPin" name="teamPin" inputmode="numeric" pattern="[0-9]*" placeholder="Napr. 123">
                     <small id="pinHelp" style="color:#666; display:block; margin-top:5px;">Tento PIN budeš potrebovať pre zmeny.</small>
                 </div>
                 
@@ -560,18 +560,21 @@
 
         // ZOZNAM PRE PRVÉ NAHRATIE (SEED)
         const defaultTeamsList = [
-            { id: "Mušky", default: 7, pin: "111" },
-            { id: "Pušky", default: 7, pin: "222" },
-            { id: "Piči Zla", default: 7, pin: "333" },
-            { id: "Guru Team", default: 7, pin: "444" },
-            { id: "Stibu", default: 6, pin: "555" },
-            { id: "Gen Z", default: 4, pin: "666" },
-            { id: "Fontána", default: 3, pin: "777" },
-            { id: "Fénixov rád", default: 5, pin: "888" },
-            { id: "Sprostáci", default: 5, pin: "101" },
-            { id: "Žolíci", default: 3, pin: "102" },
-            { id: "Nevídali", default: 3, pin: "103" }
+            { id: "Mušky", default: 7, pin: "111", current: 0, confirmed: false },
+            { id: "Pušky", default: 7, pin: "222", current: 0, confirmed: false },
+            { id: "Piči Zla", default: 7, pin: "333", current: 0, confirmed: false },
+            { id: "Guru Team", default: 7, pin: "444", current: 0, confirmed: false },
+            { id: "Stibu", default: 6, pin: "555", current: 0, confirmed: false },
+            { id: "Gen Z", default: 4, pin: "666", current: 0, confirmed: false },
+            { id: "Fontána", default: 3, pin: "777", current: 0, confirmed: false },
+            { id: "Fénixov rád", default: 5, pin: "888", current: 0, confirmed: false },
+            { id: "Sprostáci", default: 5, pin: "101", current: 0, confirmed: false },
+            { id: "Žolíci", default: 3, pin: "102", current: 0, confirmed: false },
+            { id: "Nevídali", default: 3, pin: "103", current: 0, confirmed: false }
         ];
+        
+        // INICIALIZUJ teamsData s default tímami na začiatku (pre offline režim)
+        teamsData = JSON.parse(JSON.stringify(defaultTeamsList));
 
         // Funkcia na skrytie loading overlay
         function hideLoadingOverlay() {
@@ -693,32 +696,27 @@
         }
 
         window.handleFormSubmit = async function(e) {
-            e.preventDefault();
-            console.log("🔍 Form submit iniciovaný!");
-            
-            // FALLBACK: Ak teamsData je prázdne (offline režim), skús načítať z localStorage
-            if (teamsData.length === 0) {
-                console.warn("⚠️ teamsData je prázdne! Skúšam načítať z localStorage...");
-                const cached = localStorage.getItem('teams_cache');
-                if (cached) {
-                    try {
-                        teamsData = JSON.parse(cached);
-                        console.log("✅ Tímy načítané z cache:", teamsData);
-                    } catch(e) {
-                        console.error("Chyba pri parsovaní cache:", e);
-                    }
-                }
+            if (e && e.preventDefault) {
+                e.preventDefault();
             }
+            console.log("🔍 Form submit iniciovaný!");
+            console.log("📊 Aktuálny stav:", { 
+                teamsDataLength: teamsData.length, 
+                teamsData: teamsData,
+                adminLoggedIn: window.adminLoggedIn,
+                hasAuth: !!window.auth,
+                hasCurrentUser: window.auth && window.auth.currentUser
+            });
+            
+            // Get count from input field
+            const count = parseInt(document.getElementById('playerCount').value) || 4;
+            const enteredPin = document.getElementById('teamPin').value;
+            const teamSelect = document.getElementById('teamSelect').value;
             
             if (!checkDeadline()) {
                 console.log("❌ Deadline check neprešiel!");
                 return;
             }
-            const teamSelect = document.getElementById('teamSelect').value;
-            const count = parseInt(document.getElementById('playerCount').value);
-            const enteredPin = document.getElementById('teamPin').value;
-
-            console.log("📋 Form values:", { teamSelect, count, enteredPin });
 
             let currentTeamCount = 0;
             if (teamSelect !== 'new') {
@@ -787,25 +785,39 @@
                         alert("❌ Zadaj názov tímu!");
                         return;
                     }
-                    if (!enteredPin) {
+                    
+                    // Check if user is admin (logged in via Firebase)
+                    const isAdmin = window.qbAdmin && window.qbAdmin.isUserAdmin();
+                    const isAdminLoggedIn = window.adminLoggedIn === true;
+                    const adminAuth = window.auth && window.auth.currentUser;
+                    const finalIsAdmin = isAdmin || isAdminLoggedIn || (adminAuth ? true : false);
+                    
+                    // Ak je admin, PIN sa nevyžaduje
+                    if (!finalIsAdmin && !enteredPin) {
                         alert("❌ Zadaj PIN!");
                         return;
                     }
                     const existing = teamsData.find(t => t.id === newName);
                     if (existing) {
-                        const pinTrimmed = enteredPin.trim();
-                        const existingPinTrimmed = String(existing.pin || "").trim();
-                        const masterPinTrimmed = String(globalSettings.masterPin || "").trim();
-                        if (pinTrimmed !== existingPinTrimmed && pinTrimmed !== masterPinTrimmed) {
-                            alert("❌ Tím už existuje. Zlý PIN.");
-                            return;
+                        // Ak nie je admin, skontroluj PIN
+                        if (!finalIsAdmin) {
+                            const pinTrimmed = enteredPin.trim();
+                            const existingPinTrimmed = String(existing.pin || "").trim();
+                            const masterPinTrimmed = String(globalSettings.masterPin || "").trim();
+                            if (pinTrimmed !== existingPinTrimmed && pinTrimmed !== masterPinTrimmed) {
+                                alert("❌ Tím už existuje. Zlý PIN.");
+                                return;
+                            }
                         }
+                        // Ak je admin, preskoči PIN check
                         await updateDoc(doc(db, "teams", newName), { current: count, confirmed: true });
                         document.getElementById('formMessage').innerText = `✅ Tím ${newName} upravený!`;
                         document.getElementById('formMessage').style.color = 'green';
                     } else {
+                        // Nový tím - admin môže vytvoriť bez PINu
+                        const finalPin = enteredPin || "0000"; // Ak je admin a nezadal PIN, default "0000"
                         await setDoc(doc(db, "teams", newName), {
-                            default: count, current: count, pin: enteredPin, confirmed: true, isStatic: false, tableId: ""
+                            default: count, current: count, pin: finalPin, confirmed: true, isStatic: false, tableId: ""
                         });
                         document.getElementById('formMessage').innerText = `✅ Tím ${newName} zaregistrovaný!`;
                         document.getElementById('formMessage').style.color = 'green';
