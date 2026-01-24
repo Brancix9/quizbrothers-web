@@ -773,6 +773,13 @@
                     try {
                         await updateDoc(doc(db, "teams", team.id), { current: count, confirmed: true });
                         console.log("✅ Tím úspešne updatovaný!");
+                        // Okamžite aktualizuj lokálne dáta a UI
+                        const idx = teamsData.findIndex(t => t.id === team.id);
+                        if (idx !== -1) {
+                            teamsData[idx].current = count;
+                            teamsData[idx].confirmed = true;
+                        }
+                        displayTeams();
                     } catch (updateErr) {
                         console.warn("⚠️ updateDoc chyba (možno offline):", updateErr);
                         throw updateErr; // Preskupuj chybu vyššie na catch handler
@@ -811,6 +818,13 @@
                         }
                         // Ak je admin, preskoči PIN check
                         await updateDoc(doc(db, "teams", newName), { current: count, confirmed: true });
+                        // Okamžite aktualizuj lokálne dáta a UI
+                        const idx = teamsData.findIndex(t => t.id === newName);
+                        if (idx !== -1) {
+                            teamsData[idx].current = count;
+                            teamsData[idx].confirmed = true;
+                        }
+                        displayTeams();
                         document.getElementById('formMessage').innerText = `✅ Tím ${newName} upravený!`;
                         document.getElementById('formMessage').style.color = 'green';
                     } else {
@@ -819,6 +833,17 @@
                         await setDoc(doc(db, "teams", newName), {
                             default: count, current: count, pin: finalPin, confirmed: true, isStatic: false, tableId: ""
                         });
+                        // Okamžite aktualizuj lokálne dáta a UI
+                        teamsData.push({
+                            id: newName,
+                            default: count,
+                            current: count,
+                            pin: finalPin,
+                            confirmed: true,
+                            isStatic: false,
+                            tableId: ""
+                        });
+                        displayTeams();
                         document.getElementById('formMessage').innerText = `✅ Tím ${newName} zaregistrovaný!`;
                         document.getElementById('formMessage').style.color = 'green';
                     }
