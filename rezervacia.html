@@ -779,7 +779,7 @@
                             teamsData[idx].current = count;
                             teamsData[idx].confirmed = true;
                         }
-                        displayTeams();
+                        updateDashboard();
                     } catch (updateErr) {
                         console.warn("⚠️ updateDoc chyba (možno offline):", updateErr);
                         throw updateErr; // Preskupuj chybu vyššie na catch handler
@@ -824,7 +824,7 @@
                             teamsData[idx].current = count;
                             teamsData[idx].confirmed = true;
                         }
-                        displayTeams();
+                        updateDashboard();
                         document.getElementById('formMessage').innerText = `✅ Tím ${newName} upravený!`;
                         document.getElementById('formMessage').style.color = 'green';
                     } else {
@@ -843,7 +843,7 @@
                             isStatic: false,
                             tableId: ""
                         });
-                        displayTeams();
+                        updateDashboard();
                         document.getElementById('formMessage').innerText = `✅ Tím ${newName} zaregistrovaný!`;
                         document.getElementById('formMessage').style.color = 'green';
                     }
