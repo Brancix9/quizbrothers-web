@@ -10,7 +10,7 @@ body {
 
 /* --- MENU (NAVIG?CIA) --- */
 header {
-    background: #1a1c4a; color: white; padding: 1rem 0;
+    background: #121430; color: white; padding: 1rem 0;
     position: sticky; top: 0; z-index: 1000; box-shadow: 0 4px 20px rgba(0,0,0,0.25);
 }
 .nav-container {
@@ -195,7 +195,7 @@ footer {
         position: absolute;
         top: 100%; 
         left: 0; 
-        background: #1a1c4a; 
+        background: #121430; 
         text-align: center; 
         padding: 20px 0;
         box-shadow: 0 4px 20px rgba(0,0,0,0.3);
@@ -213,7 +213,7 @@ footer {
     /* Logo - text v strede, logo ved?a neho */
     .logo { 
         font-size: 1.4rem;
-        gap: 10px;
+        gap: 8px;
         margin: 0 auto;
         position: absolute;
         left: 50%;
@@ -224,7 +224,7 @@ footer {
     }
     .logo img { 
         height: 38px; 
-        margin-right: -19px; /* Posunie logo do?ava o polovicu svojej ??rky, aby text bol v strede */
+        margin-right: -11px; /* Posunie logo do?ava, ale ponech? medzeru medzi logom a textom */
     }
     .logo span { 
         font-size: 1.4rem; 
@@ -367,7 +367,7 @@ footer {
     
     .logo {
         font-size: 1.2rem;
-        gap: 8px;
+        gap: 6px;
         left: 50%;
         transform: translateX(-50%);
         display: flex;
@@ -376,7 +376,7 @@ footer {
     }
     .logo img {
         height: 32px;
-        margin-right: -16px; /* Posunie logo do?ava o polovicu svojej ?írky, aby text bol v strede */
+        margin-right: -10px; /* Posunie logo do?ava, ale ponechá medzeru medzi logom a textom */
     }
     .logo span {
         font-size: 1.2rem;
