@@ -223,8 +223,43 @@
         });
     }
     
+    // Vyčistenie starých chybných dát z localStorage (iba raz pri spustení)
+    function cleanupLegacyData() {
+        try {
+            const saved = localStorage.getItem(STORAGE_KEY);
+            if (saved) {
+                const data = JSON.parse(saved);
+                // Ak sú tam neplatné texty, vymažeme ich
+                const pageName = getPageName();
+                
+                // Ak sú tam texty ktoré vyzerajú ako "displayCapacity" alebo "listReserved", vymažeme všetko
+                if (data[pageName]) {
+                    const keys = Object.keys(data[pageName]);
+                    const suspiciousKeys = keys.filter(k => 
+                        k.includes('Zostáva') || k.includes('Piči') || 
+                        k.includes('Reserved') || k.includes('Confirmed') ||
+                        data[pageName][k].includes('✔') || data[pageName][k].includes('⏳')
+                    );
+                    
+                    // Ak má veľa podozrivých kľúčov, vymažeme všetky dáta pre túto stránku
+                    if (suspiciousKeys.length > 3) {
+                        console.log('Čistenie chybných dát z admin editora...');
+                        delete data[pageName];
+                        localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+                        return;
+                    }
+                }
+            }
+        } catch (e) {
+            console.log('Skipping legacy data cleanup');
+        }
+    }
+    
     // Načítanie uložených textov
     async function loadSavedTexts() {
+        // Vyčistenie starých dát
+        cleanupLegacyData();
+        
         await initFirebase();
         
         // Skús načítať z Firebase
@@ -304,6 +339,7 @@
                     <button onclick="window.qbAdmin.saveAll()" class="admin-save-btn">💾 Uložiť všetky zmeny</button>
                     <button onclick="window.qbAdmin.resetPage()" class="admin-reset-btn">🔄 Resetovať túto stránku</button>
                     <button onclick="window.qbAdmin.clearAll()" class="admin-clear-btn">🗑️ Vymazať všetko</button>
+                    <button onclick="window.qbAdmin.resetFirebaseData()" class="admin-reset-btn" style="background: #e74c3c; margin-top: 10px;">🔥 RESET FIREBASE</button>
                     <button onclick="window.qbAdmin.logout()" class="admin-logout-btn">🚪 Odhlásiť sa</button>
                 </div>
             </div>
@@ -317,12 +353,24 @@
         // Volaj len raz za behu aplikácie
         if (textIdsInitialized) return;
         
-        const editableSelectors = 'h1, h2, h3, p, span, a, li, .card p, .card h3, .hero h1, .hero p';
-        const elements = document.querySelectorAll(editableSelectors);
+        // WHITELIST prvkov ktoré SMÚ byť editovateľné
+        // Vylučuj všetky dynamické prvky
+        const editableSelectors = 'h1, .hero h1, .hero p';
+        const editableElements = document.querySelectorAll(editableSelectors);
+        const elementsToIgnore = [
+            'displayCapacity', 'listReserved', 'listConfirmed', 'teamReservedInfo',
+            'pinLabel', 'pinHelp', 'pinSection', 'newTeamInput', 'submitBtn',
+            'formMessage', 'adminSection', 'admin-edit-panel', 'admin-login-modal',
+            'publicQuizDate', 'publicDeadlineInfo'
+        ];
+        
         let validIndex = 0;
         
-        elements.forEach((el) => {
-            // Preskočiť prvky v menu a footeri a admin paneli
+        editableElements.forEach((el) => {
+            // Preskočiť prvky ktoré sú v ignore liste
+            if (el.id && elementsToIgnore.includes(el.id)) {
+                return;
+            }
             if (el.closest('header') || el.closest('footer') || el.closest('#admin-edit-panel') || el.closest('#admin-login-modal')) {
                 return;
             }
@@ -345,11 +393,21 @@
             initializeTextIds();
         }
         
-        const editableSelectors = 'h1, h2, h3, p, span, a, li, .card p, .card h3, .hero h1, .hero p';
-        const elements = document.querySelectorAll(editableSelectors);
+        // WHITELIST prvkov ktoré SMÚ byť editovateľné
+        const editableSelectors = 'h1, .hero h1, .hero p';
+        const editableElements = document.querySelectorAll(editableSelectors);
+        const elementsToIgnore = [
+            'displayCapacity', 'listReserved', 'listConfirmed', 'teamReservedInfo',
+            'pinLabel', 'pinHelp', 'pinSection', 'newTeamInput', 'submitBtn',
+            'formMessage', 'adminSection', 'admin-edit-panel', 'admin-login-modal',
+            'publicQuizDate', 'publicDeadlineInfo'
+        ];
         
-        elements.forEach((el) => {
-            // Preskočiť prvky v menu a footeri a admin paneli
+        editableElements.forEach((el) => {
+            // Preskočiť prvky ktoré sú v ignore liste
+            if (el.id && elementsToIgnore.includes(el.id)) {
+                return;
+            }
             if (el.closest('header') || el.closest('footer') || el.closest('#admin-edit-panel') || el.closest('#admin-login-modal')) {
                 return;
             }
@@ -558,6 +616,42 @@
     document.body.appendChild(btn);
 }
     
+    // Vymazanie všetkých admin dát z Firebase
+    async function resetFirebaseData() {
+        if (!confirm('⚠️ VAROVANIE!\n\nToto vymaže VŠETKY admin texty z Firebase databázy!\n\nJe to nevratné!\n\nChceš pokračovať?')) {
+            return;
+        }
+        
+        await initFirebase();
+        
+        if (!db) {
+            alert('❌ Firebase nie je pripojená!');
+            return;
+        }
+        
+        try {
+            const { doc, deleteDoc } = await import("https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js");
+            
+            // Vymaž pageTexts dokument z Firebase
+            await deleteDoc(doc(db, "config", "pageTexts"));
+            
+            console.log('✅ Firebase dáta vymazané');
+            alert('✅ Všetky admin texty boli vymazané z Firebase!\n\nStránka sa obnoví za 2 sekundy...');
+            
+            // Vymaž aj localStorage
+            localStorage.removeItem(STORAGE_KEY);
+            
+            // Obnov stránku
+            setTimeout(() => {
+                location.reload();
+            }, 2000);
+            
+        } catch (error) {
+            console.error("Chyba pri mazaní Firebase dát:", error);
+            alert('❌ Chyba pri mazaní: ' + error.message);
+        }
+    }
+    
     // Export funkcií
     window.qbAdmin = {
         activate: activateAdminMode,
@@ -567,6 +661,7 @@
         clearAll: clearAll,
         logout: logout,
         toggleMinimize: toggleMinimize,
+        resetFirebaseData: resetFirebaseData,
         isUserAdmin: function() {
             // Return true if user is logged in via Firebase
             return auth && auth.currentUser ? true : false;
