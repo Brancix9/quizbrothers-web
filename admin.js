@@ -8,6 +8,52 @@
     
     let isAdminMode = false;
     let savedTexts = {};
+    let db = null;
+    let firebaseInitialized = false;
+    
+    // Inicializácia Firebase (ak ešte nie je inicializované)
+    async function initFirebase() {
+        if (firebaseInitialized && db) return;
+        
+        // Skús použiť existujúci db objekt (z rezervacia.html)
+        if (window.db && typeof window.db === 'object') {
+            db = window.db;
+            firebaseInitialized = true;
+            return;
+        }
+        
+        // Počkaj chvíľu, možno sa Firebase ešte načítava
+        await new Promise(resolve => setTimeout(resolve, 500));
+        
+        if (window.db && typeof window.db === 'object') {
+            db = window.db;
+            firebaseInitialized = true;
+            return;
+        }
+        
+        // Ak nie je db, inicializuj Firebase
+        try {
+            const { initializeApp } = await import("https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js");
+            const { getFirestore } = await import("https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js");
+            
+            const firebaseConfig = {
+                apiKey: "AIzaSyCgKeENYtYJWf2_DZOw4irg6GPLq3XKhEc",
+                authDomain: "quizbrothers-rezervacia.firebaseapp.com",
+                projectId: "quizbrothers-rezervacia",
+                storageBucket: "quizbrothers-rezervacia.firebasestorage.app",
+                messagingSenderId: "193476216369",
+                appId: "1:193476216369:web:8e0d59dd8282cb53ba3710",
+                measurementId: "G-0LKTHWLKH5"
+            };
+            
+            const app = initializeApp(firebaseConfig);
+            db = getFirestore(app);
+            firebaseInitialized = true;
+        } catch (error) {
+            console.error("Chyba pri inicializácii Firebase:", error);
+            // Fallback na localStorage ak Firebase zlyhá
+        }
+    }
     
     // Získanie aktuálneho hesla
     function getPassword() {
@@ -25,7 +71,27 @@
     }
     
     // Načítanie uložených textov
-    function loadSavedTexts() {
+    async function loadSavedTexts() {
+        await initFirebase();
+        
+        // Skús načítať z Firebase
+        if (db) {
+            try {
+                const { doc, getDoc } = await import("https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js");
+                const docRef = doc(db, "config", "pageTexts");
+                const docSnap = await getDoc(docRef);
+                
+                if (docSnap.exists()) {
+                    savedTexts = docSnap.data() || {};
+                    applySavedTexts();
+                    return;
+                }
+            } catch (error) {
+                console.error("Chyba pri načítaní z Firebase:", error);
+            }
+        }
+        
+        // Fallback na localStorage
         const saved = localStorage.getItem(STORAGE_KEY);
         if (saved) {
             savedTexts = JSON.parse(saved);
@@ -128,26 +194,43 @@
                 }
             });
             
-            el.addEventListener('blur', function() {
+            el.addEventListener('blur', async function() {
                 this.style.outline = '';
                 this.style.backgroundColor = '';
                 // Automatické uloženie pri strate fokusu
                 const currentText = this.textContent.trim();
                 if (currentText !== savedTexts[pageName][textId]) {
                     savedTexts[pageName][textId] = currentText;
-                    saveToStorage();
+                    await saveToStorage();
                 }
             });
         });
     }
     
-    // Uloženie do localStorage
-    function saveToStorage() {
+    // Uloženie do Firebase alebo localStorage
+    async function saveToStorage() {
+        await initFirebase();
+        
+        // Skús uložiť do Firebase
+        if (db) {
+            try {
+                const { doc, setDoc } = await import("https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js");
+                const docRef = doc(db, "config", "pageTexts");
+                await setDoc(docRef, savedTexts, { merge: true });
+                // Tiež ulož do localStorage ako backup
+                localStorage.setItem(STORAGE_KEY, JSON.stringify(savedTexts));
+                return;
+            } catch (error) {
+                console.error("Chyba pri ukladaní do Firebase:", error);
+            }
+        }
+        
+        // Fallback na localStorage
         localStorage.setItem(STORAGE_KEY, JSON.stringify(savedTexts));
     }
     
     // Uloženie všetkých zmien
-    function saveAll() {
+    async function saveAll() {
         const pageName = getPageName();
         const editableElements = document.querySelectorAll('[data-text-id]');
         
@@ -159,23 +242,34 @@
             }
         });
         
-        saveToStorage();
+        await saveToStorage();
         alert('✅ Všetky zmeny boli uložené!');
     }
     
     // Reset stránky
-    function resetPage() {
+    async function resetPage() {
         if (!confirm('Naozaj chceš resetovať všetky zmeny na tejto stránke?')) return;
         
         const pageName = getPageName();
         delete savedTexts[pageName];
-        saveToStorage();
+        await saveToStorage();
         location.reload();
     }
     
     // Vymazanie všetkého
-    function clearAll() {
+    async function clearAll() {
         if (!confirm('⚠️ Naozaj chceš vymazať VŠETKY uložené texty zo všetkých stránok?')) return;
+        
+        await initFirebase();
+        if (db) {
+            try {
+                const { doc, deleteDoc } = await import("https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js");
+                const docRef = doc(db, "config", "pageTexts");
+                await deleteDoc(docRef);
+            } catch (error) {
+                console.error("Chyba pri mazaní z Firebase:", error);
+            }
+        }
         
         localStorage.removeItem(STORAGE_KEY);
         savedTexts = {};
@@ -259,8 +353,9 @@
     };
     
     // Inicializácia
-    document.addEventListener('DOMContentLoaded', function() {
-        loadSavedTexts();
+    document.addEventListener('DOMContentLoaded', async function() {
+        await initFirebase();
+        await loadSavedTexts();
         createAdminButton();
     });
     

@@ -376,7 +376,7 @@ footer {
     }
     .logo img {
         height: 32px;
-        margin-right: -10px; /* Posunie logo do?ava, ale ponechá medzeru medzi logom a textom */
+        margin-right: -10px; /* Posunie logo do?ava, ale ponech? medzeru medzi logom a textom */
     }
     .logo span {
         font-size: 1.2rem;
@@ -454,9 +454,9 @@ footer {
 
 /* --- ADMIN M?D --- */
 #admin-activate-btn {
-    position: fixed;
-    bottom: 10px;
-    right: 10px;
+    position: fixed !important;
+    bottom: 10px !important;
+    right: 10px !important;
     width: 30px;
     height: 30px;
     border-radius: 4px;
@@ -468,6 +468,7 @@ footer {
     z-index: 9998;
     transition: all 0.2s;
     opacity: 0.5;
+    transform: none !important;
 }
 
 #admin-activate-btn:hover {
@@ -649,11 +650,13 @@ footer {
     }
     
     #admin-activate-btn {
+        position: fixed !important;
+        bottom: 8px !important;
+        right: 8px !important;
         width: 25px;
         height: 25px;
         font-size: 10px;
-        bottom: 8px;
-        right: 8px;
         z-index: 10001;
+        transform: none !important;
     }
 }
