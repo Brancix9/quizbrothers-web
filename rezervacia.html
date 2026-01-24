@@ -577,15 +577,17 @@
             teamsData = [];
             snapshot.forEach(doc => { teamsData.push({ id: doc.id, ...doc.data() }); });
             
-            // GUARD: Ak má input pole v admin sekcii focus, neobnov tabuľku
+            // Vždy aktualizuj dashboard a select - tieto MUSIA fungovať
+            updateDashboard(); 
+            populateTeamSelect(); 
+            
+            // GUARD: Len renderAdminPinTable keď admin needituje tabuľku
             const activeElement = document.activeElement;
             const isEditingInTable = activeElement && (activeElement.tagName === 'INPUT' || activeElement.tagName === 'TEXTAREA') && 
                                     (activeElement.closest('#adminConfirmedTableBody, #adminPinTableBody'));
             
             if (!isEditingInTable) {
-                updateDashboard(); 
                 renderAdminPinTable(); 
-                populateTeamSelect(); 
                 updateMapVisuals();
             }
             hideLoadingOverlay();
