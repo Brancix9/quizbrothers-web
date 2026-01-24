@@ -526,6 +526,7 @@
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
         import { getFirestore, collection, doc, setDoc, getDoc, updateDoc, onSnapshot, deleteDoc, writeBatch } 
         from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+        import { getAuth } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 
         // ========================================================
         // ⚠️ VLOŽ SEM SVOJE FIREBASE CONFIG ÚDAJE ⚠️
@@ -540,8 +541,16 @@
             measurementId: "G-0LKTHWLKH5"
         };
 
-        const app = initializeApp(firebaseConfig);
-        const db = getFirestore(app);
+        // Urobiť Firebase GLOBÁLNY aby admin.js mohol tiež používať
+        window.app = initializeApp(firebaseConfig);
+        window.db = getFirestore(window.app);
+        const app = window.app;
+        const db = window.db;
+
+        // Inicializuj aj Auth aby sme mohli skontrolovať admin state
+        // Najprv skús použiť window.auth z admin.js (ak existuje)
+        let authInstance = window.auth || getAuth(window.app);
+        window.auth = authInstance;
 
         let teamsData = []; 
         let globalSettings = { quizDate: null, masterPin: "9999" };
@@ -698,8 +707,18 @@
                     
                     // Check if user is admin (logged in via Firebase)
                     const isAdmin = window.qbAdmin && window.qbAdmin.isUserAdmin();
+                    const isAdminLoggedIn = window.adminLoggedIn === true;
+                    const adminAuth = window.auth && window.auth.currentUser;
                     
-                    if (!isAdmin) {
+                    // Tím je admin ak:
+                    // 1. qbAdmin.isUserAdmin() vracia true (starý spôsob)
+                    // 2. Alebo window.adminLoggedIn je true (nový spôsob)
+                    // 3. Alebo window.auth má currentUser (Firebase auth stav)
+                    const finalIsAdmin = isAdmin || isAdminLoggedIn || (adminAuth ? true : false);
+                    
+                    console.log("Admin check:", { isAdmin, isAdminLoggedIn, hasAuthUser: !!adminAuth, finalIsAdmin });
+                    
+                    if (!finalIsAdmin) {
                         // Regular user - must provide correct PIN
                         if (!enteredPin) {
                             alert("❌ Zadaj PIN!");
@@ -1160,12 +1179,18 @@
         // Load content when admin section is shown
         function updateAdminUIVisibility() {
             const isAdmin = window.qbAdmin && window.qbAdmin.isUserAdmin();
+            const isAdminLoggedIn = window.adminLoggedIn === true;
+            const adminAuth = window.auth && window.auth.currentUser;
+            
+            // Skontroluj admin status všetkými metódami
+            const finalIsAdmin = isAdmin || isAdminLoggedIn || (adminAuth ? true : false);
+            
             const adminSection = document.getElementById('adminSection');
             const pinSection = document.getElementById('pinSection');
             const adminLoginPrompt = document.getElementById('adminLoginPrompt');
             const oldAdminBtn = document.getElementById('adminOldLoginBtn');
             
-            if (isAdmin) {
+            if (finalIsAdmin) {
                 // Admin is logged in
                 adminSection.style.display = 'block';
                 pinSection.style.display = 'none';

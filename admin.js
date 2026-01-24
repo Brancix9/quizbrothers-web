@@ -25,16 +25,23 @@
             db = window.db;
         }
         
-        // Počkaj chvíľu, možno sa Firebase ešte načítava
-        if (!window.db && !db) {
-            await new Promise(resolve => setTimeout(resolve, 500));
+        // Počkaj na Firebase inicializáciu z rezervacia.html - pokúš sa až 5 sekúnd
+        let waitCounter = 0;
+        while ((!window.db || !db) && waitCounter < 50) {
+            await new Promise(resolve => setTimeout(resolve, 100));
+            waitCounter++;
+            
+            // Pokúš sa znova priradiť
+            if (window.app && typeof window.app === 'object') {
+                app = window.app;
+            }
+            if (window.db && typeof window.db === 'object') {
+                db = window.db;
+            }
         }
         
-        if (window.app && typeof window.app === 'object') {
-            app = window.app;
-        }
-        if (window.db && typeof window.db === 'object') {
-            db = window.db;
+        if (waitCounter === 50) {
+            console.warn("⚠️ Firebase iniciálizácia z rezervacia.html trvala dlho, pokračujem s vlastným Firebase");
         }
         
         // Ak nie je db, inicializuj Firebase
@@ -55,6 +62,9 @@
                 
                 app = initializeApp(firebaseConfig);
                 db = getFirestore(app);
+                // Uload ako globálne aby rezervacia.html mohla používať
+                window.app = app;
+                window.db = db;
             } catch (error) {
                 console.error("Chyba pri inicializácii Firebase:", error);
             }
@@ -65,6 +75,8 @@
             try {
                 const { getAuth } = await import("https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js");
                 auth = getAuth(app);
+                // Uload ako globálny aby ostatné skripty mohli vedieť o auth state
+                window.auth = auth;
             } catch (error) {
                 console.error("Chyba pri inicializácii Firebase Auth:", error);
             }
@@ -705,8 +717,17 @@
         toggleMinimize: toggleMinimize,
         resetFirebaseData: resetFirebaseData,
         isUserAdmin: function() {
-            // Return true if user is logged in via Firebase
-            return auth && auth.currentUser ? true : false;
+            // Return true if user is logged in via Firebase - v AKÉKOĽVEK auth inštancií
+            // Najprv skús admin.js auth
+            if (auth && auth.currentUser) {
+                return true;
+            }
+            // Potom skús window.auth (ak je nastavený)
+            if (window.auth && window.auth.currentUser) {
+                return true;
+            }
+            // Ak ani jedno nie je, vrať false
+            return false;
         },
         getAuth: function() {
             // Return auth object so other scripts can use it
@@ -734,11 +755,16 @@
             onAuthStateChanged(auth, async (user) => {
                 if (user) {
                     // Používateľ je prihlásený
+                    // Nastavím globálny flag aby ostatné skripty vedeli o admin state
+                    window.adminLoggedIn = true;
+                    console.log("✅ Admin je prihlásený:", user.email);
                     await loadSavedTexts();
                     // Automaticky aktivuj admin mód
                     activateAdminMode();
                 } else {
                     // Používateľ nie je prihlásený
+                    window.adminLoggedIn = false;
+                    console.log("❌ Admin sa odhlásil");
                     // Deaktivuj admin mód
                     deactivate();
                     await loadSavedTexts();
