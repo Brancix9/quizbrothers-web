@@ -2,72 +2,225 @@
 (function() {
     'use strict';
     
-    const DEFAULT_PASSWORD = 'admin123'; // Predvolené heslo
-    const PASSWORD_STORAGE_KEY = 'qb_admin_password';
     const STORAGE_KEY = 'qb_admin_texts';
     
     let isAdminMode = false;
     let savedTexts = {};
     let db = null;
+    let auth = null;
+    let app = null;
     let firebaseInitialized = false;
     
     // Inicializácia Firebase (ak ešte nie je inicializované)
     async function initFirebase() {
-        if (firebaseInitialized && db) return;
+        if (firebaseInitialized && db && auth) return;
         
-        // Skús použiť existujúci db objekt (z rezervacia.html)
+        // Skús použiť existujúci app a db objekty
+        if (window.app && typeof window.app === 'object') {
+            app = window.app;
+        }
         if (window.db && typeof window.db === 'object') {
             db = window.db;
-            firebaseInitialized = true;
-            return;
         }
         
         // Počkaj chvíľu, možno sa Firebase ešte načítava
-        await new Promise(resolve => setTimeout(resolve, 500));
+        if (!window.db && !db) {
+            await new Promise(resolve => setTimeout(resolve, 500));
+        }
         
+        if (window.app && typeof window.app === 'object') {
+            app = window.app;
+        }
         if (window.db && typeof window.db === 'object') {
             db = window.db;
-            firebaseInitialized = true;
-            return;
         }
         
         // Ak nie je db, inicializuj Firebase
-        try {
-            const { initializeApp } = await import("https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js");
-            const { getFirestore } = await import("https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js");
-            
-            const firebaseConfig = {
-                apiKey: "AIzaSyCgKeENYtYJWf2_DZOw4irg6GPLq3XKhEc",
-                authDomain: "quizbrothers-rezervacia.firebaseapp.com",
-                projectId: "quizbrothers-rezervacia",
-                storageBucket: "quizbrothers-rezervacia.firebasestorage.app",
-                messagingSenderId: "193476216369",
-                appId: "1:193476216369:web:8e0d59dd8282cb53ba3710",
-                measurementId: "G-0LKTHWLKH5"
-            };
-            
-            const app = initializeApp(firebaseConfig);
-            db = getFirestore(app);
-            firebaseInitialized = true;
-        } catch (error) {
-            console.error("Chyba pri inicializácii Firebase:", error);
-            // Fallback na localStorage ak Firebase zlyhá
+        if (!db && !app) {
+            try {
+                const { initializeApp } = await import("https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js");
+                const { getFirestore } = await import("https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js");
+                
+                const firebaseConfig = {
+                    apiKey: "AIzaSyCgKeENYtYJWf2_DZOw4irg6GPLq3XKhEc",
+                    authDomain: "quizbrothers-rezervacia.firebaseapp.com",
+                    projectId: "quizbrothers-rezervacia",
+                    storageBucket: "quizbrothers-rezervacia.firebasestorage.app",
+                    messagingSenderId: "193476216369",
+                    appId: "1:193476216369:web:8e0d59dd8282cb53ba3710",
+                    measurementId: "G-0LKTHWLKH5"
+                };
+                
+                app = initializeApp(firebaseConfig);
+                db = getFirestore(app);
+            } catch (error) {
+                console.error("Chyba pri inicializácii Firebase:", error);
+            }
         }
+        
+        // Inicializácia Auth
+        if (!auth && app) {
+            try {
+                const { getAuth } = await import("https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js");
+                auth = getAuth(app);
+            } catch (error) {
+                console.error("Chyba pri inicializácii Firebase Auth:", error);
+            }
+        }
+        
+        firebaseInitialized = true;
     }
     
-    // Získanie aktuálneho hesla
-    function getPassword() {
-        const saved = localStorage.getItem(PASSWORD_STORAGE_KEY);
-        return saved || DEFAULT_PASSWORD;
-    }
-    
-    // Uloženie nového hesla
-    function setPassword(newPassword) {
-        if (newPassword && newPassword.length >= 4) {
-            localStorage.setItem(PASSWORD_STORAGE_KEY, newPassword);
-            return true;
+    // Vytvorenie login modálneho dialógu
+    function showLoginModal() {
+        // Odstránenie existujúceho modálu
+        const existing = document.getElementById('admin-login-modal');
+        if (existing) existing.remove();
+        
+        const modal = document.createElement('div');
+        modal.id = 'admin-login-modal';
+        modal.innerHTML = `
+            <div class="admin-login-overlay"></div>
+            <div class="admin-login-container">
+                <h2>🔐 Admin Login</h2>
+                <form id="admin-login-form">
+                    <div class="form-group">
+                        <label for="admin-email">Email:</label>
+                        <input type="email" id="admin-email" required placeholder="tvoj@email.com">
+                    </div>
+                    <div class="form-group">
+                        <label for="admin-password">Heslo:</label>
+                        <input type="password" id="admin-password" required placeholder="••••••••">
+                    </div>
+                    <button type="submit" class="admin-login-btn">Prihlásiť sa</button>
+                    <p id="admin-login-error" style="color: #e74c3c; margin-top: 10px; display: none;"></p>
+                </form>
+            </div>
+        `;
+        document.body.appendChild(modal);
+        
+        // CSS štýly pre modál
+        const style = document.createElement('style');
+        style.textContent = `
+            #admin-login-modal {
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                z-index: 99999;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+            }
+            
+            .admin-login-overlay {
+                position: absolute;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                background: rgba(0, 0, 0, 0.5);
+            }
+            
+            .admin-login-container {
+                position: relative;
+                background: white;
+                padding: 30px;
+                border-radius: 8px;
+                box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+                width: 90%;
+                max-width: 400px;
+                z-index: 100000;
+            }
+            
+            .admin-login-container h2 {
+                margin: 0 0 20px 0;
+                text-align: center;
+                color: #333;
+            }
+            
+            .form-group {
+                margin-bottom: 15px;
+            }
+            
+            .form-group label {
+                display: block;
+                margin-bottom: 5px;
+                font-weight: bold;
+                color: #555;
+            }
+            
+            .form-group input {
+                width: 100%;
+                padding: 10px;
+                border: 1px solid #ddd;
+                border-radius: 4px;
+                font-size: 14px;
+                box-sizing: border-box;
+            }
+            
+            .form-group input:focus {
+                outline: none;
+                border-color: #27ae60;
+                box-shadow: 0 0 5px rgba(39, 174, 96, 0.3);
+            }
+            
+            .admin-login-btn {
+                width: 100%;
+                padding: 12px;
+                background: #27ae60;
+                color: white;
+                border: none;
+                border-radius: 4px;
+                font-size: 16px;
+                font-weight: bold;
+                cursor: pointer;
+                transition: background 0.3s;
+                opacity: 1;
+            }
+            
+            .admin-login-btn:hover {
+                background: #229954;
+            }
+        `;
+        if (!document.querySelector('style[data-admin-modal-styles]')) {
+            style.setAttribute('data-admin-modal-styles', 'true');
+            document.head.appendChild(style);
         }
-        return false;
+        
+        // Event listener pre login
+        const form = document.getElementById('admin-login-form');
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const email = document.getElementById('admin-email').value;
+            const password = document.getElementById('admin-password').value;
+            const errorMsg = document.getElementById('admin-login-error');
+            
+            try {
+                const { signInWithEmailAndPassword } = await import("https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js");
+                await signInWithEmailAndPassword(auth, email, password);
+                // Ak je prihlasenie úspešné, modal sa automaticky uzavrie
+                const modal = document.getElementById('admin-login-modal');
+                if (modal) modal.remove();
+                activateAdminMode();
+            } catch (error) {
+                errorMsg.style.display = 'block';
+                if (error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password') {
+                    errorMsg.textContent = '❌ Nesprávny email alebo heslo!';
+                } else if (error.code === 'auth/invalid-email') {
+                    errorMsg.textContent = '❌ Neplatný email!';
+                } else {
+                    errorMsg.textContent = '❌ Chyba pri prihlasovaní: ' + error.message;
+                }
+            }
+        });
+        
+        // Click na overlay zatvorí modál
+        document.querySelector('.admin-login-overlay').addEventListener('click', () => {
+            const modal = document.getElementById('admin-login-modal');
+            if (modal) modal.remove();
+        });
     }
     
     // Načítanie uložených textov
@@ -150,8 +303,8 @@
                 <div class="admin-actions">
                     <button onclick="window.qbAdmin.saveAll()" class="admin-save-btn">💾 Uložiť všetky zmeny</button>
                     <button onclick="window.qbAdmin.resetPage()" class="admin-reset-btn">🔄 Resetovať túto stránku</button>
-                    <button onclick="window.qbAdmin.changePassword()" class="admin-password-btn">🔐 Zmeniť heslo</button>
                     <button onclick="window.qbAdmin.clearAll()" class="admin-clear-btn">🗑️ Vymazať všetko</button>
+                    <button onclick="window.qbAdmin.logout()" class="admin-logout-btn">🚪 Odhlásiť sa</button>
                 </div>
             </div>
         `;
@@ -303,43 +456,59 @@
         });
     }
     
-    // Zmena hesla
-    function changePassword() {
-        const currentPassword = prompt('Zadaj aktuálne heslo:');
-        if (currentPassword !== getPassword()) {
-            alert('❌ Nesprávne heslo!');
-            return;
-        }
-        
-        const newPassword = prompt('Zadaj nové heslo (min. 4 znaky):');
-        if (newPassword && newPassword.length >= 4) {
-            if (setPassword(newPassword)) {
-                alert('✅ Heslo bolo úspešne zmenené!');
-            } else {
-                alert('❌ Heslo musí mať aspoň 4 znaky!');
-            }
-        } else if (newPassword !== null) {
-            alert('❌ Heslo musí mať aspoň 4 znaky!');
+    // Odhlásiť sa
+    async function logout() {
+        try {
+            const { signOut } = await import("https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js");
+            await signOut(auth);
+            deactivate();
+            location.reload();
+        } catch (error) {
+            console.error("Chyba pri odhlasovaní:", error);
+            alert('❌ Chyba pri odhlasovaní');
         }
     }
     
-    // Tlačidlo na aktiváciu
-    function createAdminButton() {
-        const btn = document.createElement('button');
-        btn.id = 'admin-activate-btn';
-        btn.innerHTML = '⚙';
-        btn.title = 'Admin mód';
-        btn.onclick = function() {
-            const password = prompt('Zadaj admin heslo:');
-            if (password === getPassword()) {
-                activateAdminMode();
-                btn.style.display = 'none';
-            } else if (password !== null) {
-                alert('❌ Nesprávne heslo!');
-            }
-        };
-        document.body.appendChild(btn);
-    }
+   // Tlačidlo na aktiváciu
+   function createAdminButton() {
+    // Najprv skontroluj, či už tlačidlo neexistuje (aby sa neduplikovalo)
+    if (document.getElementById('admin-activate-btn')) return;
+
+    const btn = document.createElement('button');
+    btn.id = 'admin-activate-btn';
+    btn.innerHTML = '⚙';
+    btn.title = 'Admin mód';
+    
+    // --- PRIDANÉ ŠTÝLY ABY TO VYZERALO DOBRE ---
+    btn.style.background = 'none';
+    btn.style.border = 'none';
+    btn.style.fontSize = '24px';
+    btn.style.cursor = 'pointer';
+    btn.style.opacity = '0.5';
+    btn.style.transition = 'opacity 0.3s';
+    btn.style.padding = '10px';
+    btn.style.position = 'fixed';
+    btn.style.bottom = '20px';
+    btn.style.right = '20px';
+    btn.style.zIndex = '9999';
+    
+    // Efekt pri prejdení myšou
+    btn.onmouseover = function() { this.style.opacity = '1'; }
+    btn.onmouseout = function() { this.style.opacity = '0.5'; }
+
+    btn.onclick = async function() {
+        // Skontroluj, či je používateľ prihlásený
+        if (auth && auth.currentUser) {
+            // Ak je prihlásený, aktivuj admin mód
+            activateAdminMode();
+        } else {
+            // Ak nie je prihlásený, zobraz login modál
+            showLoginModal();
+        }
+    };
+
+    document.body.appendChild(btn);
+}
     
     // Export funkcií
     window.qbAdmin = {
@@ -348,15 +517,56 @@
         saveAll: saveAll,
         resetPage: resetPage,
         clearAll: clearAll,
-        changePassword: changePassword,
-        toggleMinimize: toggleMinimize
+        logout: logout,
+        toggleMinimize: toggleMinimize,
+        isUserAdmin: function() {
+            // Return true if user is logged in via Firebase
+            return auth && auth.currentUser ? true : false;
+        },
+        getAuth: function() {
+            // Return auth object so other scripts can use it
+            return auth;
+        },
+        showLoginModal: showLoginModal
     };
     
-    // Inicializácia
-    document.addEventListener('DOMContentLoaded', async function() {
+    // --- OPRAVA SPÚŠŤANIA S onAuthStateChanged ---
+    const startAdmin = async function() {
         await initFirebase();
-        await loadSavedTexts();
-        createAdminButton();
-    });
+        
+        // Zawždy vytvor tlačidlo
+        setTimeout(() => {
+            createAdminButton();
+        }, 300);
+        
+        // Zaregistruj listener na zmeny auth stavu
+        if (auth) {
+            const { onAuthStateChanged } = await import("https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js");
+            
+            onAuthStateChanged(auth, async (user) => {
+                if (user) {
+                    // Používateľ je prihlásený
+                    await loadSavedTexts();
+                    // Automaticky aktivuj admin mód
+                    activateAdminMode();
+                } else {
+                    // Používateľ nie je prihlásený
+                    // Deaktivuj admin mód
+                    deactivate();
+                    await loadSavedTexts();
+                }
+            });
+        } else {
+            // Ak Auth nie je dostupný, pokračuj bez neho
+            await loadSavedTexts();
+        }
+    };
+
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', startAdmin);
+    } else {
+        // Ak už je stránka načítaná, spusti to hneď s oneskorením
+        setTimeout(startAdmin, 100);
+    }
     
 })();

@@ -54,7 +54,6 @@
         .cap-info { font-size: 9px; font-weight: normal; margin-top: 2px; }
         .rect { width: 110px; height: 55px; border-radius: 4px; } .circle { width: 75px; height: 75px; border-radius: 50%; } .circle-small { width: 55px; height: 55px; border-radius: 50%; }
         .admin-login-btn { 
-            display: block; 
             margin: 50px auto; 
             color: #999; 
             background: none; 
@@ -64,6 +63,10 @@
             font-size: 11px;
             opacity: 0.3;
             transition: opacity 0.2s;
+        }
+        
+        #adminOldLoginBtn {
+            display: none !important;
         }
         .admin-login-btn:hover {
             opacity: 0.6;
@@ -299,13 +302,20 @@
                 <label>Počet hráčov:</label>
                 <input type="number" id="playerCount" min="1" max="15" value="4">
 
-                <label id="pinLabel" style="color:#27ae60;">Vytvor si PIN kód:</label>
-                <input type="password" id="teamPin" placeholder="Napr. 123" required>
-                <small id="pinHelp" style="color:#666; display:block; margin-top:5px;">Tento PIN budeš potrebovať pre zmeny.</small>
+                <div id="pinSection">
+                    <label id="pinLabel" style="color:#27ae60;">Vytvor si PIN kód:</label>
+                    <input type="password" id="teamPin" placeholder="Napr. 123" required>
+                    <small id="pinHelp" style="color:#666; display:block; margin-top:5px;">Tento PIN budeš potrebovať pre zmeny.</small>
+                </div>
                 
                 <button type="submit" id="submitBtn" class="btn-submit">Potvrdiť účasť</button>
             </form>
             <p id="formMessage" style="color: green; font-weight: bold; margin-top: 15px;"></p>
+            
+            <div id="adminLoginPrompt" style="display: none; text-align: center; margin-top: 30px; padding: 20px; background: #f0f8ff; border-radius: 10px;">
+                <p style="color: #222454; font-weight: bold; margin-bottom: 15px;">Ste administrátor?</p>
+                <button onclick="window.qbAdmin.showLoginModal()" style="background: #222454; color: white; border: none; padding: 12px 20px; cursor: pointer; font-weight: bold; border-radius: 5px;">🔐 Prihlásiť sa ako Admin</button>
+            </div>
         </div>
 
         <div class="sidebar right-panel">
@@ -314,7 +324,7 @@
         </div>
     </div>
 
-    <button class="admin-login-btn" onclick="toggleAdmin()">ADMIN LOGIN</button>
+    <button class="admin-login-btn" id="adminOldLoginBtn" onclick="toggleAdmin()" style="display: none;">ADMIN LOGIN</button>
 
     <div id="adminSection">
         <div class="admin-config">
@@ -671,17 +681,26 @@
                         alert("❌ Tím nebol nájdený!");
                         return;
                     }
-                    if (!enteredPin) {
-                        alert("❌ Zadaj PIN!");
-                        return;
+                    
+                    // Check if user is admin (logged in via Firebase)
+                    const isAdmin = window.qbAdmin && window.qbAdmin.isUserAdmin();
+                    
+                    if (!isAdmin) {
+                        // Regular user - must provide correct PIN
+                        if (!enteredPin) {
+                            alert("❌ Zadaj PIN!");
+                            return;
+                        }
+                        const pinTrimmed = enteredPin.trim();
+                        const teamPinTrimmed = String(team.pin || "").trim();
+                        const masterPinTrimmed = String(globalSettings.masterPin || "").trim();
+                        if (pinTrimmed !== teamPinTrimmed && pinTrimmed !== masterPinTrimmed) {
+                            alert("❌ Nesprávny PIN!");
+                            return;
+                        }
                     }
-                    const pinTrimmed = enteredPin.trim();
-                    const teamPinTrimmed = String(team.pin || "").trim();
-                    const masterPinTrimmed = String(globalSettings.masterPin || "").trim();
-                    if (pinTrimmed !== teamPinTrimmed && pinTrimmed !== masterPinTrimmed) {
-                        alert("❌ Nesprávny PIN!");
-                        return;
-                    }
+                    // If admin, bypass PIN check entirely
+                    
                     await updateDoc(doc(db, "teams", team.id), { current: count, confirmed: true });
                     document.getElementById('formMessage').innerText = `✅ Tím ${team.id} potvrdený!`;
                     document.getElementById('formMessage').style.color = 'green';
@@ -1088,6 +1107,34 @@
         }
 
         // Load content when admin section is shown
+        function updateAdminUIVisibility() {
+            const isAdmin = window.qbAdmin && window.qbAdmin.isUserAdmin();
+            const adminSection = document.getElementById('adminSection');
+            const pinSection = document.getElementById('pinSection');
+            const adminLoginPrompt = document.getElementById('adminLoginPrompt');
+            const oldAdminBtn = document.getElementById('adminOldLoginBtn');
+            
+            if (isAdmin) {
+                // Admin is logged in
+                adminSection.style.display = 'block';
+                pinSection.style.display = 'none';
+                adminLoginPrompt.style.display = 'none';
+                if (oldAdminBtn) oldAdminBtn.style.display = 'none';
+                
+                // Load content into editor
+                loadWebContentToEditor('home');
+                loadWebContentToEditor('about');
+                loadWebContentToEditor('app');
+                renderAdminPinTable();
+            } else {
+                // Admin is not logged in
+                adminSection.style.display = 'none';
+                pinSection.style.display = 'block';
+                adminLoginPrompt.style.display = 'block';
+                if (oldAdminBtn) oldAdminBtn.style.display = 'block';
+            }
+        }
+        
         const originalToggleAdmin = window.toggleAdmin;
         window.toggleAdmin = function() {
             const pin = prompt("Admin PIN:");
@@ -1103,6 +1150,11 @@
                 alert("Zlý PIN");
             }
         }
+        
+        // Watch for auth state changes from admin.js
+        setInterval(function() {
+            updateAdminUIVisibility();
+        }, 1000);
     </script>
     </div>
 
@@ -1110,6 +1162,46 @@
         <img src="logo.png" alt="QuizBrothers Logo" class="footer-logo">
         <div>&copy; 2026 QuizBrothers. Všetky práva vyhradené.</div>
     </footer>
+
+    <!-- Admin Button Initialization -->
+    <script>
+        (function() {
+            function createAdminButton() {
+                if (document.getElementById('admin-activate-btn')) return;
+                const btn = document.createElement('button');
+                btn.id = 'admin-activate-btn';
+                btn.innerHTML = '⚙';
+                btn.title = 'Admin mód';
+                btn.style.cssText = `
+                    background: none;
+                    border: none;
+                    font-size: 24px;
+                    cursor: pointer;
+                    opacity: 0.5;
+                    transition: opacity 0.3s;
+                    padding: 10px;
+                    position: fixed;
+                    bottom: 20px;
+                    right: 20px;
+                    z-index: 9999;
+                `;
+                btn.onmouseover = function() { this.style.opacity = '1'; };
+                btn.onmouseout = function() { this.style.opacity = '0.5'; };
+                btn.onclick = function() {
+                    if (window.qbAdmin && window.qbAdmin.showLoginModal) {
+                        window.qbAdmin.showLoginModal();
+                    }
+                };
+                document.body.appendChild(btn);
+            }
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', createAdminButton);
+            } else {
+                createAdminButton();
+            }
+        })();
+    </script>
+
     <script src="admin.js"></script>
 </body>
 </html>
