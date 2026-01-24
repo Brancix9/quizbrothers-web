@@ -257,7 +257,27 @@
         const pageName = getPageName();
         if (savedTexts[pageName]) {
             Object.keys(savedTexts[pageName]).forEach(id => {
-                const element = document.querySelector(`[data-text-id="${id}"]`);
+                // Skús najprv element s data-text-id (admin móde)
+                let element = document.querySelector(`[data-text-id="${id}"]`);
+                
+                // Ak neexistuje, skús nájsť element podľa id-čka
+                if (!element) {
+                    // ID má formát "text-rezervacia.html-0"
+                    // Pokúšame sa nájsť element podľa poradového čísla na stránke
+                    const editableSelectors = 'h1, h2, h3, p, span, a, li, .card p, .card h3, .hero h1, .hero p';
+                    const elements = document.querySelectorAll(editableSelectors);
+                    
+                    elements.forEach((el, index) => {
+                        if (el.closest('header') || el.closest('footer') || el.closest('#admin-edit-panel')) {
+                            return;
+                        }
+                        const testId = `text-${pageName}-${index}`;
+                        if (testId === id) {
+                            element = el;
+                        }
+                    });
+                }
+                
                 if (element) {
                     element.textContent = savedTexts[pageName][id];
                 }
