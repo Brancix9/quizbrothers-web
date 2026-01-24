@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Cleanup localStorage</title>
+</head>
+<body>
+    <h1>Vyčistenie dát</h1>
+    <p>Klikni na tlačidlo aby si vymažeme všetky chybné dáta z admin editora:</p>
+    <button onclick="cleanup()">🗑️ Vyčistiť localStorage</button>
+    <p id="status"></p>
+    
+    <script>
+        function cleanup() {
+            try {
+                localStorage.removeItem('qb_admin_texts');
+                document.getElementById('status').innerHTML = '✅ Všetky admin texty boli vymazané!<br><br>Teraz si môžeš otvoriť <a href="rezervacia.html">rezervacia.html</a> a všetko by malo byť v poriadku.';
+                document.getElementById('status').style.color = 'green';
+                document.getElementById('status').style.fontWeight = 'bold';
+            } catch (e) {
+                document.getElementById('status').innerHTML = '❌ Chyba: ' + e.message;
+                document.getElementById('status').style.color = 'red';
+            }
+        }
+    </script>
+</body>
+</html>
