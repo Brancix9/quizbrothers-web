@@ -171,9 +171,13 @@ footer {
 /* --- RESPONZIVITA --- */
 @media (max-width: 768px) {
     /* Navig?cia */
+    header {
+        padding: 0.9rem 0;
+    }
     .nav-container {
         padding: 0 15px;
         position: relative;
+        min-height: 50px;
     }
     .menu-toggle { 
         display: block; 
@@ -208,15 +212,15 @@ footer {
     
     /* Logo - vycentrovan? na stred */
     .logo { 
-        font-size: 1.2rem;
-        gap: 8px;
+        font-size: 1.4rem;
+        gap: 10px;
         margin: 0 auto;
         position: absolute;
         left: 50%;
         transform: translateX(-50%);
     }
-    .logo img { height: 30px; }
-    .logo span { font-size: 1.2rem; }
+    .logo img { height: 38px; }
+    .logo span { font-size: 1.4rem; }
     
     /* Kontajnery */
     .container {
@@ -341,12 +345,12 @@ footer {
 /* Ve?mi mal? telef?ny */
 @media (max-width: 480px) {
     header {
-        padding: 1.3rem 0;
+        padding: 1rem 0;
     }
     .nav-container {
         padding: 0 10px;
         position: relative;
-        min-height: 65px;
+        min-height: 50px;
     }
     
     .menu-toggle {
@@ -354,16 +358,16 @@ footer {
     }
     
     .logo {
-        font-size: 1rem;
-        gap: 6px;
+        font-size: 1.2rem;
+        gap: 8px;
         left: 50%;
         transform: translateX(-50%);
     }
     .logo img {
-        height: 25px;
+        height: 32px;
     }
     .logo span {
-        font-size: 1rem;
+        font-size: 1.2rem;
     }
     
     .container {
