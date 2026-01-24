@@ -39,23 +39,24 @@
 
         /* ADMIN SEKCIA */
         #adminSection { display: none; border-top: 5px solid #222454; padding-top: 20px; margin-top: 50px; background: #f5f5f7; padding-bottom: 50px; }
-        .admin-config { max-width: 900px; margin: 0 auto 30px auto; background: #222454; color: white; padding: 20px; border-radius: 10px; display: flex; flex-wrap: wrap; gap: 20px; justify-content: space-between; align-items: center; }
+        .admin-config { max-width: 95%; width: 95%; margin: 0 auto 30px auto; background: #222454; color: white; padding: 20px; border-radius: 10px; display: flex; flex-wrap: wrap; gap: 20px; justify-content: space-between; align-items: center; }
         .config-block { display: flex; flex-direction: column; gap: 5px; }
         .config-block label { color: #aaa; font-size: 10px; margin: 0; text-transform: uppercase; }
         .btn-action { background: #27ae60; color: white; border: none; padding: 8px 15px; cursor: pointer; font-weight: bold; border-radius: 4px; }
         .btn-stop { background: #c0392b; color: white; border: none; padding: 8px 15px; cursor: pointer; font-weight: bold; border-radius: 4px; border: 1px solid #999; }
         
-        .room-map { position: relative; width: 960px; height: 600px; background: #e0e0e0; border: 4px solid #444; margin: 20px auto; border-radius: 4px; box-shadow: 0 10px 30px rgba(0,0,0,0.2); }
+        .room-map { position: relative; max-width: 95%; width: 95%; height: 600px; background: #e0e0e0; border: 4px solid #444; margin: 20px auto; border-radius: 4px; box-shadow: 0 10px 30px rgba(0,0,0,0.2); }
         .table { position: absolute; display: flex; justify-content: center; align-items: center; flex-direction: column; border: 2px solid #555; cursor: pointer; font-weight: bold; font-size: 11px; user-select: none; color: #333; text-align: center; line-height: 1; z-index: 10; background: #fff; box-shadow: 2px 2px 5px rgba(0,0,0,0.2); }
         .status-reserved { background-color: #ffb347; border-color: #d35400; } .status-confirmed { background-color: #2ecc71; border-color: #27ae60; } .status-free { background-color: #fff; opacity: 0.7; }
         .cap-info { font-size: 9px; font-weight: normal; margin-top: 2px; }
         .rect { width: 110px; height: 55px; border-radius: 4px; } .circle { width: 75px; height: 75px; border-radius: 50%; } .circle-small { width: 55px; height: 55px; border-radius: 50%; }
         .admin-login-btn { display: block; margin: 50px auto; color: #222454; background: none; border: none; text-decoration: underline; cursor: pointer; }
 
-        .pin-manager { max-width: 900px; margin: 40px auto; background: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 15px rgba(34,36,84,0.1); }
-        .pin-table { width: 100%; border-collapse: collapse; margin-top: 15px; }
-        .pin-table th, .pin-table td { border: 1px solid rgba(34,36,84,0.2); padding: 10px; text-align: left; }
-        .pin-table th { background-color: #f0f0f5; color: #222454; }
+        .pin-manager { max-width: 95%; width: 95%; margin: 40px auto; background: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 15px rgba(34,36,84,0.1); }
+        .pin-table { width: 100%; border-collapse: collapse; margin-top: 15px; table-layout: auto; }
+        .pin-table th, .pin-table td { border: 1px solid rgba(34,36,84,0.2); padding: 12px; text-align: left; }
+        .pin-table th { background-color: #f0f0f5; color: #222454; font-weight: bold; }
+        .pin-table td { word-wrap: break-word; }
         .admin-input { padding: 5px; text-align: center; border: 1px solid rgba(34,36,84,0.3); border-radius: 4px; } .w-small { width: 60px; } .w-med { width: 100px; }
         .btn-save-pin { background: #27ae60; color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-weight: bold; font-size: 12px; }
         .btn-delete-team { background: #c0392b; color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-size: 12px; margin-left: 5px;}
@@ -68,7 +69,11 @@
         @media (max-width: 900px) {
             .main-container { flex-direction: column; } .form-container { order: 1; } .right-panel { order: 2; } .left-panel { order: 3; }
             .add-team-form { flex-direction: column; } .btn-add { width: 100%; }
-            .admin-config { flex-direction: column; align-items: stretch; text-align: center; }
+            .admin-config { flex-direction: column; align-items: stretch; text-align: center; max-width: 98%; width: 98%; }
+            .pin-manager { max-width: 98%; width: 98%; margin: 20px auto; padding: 15px; }
+            .pin-table { font-size: 14px; }
+            .pin-table th, .pin-table td { padding: 8px; }
+            .room-map { max-width: 98%; width: 98%; height: auto; min-height: 400px; }
         }
         
         #loadingOverlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: white; z-index: 9999; display: flex; justify-content: center; align-items: center; font-size: 20px; color: #222454; font-weight: bold; }
