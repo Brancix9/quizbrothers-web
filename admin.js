@@ -74,7 +74,10 @@
         panel.innerHTML = `
             <div class="admin-panel-header">
                 <h3>✏️ Admin mód - Editácia textov</h3>
-                <button onclick="window.qbAdmin.deactivate()" class="admin-close-btn">✕ Zatvoriť</button>
+                <div style="display: flex; gap: 5px;">
+                    <button onclick="window.qbAdmin.toggleMinimize()" class="admin-minimize-btn">−</button>
+                    <button onclick="window.qbAdmin.deactivate()" class="admin-close-btn">✕ Zatvoriť</button>
+                </div>
             </div>
             <div class="admin-panel-content">
                 <p style="color: #27ae60; margin-bottom: 15px;">💡 Klikni na akýkoľvek text na stránke a začni ho editovať!</p>
@@ -116,6 +119,13 @@
             el.addEventListener('focus', function() {
                 this.style.outline = '2px solid #27ae60';
                 this.style.backgroundColor = 'rgba(39, 174, 96, 0.1)';
+                // Na mobiloch minimalizuj panel pri editovaní
+                if (window.innerWidth <= 768) {
+                    const panel = document.getElementById('admin-edit-panel');
+                    if (panel && !panel.classList.contains('admin-panel-minimized')) {
+                        toggleMinimize();
+                    }
+                }
             });
             
             el.addEventListener('blur', function() {
@@ -171,6 +181,18 @@
         savedTexts = {};
         alert('✅ Všetko bolo vymazané!');
         location.reload();
+    }
+    
+    // Minimalizovanie admin panelu
+    function toggleMinimize() {
+        const panel = document.getElementById('admin-edit-panel');
+        if (panel) {
+            panel.classList.toggle('admin-panel-minimized');
+            const content = panel.querySelector('.admin-panel-content');
+            if (content) {
+                content.style.display = panel.classList.contains('admin-panel-minimized') ? 'none' : 'block';
+            }
+        }
     }
     
     // Deaktivácia admin módu
@@ -232,7 +254,8 @@
         saveAll: saveAll,
         resetPage: resetPage,
         clearAll: clearAll,
-        changePassword: changePassword
+        changePassword: changePassword,
+        toggleMinimize: toggleMinimize
     };
     
     // Inicializácia

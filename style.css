@@ -502,7 +502,7 @@ footer {
     color: white;
 }
 
-.admin-close-btn {
+.admin-close-btn, .admin-minimize-btn {
     background: rgba(255,255,255,0.2);
     color: white;
     border: none;
@@ -513,8 +513,22 @@ footer {
     transition: background 0.2s;
 }
 
-.admin-close-btn:hover {
+.admin-close-btn:hover, .admin-minimize-btn:hover {
     background: rgba(255,255,255,0.3);
+}
+
+.admin-panel-minimized {
+    height: auto !important;
+    max-height: none !important;
+}
+
+.admin-panel-minimized .admin-panel-content {
+    display: none !important;
+}
+
+.admin-panel-minimized .admin-panel-header h3 {
+    margin: 0;
+    font-size: 14px;
 }
 
 .admin-panel-content {
@@ -580,10 +594,46 @@ footer {
 
 @media (max-width: 768px) {
     #admin-edit-panel {
-        width: calc(100% - 40px);
-        right: 20px;
-        left: 20px;
-        top: 70px;
+        width: calc(100% - 20px);
+        right: 10px;
+        left: 10px;
+        top: auto;
+        bottom: 10px;
+        max-height: 50vh;
+        box-shadow: 0 -4px 20px rgba(0,0,0,0.3);
+        z-index: 9999;
+    }
+    
+    #admin-edit-panel.admin-panel-minimized {
+        max-height: 55px;
+        bottom: 10px;
+    }
+    
+    #admin-edit-panel.admin-panel-minimized .admin-panel-header {
+        padding: 10px 15px;
+    }
+    
+    .admin-panel-header h3 {
+        font-size: 14px;
+    }
+    
+    .admin-close-btn, .admin-minimize-btn {
+        padding: 5px 10px;
+        font-size: 11px;
+    }
+    
+    .admin-panel-content {
+        padding: 15px;
+        font-size: 13px;
+    }
+    
+    .admin-actions {
+        gap: 8px;
+    }
+    
+    .admin-save-btn, .admin-reset-btn, .admin-password-btn, .admin-clear-btn {
+        padding: 8px 12px;
+        font-size: 12px;
     }
     
     #admin-activate-btn {
@@ -592,5 +642,6 @@ footer {
         font-size: 10px;
         bottom: 8px;
         right: 8px;
+        z-index: 10001;
     }
 }
