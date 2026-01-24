@@ -290,22 +290,22 @@
 
             <form id="quizForm" onsubmit="window.handleFormSubmit(event)">
                 <label>Vyber svoj tím:</label>
-                <select id="teamSelect" onchange="handleTeamChange()">
+                <select id="teamSelect" name="teamSelect" onchange="handleTeamChange()">
                     <option value="new">Nový tím / Vybrať tím</option>
                 </select>
                 <small id="teamReservedInfo" style="color:#222454; display:none; font-weight:bold; margin-top:5px;"></small>
 
                 <div id="newTeamInput" style="display:block;">
                     <label>Názov nového tímu:</label>
-                    <input type="text" id="customTeamName" placeholder="Zadaj názov tímu">
+                    <input type="text" id="customTeamName" name="customTeamName" placeholder="Zadaj názov tímu">
                 </div>
 
                 <label>Počet hráčov:</label>
-                <input type="number" id="playerCount" min="1" max="15" value="4">
+                <input type="number" id="playerCount" name="playerCount" min="1" max="15" value="4">
 
                 <div id="pinSection">
                     <label id="pinLabel" style="color:#27ae60;">Vytvor si PIN kód:</label>
-                    <input type="text" id="teamPin" inputmode="numeric" pattern="[0-9]*" placeholder="Napr. 123" required>
+                    <input type="text" id="teamPin" name="teamPin" inputmode="numeric" pattern="[0-9]*" placeholder="Napr. 123" required>
                     <small id="pinHelp" style="color:#666; display:block; margin-top:5px;">Tento PIN budeš potrebovať pre zmeny.</small>
                 </div>
                 
@@ -586,6 +586,10 @@
             teamsData = [];
             snapshot.forEach(doc => { teamsData.push({ id: doc.id, ...doc.data() }); });
             
+            // CACHUJ do localStorage pre offline režim
+            localStorage.setItem('teams_cache', JSON.stringify(teamsData));
+            console.log("✅ Teams cachované do localStorage:", teamsData);
+            
             // Vždy aktualizuj dashboard a select - tieto MUSIA fungovať
             updateDashboard(); 
             populateTeamSelect(); 
@@ -614,6 +618,8 @@
                     deadlineHour: data.deadlineHour || 16,
                     deadlineMinute: data.deadlineMinute || 30
                 };
+                // CACHUJ do localStorage pre offline režim
+                localStorage.setItem('settings_cache', JSON.stringify(globalSettings));
                 updateHeaderDate(); checkDeadline();
                 if(document.getElementById('adminQuizDate')) document.getElementById('adminQuizDate').value = globalSettings.quizDate || "";
                 if(document.getElementById('adminDeadlineTime')) {
@@ -627,6 +633,16 @@
             hideLoadingOverlay();
         }, (error) => {
             console.error("Chyba pri načítaní nastavení:", error);
+            // Skúsime načítať z cache ak je offline
+            const cached = localStorage.getItem('settings_cache');
+            if (cached) {
+                try {
+                    globalSettings = JSON.parse(cached);
+                    console.log("✅ Settings načítané z cache");
+                } catch(e) {
+                    console.error("Chyba pri načítaní cache nastavení");
+                }
+            }
             hideLoadingOverlay();
         });
 
@@ -678,10 +694,31 @@
 
         window.handleFormSubmit = async function(e) {
             e.preventDefault();
-            if (!checkDeadline()) return;
+            console.log("🔍 Form submit iniciovaný!");
+            
+            // FALLBACK: Ak teamsData je prázdne (offline režim), skús načítať z localStorage
+            if (teamsData.length === 0) {
+                console.warn("⚠️ teamsData je prázdne! Skúšam načítať z localStorage...");
+                const cached = localStorage.getItem('teams_cache');
+                if (cached) {
+                    try {
+                        teamsData = JSON.parse(cached);
+                        console.log("✅ Tímy načítané z cache:", teamsData);
+                    } catch(e) {
+                        console.error("Chyba pri parsovaní cache:", e);
+                    }
+                }
+            }
+            
+            if (!checkDeadline()) {
+                console.log("❌ Deadline check neprešiel!");
+                return;
+            }
             const teamSelect = document.getElementById('teamSelect').value;
             const count = parseInt(document.getElementById('playerCount').value);
             const enteredPin = document.getElementById('teamPin').value;
+
+            console.log("📋 Form values:", { teamSelect, count, enteredPin });
 
             let currentTeamCount = 0;
             if (teamSelect !== 'new') {
@@ -734,7 +771,14 @@
                     }
                     // If admin, bypass PIN check entirely
                     
-                    await updateDoc(doc(db, "teams", team.id), { current: count, confirmed: true });
+                    console.log("📝 Skúšam updatovať tím:", team.id, { current: count, confirmed: true });
+                    try {
+                        await updateDoc(doc(db, "teams", team.id), { current: count, confirmed: true });
+                        console.log("✅ Tím úspešne updatovaný!");
+                    } catch (updateErr) {
+                        console.warn("⚠️ updateDoc chyba (možno offline):", updateErr);
+                        throw updateErr; // Preskupuj chybu vyššie na catch handler
+                    }
                     document.getElementById('formMessage').innerText = `✅ Tím ${team.id} potvrdený!`;
                     document.getElementById('formMessage').style.color = 'green';
                 } else {
