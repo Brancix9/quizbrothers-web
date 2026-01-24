@@ -48,12 +48,27 @@
         .btn-action { background: #27ae60; color: white; border: none; padding: 8px 15px; cursor: pointer; font-weight: bold; border-radius: 4px; }
         .btn-stop { background: #c0392b; color: white; border: none; padding: 8px 15px; cursor: pointer; font-weight: bold; border-radius: 4px; border: 1px solid #999; }
         
-        .room-map { position: relative; max-width: 95%; width: 95%; height: 600px; background: #e0e0e0; border: 4px solid #444; margin: 20px auto; border-radius: 4px; box-shadow: 0 10px 30px rgba(0,0,0,0.2); }
+        .room-map { position: relative; max-width: 95%; width: 95%; height: 600px; background: #e0e0e0; border: 4px solid #444; margin: 20px auto; border-radius: 4px; box-shadow: 0 10px 30px rgba(0,0,0,0.2); overflow-x: hidden; box-sizing: border-box; }
         .table { position: absolute; display: flex; justify-content: center; align-items: center; flex-direction: column; border: 2px solid #555; cursor: pointer; font-weight: bold; font-size: 11px; user-select: none; color: #333; text-align: center; line-height: 1; z-index: 10; background: #fff; box-shadow: 2px 2px 5px rgba(0,0,0,0.2); }
         .status-reserved { background-color: #ffb347; border-color: #d35400; } .status-confirmed { background-color: #2ecc71; border-color: #27ae60; } .status-free { background-color: #fff; opacity: 0.7; }
         .cap-info { font-size: 9px; font-weight: normal; margin-top: 2px; }
         .rect { width: 110px; height: 55px; border-radius: 4px; } .circle { width: 75px; height: 75px; border-radius: 50%; } .circle-small { width: 55px; height: 55px; border-radius: 50%; }
-        .admin-login-btn { display: block; margin: 50px auto; color: #222454; background: none; border: none; text-decoration: underline; cursor: pointer; }
+        .admin-login-btn { 
+            display: block; 
+            margin: 50px auto; 
+            color: #999; 
+            background: none; 
+            border: none; 
+            text-decoration: none; 
+            cursor: pointer; 
+            font-size: 11px;
+            opacity: 0.3;
+            transition: opacity 0.2s;
+        }
+        .admin-login-btn:hover {
+            opacity: 0.6;
+            color: #666;
+        }
 
         .pin-manager { max-width: 95%; width: 95%; margin: 40px auto; background: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 15px rgba(34,36,84,0.1); }
         .pin-manager h4 { margin-top: 0; }
@@ -67,7 +82,7 @@
         textarea.admin-input { text-align: left; resize: vertical; }
         .w-small { width: 60px; } .w-med { width: 100px; }
         .btn-save-pin { background: #27ae60; color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-weight: bold; font-size: 12px; }
-        .btn-delete-team { background: #c0392b; color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-size: 12px; margin-left: 5px;}
+        .btn-delete-team { background: #c0392b; color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-size: 12px; margin-left: 10px;}
 
         .add-team-form { background: #f9f9f9; padding: 15px; margin-top: 20px; border: 1px dashed rgba(34,36,84,0.3); border-radius: 5px; display: flex; gap: 10px; align-items: flex-end;}
         .form-group { flex: 1; } .form-group label { font-size: 11px; margin-bottom: 2px; color:#222454; }
@@ -144,10 +159,24 @@
             }
         }
         
+        @media (max-width: 768px) {
+            .admin-login-btn {
+                font-size: 10px;
+                opacity: 0.25;
+                margin: 30px auto;
+            }
+        }
+        
         @media (max-width: 480px) {
             .content-wrapper { padding: 5px; }
             
             h1 { font-size: 1.3rem; margin-bottom: 10px; }
+            
+            .admin-login-btn {
+                font-size: 9px;
+                opacity: 0.2;
+                margin: 20px auto;
+            }
             
             .main-container {
                 margin: 10px auto;
@@ -192,7 +221,20 @@
             }
             
             .room-map {
+                max-width: 100%;
+                width: 100%;
                 min-height: 300px;
+                overflow-x: hidden;
+                box-sizing: border-box;
+            }
+            
+            .btn-save-pin, .btn-delete-team {
+                margin: 5px 3px;
+                display: inline-block;
+            }
+            
+            .btn-delete-team {
+                margin-left: 15px;
             }
         }
         
@@ -633,7 +675,10 @@
                         alert("❌ Zadaj PIN!");
                         return;
                     }
-                    if (enteredPin !== team.pin && enteredPin !== globalSettings.masterPin) {
+                    const pinTrimmed = enteredPin.trim();
+                    const teamPinTrimmed = String(team.pin || "").trim();
+                    const masterPinTrimmed = String(globalSettings.masterPin || "").trim();
+                    if (pinTrimmed !== teamPinTrimmed && pinTrimmed !== masterPinTrimmed) {
                         alert("❌ Nesprávny PIN!");
                         return;
                     }
@@ -652,7 +697,10 @@
                     }
                     const existing = teamsData.find(t => t.id === newName);
                     if (existing) {
-                        if (existing.pin !== enteredPin && enteredPin !== globalSettings.masterPin) {
+                        const pinTrimmed = enteredPin.trim();
+                        const existingPinTrimmed = String(existing.pin || "").trim();
+                        const masterPinTrimmed = String(globalSettings.masterPin || "").trim();
+                        if (pinTrimmed !== existingPinTrimmed && pinTrimmed !== masterPinTrimmed) {
                             alert("❌ Tím už existuje. Zlý PIN.");
                             return;
                         }
@@ -817,7 +865,7 @@
                         <td><input type="number" class="admin-input w-small" id="confirmed_count_${t.id}" value="${t.current}" min="1" max="15" style="width:60px;"></td>
                         <td><span style="color:#27ae60; font-weight:bold;">✅ Potvrdený</span></td>
                         <td>
-                            <button class="btn-save-pin" onclick="window.updateConfirmedTeam('${t.id}')" style="margin-right:5px;">💾 Uložiť</button>
+                            <button class="btn-save-pin" onclick="window.updateConfirmedTeam('${t.id}')" style="margin-right:10px;">💾 Uložiť</button>
                             <button class="btn-delete-team" onclick="window.removeConfirmedTeam('${t.id}')">🗑️ Odstrániť</button>
                         </td>`;
                     confirmedTbody.appendChild(tr);
@@ -833,7 +881,7 @@
                     <td>${t.id} ${!t.isStatic ? '(Nový)' : ''} ${t.confirmed ? '<span style="color:#27ae60;">✓</span>' : ''}</td>
                     <td><input type="number" class="admin-input w-small" id="cap_${t.id}" value="${t.default}"></td>
                     <td><input type="text" class="admin-input w-med" id="pin_${t.id}" value="${t.pin}"></td>
-                    <td><button class="btn-save-pin" onclick="window.saveAdminTeam('${t.id}')">Uložiť</button>
+                    <td><button class="btn-save-pin" onclick="window.saveAdminTeam('${t.id}')" style="margin-right:10px;">Uložiť</button>
                     <button class="btn-delete-team" onclick="window.deleteTeam('${t.id}')">Zmazať</button></td>`;
                 tbody.appendChild(tr);
             });
