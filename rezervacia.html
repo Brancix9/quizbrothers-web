@@ -779,7 +779,7 @@
                             teamsData[idx].current = count;
                             teamsData[idx].confirmed = true;
                         }
-                        updateDashboard();
+                        try { updateDashboard(); } catch(e) { console.warn("updateDashboard error:", e); }
                     } catch (updateErr) {
                         console.warn("⚠️ updateDoc chyba (možno offline):", updateErr);
                         throw updateErr; // Preskupuj chybu vyššie na catch handler
@@ -819,12 +819,12 @@
                         // Ak je admin, preskoči PIN check
                         await updateDoc(doc(db, "teams", newName), { current: count, confirmed: true });
                         // Okamžite aktualizuj lokálne dáta a UI
-                        const idx = teamsData.findIndex(t => t.id === newName);
-                        if (idx !== -1) {
-                            teamsData[idx].current = count;
-                            teamsData[idx].confirmed = true;
+                        const idx2 = teamsData.findIndex(t => t.id === newName);
+                        if (idx2 !== -1) {
+                            teamsData[idx2].current = count;
+                            teamsData[idx2].confirmed = true;
                         }
-                        updateDashboard();
+                        try { updateDashboard(); } catch(e) { console.warn("updateDashboard error:", e); }
                         document.getElementById('formMessage').innerText = `✅ Tím ${newName} upravený!`;
                         document.getElementById('formMessage').style.color = 'green';
                     } else {
@@ -843,7 +843,7 @@
                             isStatic: false,
                             tableId: ""
                         });
-                        updateDashboard();
+                        try { updateDashboard(); } catch(e) { console.warn("updateDashboard error:", e); }
                         document.getElementById('formMessage').innerText = `✅ Tím ${newName} zaregistrovaný!`;
                         document.getElementById('formMessage').style.color = 'green';
                     }
