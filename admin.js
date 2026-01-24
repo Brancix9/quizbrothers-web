@@ -10,6 +10,8 @@
     let auth = null;
     let app = null;
     let firebaseInitialized = false;
+    let isEditingText = false; // Flag na kontrolu či user edituje text
+    
     
     // Inicializácia Firebase (ak ešte nie je inicializované)
     async function initFirebase() {
@@ -260,6 +262,11 @@
         // Vyčistenie starých dát
         cleanupLegacyData();
         
+        // GUARD: Ak user edituje, neiniciuj applySavedTexts
+        if (isEditingText) {
+            return;
+        }
+        
         await initFirebase();
         
         // Skús načítať z Firebase
@@ -294,6 +301,10 @@
             Object.keys(savedTexts[pageName]).forEach(id => {
                 const element = document.querySelector(`[data-text-id="${id}"]`);
                 if (element) {
+                    // GUARD: Ak má element focus (edituje ho user), neignoruj ho
+                    if (element === document.activeElement) {
+                        return;
+                    }
                     element.textContent = savedTexts[pageName][id];
                 }
             });
@@ -335,20 +346,23 @@
             </div>
             <div class="admin-panel-content">
                 <p style="color: #27ae60; margin-bottom: 15px;">💡 Klikni na akýkoľvek text na stránke a začni ho editovať!</p>
-                <div class="admin-actions">
-                    <button onclick="window.qbAdmin.saveAll()" class="admin-save-btn">💾 Uložiť všetky zmeny</button>
-                    <button onclick="window.qbAdmin.logout()" class="admin-logout-btn">🚪 Odhlásiť sa</button>
-                </div>
                 
-                <details style="margin-top: 15px; padding: 10px; border: 1px solid #e74c3c; border-radius: 5px; background: #ffe0e0;">
-                    <summary style="cursor: pointer; color: #c0392b; font-weight: bold;">⚠️ Nebezpečné operácie (Klikni pre otvorenie)</summary>
-                    <div style="margin-top: 10px; padding-top: 10px; border-top: 1px solid #e74c3c;">
-                        <p style="color: #c0392b; font-size: 12px; margin: 5px 0;">Opatrne! Tieto akcie nie je ľahké vrátiť späť.</p>
-                        <button onclick="window.qbAdmin.resetPage()" class="admin-reset-btn" style="width: 100%; margin-bottom: 8px;">🔄 Resetovať túto stránku</button>
-                        <button onclick="window.qbAdmin.clearAll()" class="admin-clear-btn" style="width: 100%; margin-bottom: 8px;">🗑️ Vymazať všetko</button>
-                        <button onclick="window.qbAdmin.resetFirebaseData()" class="admin-reset-btn" style="background: #c0392b; width: 100%;">🔥 RESET FIREBASE</button>
+                <details style="margin-top: 0; margin-bottom: 20px; padding: 8px; border: 1px solid #d4a574; border-radius: 5px; background: #f5ede3;">
+                    <summary style="cursor: pointer; color: #8b7355; font-weight: bold; font-size: 12px;">⚙️ Pokročilé operácie (rozbaľ)</summary>
+                    <div style="margin-top: 8px; padding-top: 8px; border-top: 1px solid #d4a574;">
+                        <button onclick="window.qbAdmin.resetPage()" class="admin-reset-btn" style="width: 100%; margin-bottom: 6px; font-size: 12px;">🔄 Resetovať stránku</button>
+                        <button onclick="window.qbAdmin.clearAll()" class="admin-clear-btn" style="width: 100%; margin-bottom: 6px; font-size: 12px;">🗑️ Vymazať všetko</button>
+                        <button onclick="window.qbAdmin.resetFirebaseData()" class="admin-reset-btn" style="background: #e8a87c; width: 100%; font-size: 12px;">🔥 Reset Firebase</button>
                     </div>
                 </details>
+                
+                <div class="admin-actions">
+                    <button onclick="window.qbAdmin.saveAll()" class="admin-save-btn">💾 Uložiť všetky zmeny</button>
+                </div>
+                
+                <div class="admin-actions" style="margin-top: 15px;">
+                    <button onclick="window.qbAdmin.logout()" class="admin-logout-btn">🚪 Odhlásiť sa</button>
+                </div>
             </div>
         `;
         document.body.appendChild(panel);
@@ -456,6 +470,7 @@
                 // Event listenery - pridaj len raz
                 if (!el.hasAttribute('data-listener-attached')) {
                     el.addEventListener('focus', function() {
+                        isEditingText = true; // Označ že user edituje
                         this.style.outline = '2px solid #27ae60';
                         this.style.backgroundColor = 'rgba(39, 174, 96, 0.1)';
                         // Na mobiloch minimalizuj panel pri editovaní
@@ -468,6 +483,7 @@
                     });
                     
                     el.addEventListener('blur', async function(e) {
+                        isEditingText = false; // Označ že user končí editáciu
                         // GUARD: Neignoruj blur ak je event spôsobený input/textarea elementami
                         if (e.relatedTarget && (e.relatedTarget.tagName === 'INPUT' || e.relatedTarget.tagName === 'TEXTAREA')) {
                             return;
