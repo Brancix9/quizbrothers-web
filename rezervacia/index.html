@@ -799,6 +799,7 @@
             const teamReservedInfo = document.getElementById('teamReservedInfo');
             const cancelBtn = document.getElementById('cancelBtn');
             const customTeamInput = document.getElementById('customTeamName');
+            const releaseInFuture = isReleaseTimeInFuture();
             teamPinInput.value = "";
             
             if (select.value === 'new') {
@@ -832,7 +833,8 @@
                 customInputDiv.style.display = 'none';
                 const team = teamsData.find(t => t.id === select.value);
                 if (team) {
-                    if (team.isStatic && !team.confirmed) {
+                    // ✅ ZMENA: Zobraz informácie na základe času uvoľnenia
+                    if (team.isStatic && !team.confirmed && releaseInFuture) {
                         teamReservedInfo.style.display = 'block';
                         teamReservedInfo.innerText = `⏳ Rezervovaný počet: ${team.default} os.`;
                         teamReservedInfo.style.color = '#222454';
@@ -986,12 +988,43 @@
             }
         }
 
-        function calculateOccupied() { return teamsData.reduce((sum, t) => sum + t.current, 0); }
+        function isReleaseTimeInFuture() {
+            if (!globalSettings.quizDate) return true;
+            const now = new Date();
+            const releaseHour = globalSettings.releaseHour || 15;
+            const releaseMinute = globalSettings.releaseMinute || 0;
+            const releaseTime = new Date(`${globalSettings.quizDate}T${String(releaseHour).padStart(2, '0')}:${String(releaseMinute).padStart(2, '0')}:00`);
+            return now < releaseTime;
+        }
+
+        function calculateOccupied() { 
+            const releaseInFuture = isReleaseTimeInFuture();
+            return teamsData.reduce((sum, t) => {
+                // Ak je čas uvoľnenia v budúcnosti, statické tímy majú Reserved miesto (default hodnota)
+                if (releaseInFuture && t.isStatic && !t.confirmed) {
+                    return sum + (t.default || 0);
+                }
+                // Ak je čas uvoľnenia v minulosti a tím je statický a nepotvrdený, nepočítaj ho
+                if (!releaseInFuture && t.isStatic && !t.confirmed) {
+                    return sum;
+                }
+                // Potvrdené tímy (či statické alebo nie) sa počítajú ako current
+                return sum + t.current;
+            }, 0);
+        }
 
         function populateTeamSelect() {
             const select = document.getElementById('teamSelect');
             select.innerHTML = '<option value="new">Nový tím / Vybrať tím</option>';
-            teamsData.filter(t => t.isStatic || t.confirmed).forEach(t => {
+            
+            // ✅ ZMENA: Filtruj statické tímy podľa času uvoľnenia
+            const releaseInFuture = isReleaseTimeInFuture();
+            
+            teamsData.filter(t => {
+                if (t.confirmed) return true; // Potvrdené tímy vždy dostupné
+                if (t.isStatic && releaseInFuture) return true; // Statické tímy len ak je čas v budúcnosti
+                return false;
+            }).forEach(t => {
                 let opt = document.createElement('option');
                 opt.value = t.id; opt.innerText = t.id; select.appendChild(opt);
             });
@@ -1030,8 +1063,8 @@
             const releaseHour = String(globalSettings.releaseHour || 15).padStart(2, '0');
             const releaseMinute = String(globalSettings.releaseMinute || 0).padStart(2, '0');
             
-            // Zisti či sú nejaké uvoľnené tímy (current === 0 pre statické)
-            const hasReleasedTeams = teamsData.some(t => t.isStatic && t.current === 0);
+            // ✅ NOVÁ LOGIKA: Zisti či je čas uvoľnenia v budúcnosti alebo minulosti
+            const releaseInFuture = isReleaseTimeInFuture();
             
             teamsData.forEach(t => {
                 const li = document.createElement('li'); 
@@ -1040,20 +1073,20 @@
                     li.innerHTML = `${t.id} <span class="badge-count badge-confirmed">${t.current} ✔</span>`;
                     confirmedContent.push(li);
                 } else if (t.isStatic) {
-                    // Ak je current > 0, zobraz tím normálne
-                    if (t.current > 0) {
-                        li.innerHTML = `${t.id} <span class="badge-count">${t.default}</span>`;
+                    // ✅ ZMENA: Zobrazuj statické tímy LEN ak je čas uvoľnenia v budúcnosti
+                    if (releaseInFuture) {
+                        li.innerHTML = `${t.id} <span class="badge-count">${t.default} os.</span>`;
                         reservedContent.push(li);
                     }
-                    // Ak je current === 0, nezobrazuj tím individuálne
+                    // Ak je čas uvoľnenia v minulosti, nezobrazuj jednotlivé tímy
                 }
             });
             
-            // Ak sú uvoľnené tímy, pridaj všeobecný oznam namiesto tímov
-            if (hasReleasedTeams && reservedContent.length === 0) {
+            // ✅ ZMENA: Zobraz správu keď je čas uvoľnenia v minulosti a nie sú žiadne individuálne rezervované tímy
+            if (!releaseInFuture && reservedContent.length === 0) {
                 const li = document.createElement('li');
                 li.className = 'team-item';
-                li.innerHTML = `<span style="color:#999; font-size:14px;">Rezerváciu bolo potrebné potvrdiť do ${releaseHour}:${releaseMinute} - ak je stále voľné miesto, môžete sa pridať</span>`;
+                li.innerHTML = `<span style="color:#999; font-size:14px;">⏳ Rezervované (do ${releaseHour}:${releaseMinute})<br/>Rezerváciu bolo potrebné potvrdiť do ${releaseHour}:${releaseMinute} - ak je stále voľné miesto, môžete sa pridať</span>`;
                 reservedContent.push(li);
             }
             
@@ -1269,6 +1302,9 @@
                     deadlineMinute: minute 
                 });
                 alert(`✅ Deadline čas bol nastavený na ${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}!`);
+                setTimeout(() => {
+                    updateDashboard();
+                }, 100);
             } catch (err) {
                 console.error("Chyba pri ukladaní:", err);
                 alert("❌ Chyba pri ukladaní: " + err.message);
