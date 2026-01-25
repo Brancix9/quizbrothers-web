@@ -76,6 +76,11 @@
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
 
+        // --- PREPOJENIE PRE ADMIN.JS ---
+        window.app = app;
+        window.db = db;
+        // -------------------------------
+
         function loadWebContent() {
             const contentDoc = doc(db, "web_content", "about");
             onSnapshot(contentDoc, (docSnap) => {
