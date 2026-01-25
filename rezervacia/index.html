@@ -687,17 +687,17 @@
         };
 
         const defaultTeamsList = [
-            { id: "Mušky", default: 7, pin: "111", current: 0, confirmed: false },
-            { id: "Pušky", default: 7, pin: "222", current: 0, confirmed: false },
-            { id: "Piči Zla", default: 7, pin: "333", current: 0, confirmed: false },
-            { id: "Guru Team", default: 7, pin: "444", current: 0, confirmed: false },
-            { id: "Stibu", default: 6, pin: "555", current: 0, confirmed: false },
-            { id: "Gen Z", default: 4, pin: "666", current: 0, confirmed: false },
-            { id: "Fontána", default: 3, pin: "777", current: 0, confirmed: false },
-            { id: "Fénixov rád", default: 5, pin: "888", current: 0, confirmed: false },
-            { id: "Sprostáci", default: 5, pin: "101", current: 0, confirmed: false },
-            { id: "Žolíci", default: 3, pin: "102", current: 0, confirmed: false },
-            { id: "Nevídali", default: 3, pin: "103", current: 0, confirmed: false }
+            { id: "Mušky", default: 7, pin: "111", current: 0, confirmed: false, declined: false },
+            { id: "Pušky", default: 7, pin: "222", current: 0, confirmed: false, declined: false },
+            { id: "Piči Zla", default: 7, pin: "333", current: 0, confirmed: false, declined: false },
+            { id: "Guru Team", default: 7, pin: "444", current: 0, confirmed: false, declined: false },
+            { id: "Stibu", default: 6, pin: "555", current: 0, confirmed: false, declined: false },
+            { id: "Gen Z", default: 4, pin: "666", current: 0, confirmed: false, declined: false },
+            { id: "Fontána", default: 3, pin: "777", current: 0, confirmed: false, declined: false },
+            { id: "Fénixov rád", default: 5, pin: "888", current: 0, confirmed: false, declined: false },
+            { id: "Sprostáci", default: 5, pin: "101", current: 0, confirmed: false, declined: false },
+            { id: "Žolíci", default: 3, pin: "102", current: 0, confirmed: false, declined: false },
+            { id: "Nevídali", default: 3, pin: "103", current: 0, confirmed: false, declined: false }
         ];
         
         teamsData = JSON.parse(JSON.stringify(defaultTeamsList));
@@ -1075,9 +1075,9 @@
         function calculateOccupied() { 
             const releaseInFuture = isReleaseTimeInFuture();
             return teamsData.reduce((sum, t) => {
-                // Ak je čas uvoľnenia v budúcnosti, statické tímy majú Reserved miesto (current hodnota - ak je 0, tak neuberajú miesto!)
+                // Ak je čas uvoľnenia v budúcnosti, statické tímy majú Reserved miesto (default hodnota)
                 if (releaseInFuture && t.isStatic && !t.confirmed) {
-                    return sum + (t.current || 0);
+                    return sum + (t.default || 0);
                 }
                 // Ak je čas uvoľnenia v minulosti a tím je statický a nepotvrdený, nepočítaj ho
                 if (!releaseInFuture && t.isStatic && !t.confirmed) {
@@ -1147,13 +1147,13 @@
                 if (t.confirmed) {
                     li.innerHTML = `${t.id} <span class="badge-count badge-confirmed">${t.current} ✔</span>`;
                     confirmedContent.push(li);
-                } else if (t.isStatic) {
-                    // ✅ ZMENA: Zobrazuj statické tímy LEN ak je čas uvoľnenia v budúcnosti
-                    if (releaseInFuture) {
+                } else if (t.isStatic !== false) {
+                    // ✅ ZMENA: Zobrazuj statické tímy LEN ak je čas uvoľnenia v budúcnosti A ak NEUVEDLI "Neprídeme" (declined !== true)
+                    if (releaseInFuture && t.declined !== true) {
                         li.innerHTML = `${t.id} <span class="badge-count">${t.default} os.</span>`;
                         reservedContent.push(li);
                     }
-                    // Ak je čas uvoľnenia v minulosti, nezobrazuj jednotlivé tímy
+                    // Ak je čas uvoľnenia v minulosti alebo declined == true, nezobrazuj
                 }
             });
             
@@ -1715,7 +1715,8 @@
             
             try {
                 await updateDoc(doc(db, "teams", teamId), { 
-                    current: 0
+                    current: 0,
+                    declined: true
                 });
                 alert(`✅ Miesta tímu "${teamId}" bola úspešne uvoľnená!\n\n${team.default} miest je teraz dostupných pre iné tímy.`);
                 
@@ -1737,7 +1738,7 @@
             const cap = parseInt(document.getElementById(`cap_${id}`).value);
             const pin = String(document.getElementById(`pin_${id}`).value.trim());
             const t = teamsData.find(x => x.id === id);
-            let updates = { default: cap, pin: pin };
+            let updates = { default: cap, pin: pin, declined: false };
             if (!t.confirmed) updates.current = cap;
             await updateDoc(doc(db, "teams", id), updates); alert("Uložené");
         }
