@@ -297,7 +297,7 @@
 
                 <div id="newTeamInput" style="display:block;">
                     <label>Názov nového tímu:</label>
-                    <input type="text" id="customTeamName" name="customTeamName" placeholder="Zadaj názov tímu">
+                    <input type="text" id="customTeamName" name="customTeamName" placeholder="Zadaj názov tímu" oninput="handleTeamChange()">
                 </div>
 
                 <label>Počet hráčov:</label>
@@ -310,6 +310,7 @@
                 </div>
                 
                 <button type="submit" id="submitBtn" class="btn-submit">Potvrdiť účasť</button>
+                <button type="button" id="cancelBtn" class="btn-submit" style="background: #c0392b; display: none; margin-top: 10px;" onclick="window.cancelTeamParticipation()">🚫 Zrušiť účasť</button>
             </form>
             <p id="formMessage" style="color: green; font-weight: bold; margin-top: 15px;"></p>
             
@@ -355,6 +356,13 @@
                     <button class="btn-action" onclick="saveDeadlineTime()">Uložiť</button>
                 </div>
             </div>
+            <div class="config-block">
+                <label>Kapacita:</label>
+                <div style="display:flex; gap:5px;">
+                    <input type="number" id="adminMaxCapacity" min="1" max="999" style="padding:5px; width:60px;">
+                    <button class="btn-action" onclick="saveMaxCapacity()">Uložiť</button>
+                </div>
+            </div>
             
             <button onclick="uploadDefaults()" style="background:#222454; color:white; border:none; padding:8px 15px; cursor:pointer; font-weight:bold; border-radius:4px; margin-left:10px;">🚀 NAHRAŤ PREDVOLENÉ TÍMY</button>
             
@@ -368,6 +376,7 @@
                 <tbody id="adminConfirmedTableBody"></tbody>
             </table>
             <p style="text-align:center; color:#666; margin-top:15px; font-size:12px;">Tímy, ktoré potvrdili účasť. Môžeš upraviť počet hráčov alebo odstrániť tím.</p>
+            <button onclick="window.clearAllConfirmedTeams()" style="background:#e67e22; color:white; border:none; padding:8px 15px; cursor:pointer; font-weight:bold; border-radius:4px; margin-top:10px; width:100%;">🗑️ Vymazať všetky potvrdené tímy</button>
         </div>
 
         <div class="pin-manager">
@@ -553,8 +562,9 @@
         window.auth = authInstance;
 
         let teamsData = []; 
-        let globalSettings = { quizDate: null, masterPin: "9999" };
-        const MAX_CAPACITY = 83;
+        let globalSettings = { quizDate: null, masterPin: "9999", maxCapacity: 83 };
+        let MAX_CAPACITY = 83;
+        let autoCleanupTimeout = null; // Timeout pre automatické čistenie o polnoci
         const DEADLINE_HOUR = 16;
         const DEADLINE_MINUTE = 30;
 
@@ -619,8 +629,10 @@
                     quizDate: data.quizDate || null,
                     masterPin: data.masterPin || "9999",
                     deadlineHour: data.deadlineHour || 16,
-                    deadlineMinute: data.deadlineMinute || 30
+                    deadlineMinute: data.deadlineMinute || 30,
+                    maxCapacity: data.maxCapacity || 83
                 };
+                MAX_CAPACITY = globalSettings.maxCapacity;
                 // CACHUJ do localStorage pre offline režim
                 localStorage.setItem('settings_cache', JSON.stringify(globalSettings));
                 updateHeaderDate(); checkDeadline();
@@ -630,8 +642,14 @@
                     const minute = String(globalSettings.deadlineMinute).padStart(2, '0');
                     document.getElementById('adminDeadlineTime').value = `${hour}:${minute}`;
                 }
+                if(document.getElementById('adminMaxCapacity')) document.getElementById('adminMaxCapacity').value = globalSettings.maxCapacity || 83;
+                
+                // Nastav automatické čistenie ak je dátum kvízu určený
+                if (globalSettings.quizDate) {
+                    scheduleAutoCleanup();
+                }
             } else {
-                setDoc(doc(db, "config", "settings"), { quizDate: null, masterPin: "9999", deadlineHour: 16, deadlineMinute: 30 });
+                setDoc(doc(db, "config", "settings"), { quizDate: null, masterPin: "9999", deadlineHour: 16, deadlineMinute: 30, maxCapacity: 83 });
             }
             hideLoadingOverlay();
         }, (error) => {
@@ -652,6 +670,17 @@
         // Fallback timeout - skryje loading overlay po 5 sekundách aj keď sa Firebase nenačíta
         setTimeout(() => {
             hideLoadingOverlay();
+            
+            // Pridaj event listener na playerCount input
+            const playerCountInput = document.getElementById('playerCount');
+            if (playerCountInput) {
+                playerCountInput.addEventListener('change', function() {
+                    checkDeadline(); // Re-validate when player count changes
+                });
+                playerCountInput.addEventListener('input', function() {
+                    checkDeadline(); // Also check while typing
+                });
+            }
         }, 5000);
 
         // WINDOW FUNCTIONS
@@ -663,13 +692,35 @@
             const pinHelp = document.getElementById('pinHelp');
             const teamPinInput = document.getElementById('teamPin');
             const teamReservedInfo = document.getElementById('teamReservedInfo');
+            const cancelBtn = document.getElementById('cancelBtn');
+            const customTeamInput = document.getElementById('customTeamName');
             teamPinInput.value = "";
             
             if (select.value === 'new') {
-                customInputDiv.style.display = 'block'; countInput.value = 4;
-                pinLabel.innerText = "Vytvor si PIN kód:"; pinLabel.style.color = "#27ae60";
+                customInputDiv.style.display = 'block'; 
+                countInput.value = 4;
+                pinLabel.innerText = "Vytvor si PIN kód:"; 
+                pinLabel.style.color = "#27ae60";
                 pinHelp.innerText = "Zapamätaj si ho pre budúce zmeny.";
                 teamReservedInfo.style.display = 'none';
+                
+                // Skontroluj či je zadaný názov existujúceho potvrdzeného tímu
+                const customName = customTeamInput.value.trim();
+                if (customName) {
+                    const existingTeam = teamsData.find(t => t.id === customName);
+                    if (existingTeam && existingTeam.confirmed) {
+                        // Existuje potvrdený tím s týmto menom
+                        teamReservedInfo.style.display = 'block';
+                        teamReservedInfo.innerText = `✅ Tento tím je už potvrdený s ${existingTeam.current} os.!`;
+                        teamReservedInfo.style.color = '#27ae60';
+                        cancelBtn.style.display = 'block'; // Zobraz cancel btn
+                        countInput.value = existingTeam.current;
+                    } else {
+                        cancelBtn.style.display = 'none';
+                    }
+                } else {
+                    cancelBtn.style.display = 'none';
+                }
             } else {
                 customInputDiv.style.display = 'none';
                 const team = teamsData.find(t => t.id === select.value);
@@ -679,20 +730,26 @@
                         teamReservedInfo.style.display = 'block';
                         teamReservedInfo.innerText = `⏳ Rezervovaný počet: ${team.default} os.`;
                         teamReservedInfo.style.color = '#222454';
+                        cancelBtn.style.display = 'none'; // Skry cancel btn keď nie je potvrdený
                     } else if (team.confirmed) {
                         teamReservedInfo.style.display = 'block';
                         teamReservedInfo.innerText = `✅ Potvrdený počet: ${team.current} os.`;
                         teamReservedInfo.style.color = '#27ae60';
+                        cancelBtn.style.display = 'block'; // Zobraz cancel btn keď je potvrdený
                     } else {
                         teamReservedInfo.style.display = 'none';
+                        cancelBtn.style.display = 'none'; // Skry cancel btn v ostatných prípadoch
                     }
                     countInput.value = team.current || team.default || 4;
                 } else {
                     teamReservedInfo.style.display = 'none';
+                    cancelBtn.style.display = 'none'; // Skry cancel btn ak tím neexistuje
                 }
-                pinLabel.innerText = `Zadaj PIN pre tím ${select.value}:`; pinLabel.style.color = "#27ae60";
+                pinLabel.innerText = `Zadaj PIN pre tím ${select.value}:`; 
+                pinLabel.style.color = "#27ae60";
                 pinHelp.innerText = "Ak si zabudol PIN, kontaktuj organizátora.";
             }
+            checkDeadline(); // Re-check validity when team changes
         }
 
         window.handleFormSubmit = async function(e) {
@@ -730,7 +787,11 @@
 
             const currentOccupied = calculateOccupied();
             const diff = count - currentTeamCount;
-            if (diff > 0 && (currentOccupied + diff) > MAX_CAPACITY) { alert("Kapacita je plná."); return; }
+            const remaining = MAX_CAPACITY - currentOccupied;
+            
+            // Blokovať zvýšenie počtu len keď je PLNO alebo keď by to prekročilo kapacitu
+            // ALE dovoliť zníženie počtu aj keď je PLNO (pretože uvoľňuje miesta)
+            if (diff > 0 && (currentOccupied + diff) > MAX_CAPACITY) { alert("Kapacita je plná - môžeš iba znížiť počet účastníkov."); return; }
 
             try {
                 if (teamSelect !== 'new') {
@@ -863,7 +924,8 @@
         function populateTeamSelect() {
             const select = document.getElementById('teamSelect');
             select.innerHTML = '<option value="new">Nový tím / Vybrať tím</option>';
-            teamsData.filter(t => t.isStatic).forEach(t => {
+            // Zobraz všetky tímy - statické aj potvrdené nové
+            teamsData.filter(t => t.isStatic || t.confirmed).forEach(t => {
                 let opt = document.createElement('option');
                 opt.value = t.id; opt.innerText = t.id; select.appendChild(opt);
             });
@@ -922,6 +984,7 @@
             reservedContent.forEach(item => listReserved.appendChild(item));
             confirmedContent.forEach(item => listConfirmed.appendChild(item));
             
+            populateTeamSelect(); // Aktualizuj dropdown keď sa zmenia potvrdené tímy
             checkDeadline();
         }
 
@@ -931,8 +994,41 @@
             const now = new Date();
             const deadline = new Date(`${globalSettings.quizDate}T${DEADLINE_HOUR}:${DEADLINE_MINUTE}:00`);
             if (now > deadline) { if(btn) { btn.disabled = true; btn.innerText = "Registrácia ukončená"; } return false; }
+            
             const remaining = MAX_CAPACITY - calculateOccupied();
-            if(btn && remaining > 0) { btn.disabled = false; btn.innerText = "Potvrdiť účasť"; }
+            const teamSelect = document.getElementById('teamSelect');
+            const playerCountInput = document.getElementById('playerCount');
+            const isFull = remaining <= 0;
+            
+            // Ak je PLNO, skontroluj či môžeme aspoň znížiť počet
+            if (isFull && btn) {
+                // Zistí aký je aktuálny počet vybraného tímu
+                let currentTeamCount = 0;
+                if (teamSelect && teamSelect.value !== 'new') {
+                    const existing = teamsData.find(t => t.id === teamSelect.value);
+                    if(existing) currentTeamCount = existing.current;
+                } else if (document.getElementById('customTeamName')) {
+                    const newName = document.getElementById('customTeamName').value;
+                    const existing = teamsData.find(t => t.id === newName);
+                    if(existing) currentTeamCount = existing.current;
+                }
+                
+                const newCount = parseInt(playerCountInput.value) || 4;
+                const willDecrease = newCount < currentTeamCount;
+                
+                if (willDecrease) {
+                    // Zmena znižuje počet - je povolená aj keď je PLNO
+                    btn.disabled = false;
+                    btn.innerText = "Potvrdiť zmenu (↓ uvoľňuješ miesto)";
+                } else {
+                    // Zmena by zvýšila alebo ponechala rovnaký počet keď je PLNO
+                    btn.disabled = true;
+                    btn.innerText = "PLNO - zmeniť iba na menší počet";
+                }
+            } else if (btn && remaining > 0) { 
+                btn.disabled = false; 
+                btn.innerText = "Potvrdiť účasť"; 
+            }
             return true;
         }
 
@@ -948,9 +1044,53 @@
                 dateEl.innerText = `Kvíz sa koná: ${d.getDate()}.${d.getMonth()+1}.${d.getFullYear()}`;
                 dateEl.style.color = "#222454";
                 deadEl.innerText = `⚠️ Registrácia do: ${d.getDate()}.${d.getMonth()+1}. ${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`;
+                
+                // Nastaviť automatické čistenie potvrdených tímov o polnoci
+                scheduleAutoCleanup();
             } else {
                 dateEl.innerText = "Termín najbližšieho kvízu zatiaľ nie je určený.";
                 dateEl.style.color = "#666"; deadEl.innerText = "";
+                
+                // Zrušiť automatické čistenie ak nie je dátum kvízu
+                cancelAutoCleanup();
+            }
+        }
+        
+        // Funkcia na naplánovaní automatického čistenia
+        function scheduleAutoCleanup() {
+            // Zrušiť starý timeout ak existuje
+            cancelAutoCleanup();
+            
+            if (!globalSettings.quizDate) return;
+            
+            // Vypočítaj čas do polnoci nasledujúceho dňa po kvízovom dátume
+            const quizDate = new Date(globalSettings.quizDate);
+            const nextDay = new Date(quizDate);
+            nextDay.setDate(nextDay.getDate() + 1); // Ďalší deň
+            nextDay.setHours(0, 0, 0, 0); // Polnoc
+            
+            const now = new Date();
+            const timeUntilMidnight = nextDay.getTime() - now.getTime();
+            
+            if (timeUntilMidnight > 0) {
+                console.log(`⏰ Automatické čistenie naplánované na: ${nextDay.toLocaleString()}`);
+                autoCleanupTimeout = setTimeout(async () => {
+                    console.log("🧹 Spúšťam automatické čistenie potvrdených tímov...");
+                    // Skontroluj či sme opravdu v správnom čase (viac ako 24 hodín od kvízu)
+                    const today = new Date();
+                    if (today > nextDay) {
+                        await window.clearAllConfirmedTeams();
+                    }
+                }, timeUntilMidnight);
+            }
+        }
+        
+        // Funkcia na zrušenie automatického čistenia
+        function cancelAutoCleanup() {
+            if (autoCleanupTimeout) {
+                clearTimeout(autoCleanupTimeout);
+                autoCleanupTimeout = null;
+                console.log("❌ Automatické čistenie zrušené");
             }
         }
 
@@ -964,12 +1104,16 @@
 
         window.saveQuizDate = async function() {
             const val = document.getElementById('adminQuizDate').value;
-            if(val) await updateDoc(doc(db, "config", "settings"), { quizDate: val });
+            if(val) {
+                await updateDoc(doc(db, "config", "settings"), { quizDate: val });
+                scheduleAutoCleanup(); // Znova nastav automatické čistenie
+            }
         }
         window.stopRegistration = async function() {
             if(confirm("Zastaviť registráciu?")) {
                 await updateDoc(doc(db, "config", "settings"), { quizDate: null });
                 document.getElementById('adminQuizDate').value = "";
+                cancelAutoCleanup(); // Zruš automatické čistenie
             }
         }
         window.saveMasterPin = async function() {
@@ -995,6 +1139,22 @@
                 alert(`✅ Deadline čas bol nastavený na ${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}!`);
             } catch (err) {
                 console.error("Chyba pri ukladaní:", err);
+                alert("❌ Chyba pri ukladaní: " + err.message);
+            }
+        }
+        
+        window.saveMaxCapacity = async function() {
+            const capacityInput = document.getElementById('adminMaxCapacity');
+            const val = parseInt(capacityInput.value);
+            if (isNaN(val) || val < 1 || val > 999) {
+                alert("❌ Kapacita musí byť číslo medzi 1 a 999!");
+                return;
+            }
+            try {
+                await updateDoc(doc(db, "config", "settings"), { maxCapacity: val });
+                alert(`✅ Celková kapacita bola nastavená na ${val}!`);
+            } catch (err) {
+                console.error("Chyba pri ukladaní kapacity:", err);
                 alert("❌ Chyba pri ukladaní: " + err.message);
             }
         }
@@ -1094,6 +1254,7 @@
                         confirmed: false, 
                         current: team.default 
                     });
+                    populateTeamSelect(); // Aktualizuj dropdown
                     alert(`✅ Tím "${id}" bol vrátený medzi rezervované!`);
                 } catch (err) {
                     console.error("Chyba pri aktualizácii:", err);
@@ -1106,12 +1267,145 @@
                 }
                 try {
                     await deleteDoc(doc(db, "teams", id));
+                    populateTeamSelect(); // Aktualizuj dropdown
                     alert(`✅ Tím "${id}" bol úspešne odstránený!`);
                 } catch (err) {
                     console.error("Chyba pri mazaní:", err);
                     alert("❌ Chyba pri odstraňovaní tímu: " + err.message);
                 }
             }
+        }
+
+        // FUNKCIA NA VYMAZANIE VŠETKÝCH POTVRDENÝCH TÍMOV
+        window.clearAllConfirmedTeams = async function() {
+            const confirmedTeams = teamsData.filter(t => t.confirmed);
+            
+            if (confirmedTeams.length === 0) {
+                alert("ℹ️ Nemáš žiadne potvrdené tímy!");
+                return;
+            }
+            
+            const staticCount = confirmedTeams.filter(t => t.isStatic).length;
+            const newCount = confirmedTeams.filter(t => !t.isStatic).length;
+            
+            let message = `⚠️ Naozaj chceš vymazať všetkých ${confirmedTeams.length} potvrdených tímov?\n\n`;
+            if (staticCount > 0) message += `• ${staticCount} statických tímov sa vrátia medzi rezervované\n`;
+            if (newCount > 0) message += `• ${newCount} nových tímov sa úplne odstráni\n`;
+            message += `\nTáto akcia je čiastočne nevratná!`;
+            
+            if (!confirm(message)) {
+                return;
+            }
+            
+            try {
+                const batch = writeBatch(db);
+                
+                confirmedTeams.forEach(team => {
+                    if (team.isStatic) {
+                        // Pre statické tímy - vrátiť do rezervovaných
+                        batch.update(doc(db, "teams", team.id), { 
+                            confirmed: false, 
+                            current: team.default 
+                        });
+                    } else {
+                        // Pre nové tímy - úplné odstránenie
+                        batch.delete(doc(db, "teams", team.id));
+                    }
+                });
+                
+                await batch.commit();
+                populateTeamSelect();
+                alert(`✅ Všetci potvrdení hráči boli vymazaní!\n\n${staticCount} statických tímov je teraz medzi rezervovanými.\n${newCount} nových tímov bolo odstránených.`);
+                
+            } catch (err) {
+                console.error("Chyba pri vymazaní všetkých tímov:", err);
+                alert("❌ Chyba pri vymazaní: " + err.message);
+            }
+        }
+
+        // FUNKCIA NA ZRUŠENIE ÚČASTI - PRE BEŽNÉ TÍMY
+        window.cancelTeamParticipation = async function() {
+            const teamSelect = document.getElementById('teamSelect');
+            const pinInput = document.getElementById('teamPin');
+            const customTeamInput = document.getElementById('customTeamName');
+            let teamId = teamSelect.value;
+            const enteredPin = pinInput.value;
+            
+            // Ak je vybrané "new", skontroluj customTeamName
+            if (teamId === 'new') {
+                teamId = customTeamInput.value.trim();
+            }
+            
+            if (!teamId) {
+                alert("❌ Vyber si svoj tím!");
+                return;
+            }
+            
+            if (!enteredPin || !enteredPin.trim()) {
+                alert("❌ Zadaj PIN!");
+                return;
+            }
+            
+            const team = teamsData.find(t => t.id === teamId);
+            if (!team) {
+                alert("❌ Tím nebol nájdený!");
+                return;
+            }
+            
+            if (!team.confirmed) {
+                alert("❌ Tím nie je potvrdený!");
+                return;
+            }
+            
+            // Skontroluj PIN
+            const enteredPinTrimmed = enteredPin.trim();
+            const teamPinTrimmed = String(team.pin || "").trim();
+            const masterPinTrimmed = String(globalSettings.masterPin || "").trim();
+            
+            if (enteredPinTrimmed !== teamPinTrimmed && enteredPinTrimmed !== masterPinTrimmed) {
+                alert("❌ Nesprávny PIN! Zrušenie zlyhalo.");
+                return;
+            }
+            
+            // Potvrdzovacia správa
+            const confirmMsg = team.isStatic 
+                ? `⚠️ Chceš naozaj zrušiť účasť tímu "${teamId}"?\n\nTím má ${team.current} hráčov.\nBudeš medzi rezervovanými s počtom ${team.default} os.\n\nDá sa to kedykoľvek opakovať.`
+                : `⚠️ Chceš naozaj zrušiť účasť tímu "${teamId}"?\n\nTím má ${team.current} hráčov.\nTáto akcia je nevratná - tím sa úplne odstráni!\n\nPotom sa budeš musieť znova zaregistrovať.`;
+            
+            if (!confirm(confirmMsg)) {
+                return;
+            }
+            
+            try {
+                if (team.isStatic) {
+                    // Pre statické tímy - vrátiť do rezervovaných
+                    await updateDoc(doc(db, "teams", teamId), { 
+                        confirmed: false, 
+                        current: team.default 
+                    });
+                    alert(`✅ Účasť tímu "${teamId}" bola zrušená!\n\nTím je teraz medzi rezervovanými.`);
+                } else {
+                    // Pre nové tímy - úplné odstránenie
+                    await deleteDoc(doc(db, "teams", teamId));
+                    alert(`✅ Účasť tímu "${teamId}" bola zrušená!\n\nTím bol odstránený zo systému.`);
+                }
+                
+                // Resetuj formulár a skry cancel tlačidlo
+                document.getElementById('teamSelect').value = 'new';
+                document.getElementById('teamPin').value = "";
+                document.getElementById('customTeamName').value = "";
+                document.getElementById('cancelBtn').style.display = 'none';
+                window.handleTeamChange();
+                
+            } catch (err) {
+                console.error("Chyba pri zrušení účasti:", err);
+                alert("❌ Chyba pri zrušení účasti: " + err.message);
+            }
+        }
+        
+        // FUNKCIA NA NAPLNENIE SELECTU PRE ZRUŠENIE ÚČASTI - JUŽ NEPOTREBNÁ
+        window.populateCancelTeamSelect = function() {
+            // Táto funkcia sa už nepoužíva - zrušenie účasti je priamo v hlavnom formulári
         }
         window.saveAdminTeam = async function(id) {
             const cap = parseInt(document.getElementById(`cap_${id}`).value);
@@ -1121,7 +1415,12 @@
             if (!t.confirmed) updates.current = cap;
             await updateDoc(doc(db, "teams", id), updates); alert("Uložené");
         }
-        window.deleteTeam = async function(id) { if(confirm("Zmazať " + id + "?")) await deleteDoc(doc(db, "teams", id)); }
+        window.deleteTeam = async function(id) { 
+            if(confirm("Zmazať " + id + "?")) {
+                await deleteDoc(doc(db, "teams", id));
+                populateTeamSelect(); // Aktualizuj dropdown
+            }
+        }
         window.addNewTeam = async function() {
             const name = document.getElementById('addTeamName').value;
             const cap = parseInt(document.getElementById('addTeamCap').value);
