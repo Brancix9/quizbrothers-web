@@ -577,6 +577,7 @@
         window.promptPin = function(message) {
             return new Promise((resolve) => {
                 pinModalPromise = resolve;
+                document.body.style.overflow = 'hidden';
                 document.getElementById('pinModalOverlay').style.display = 'block';
                 document.getElementById('pinModal').style.display = 'block';
                 document.getElementById('pinModalInput').value = '';
@@ -593,6 +594,7 @@
 
         window.confirmPin = function() {
             const pin = document.getElementById('pinModalInput').value;
+            document.body.style.overflow = 'auto';
             document.getElementById('pinModalOverlay').style.display = 'none';
             document.getElementById('pinModal').style.display = 'none';
             if (pinModalPromise) {
@@ -602,6 +604,7 @@
         };
 
         window.cancelPin = function() {
+            document.body.style.overflow = 'auto';
             document.getElementById('pinModalOverlay').style.display = 'none';
             document.getElementById('pinModal').style.display = 'none';
             if (pinModalPromise) {
