@@ -3,7 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Aplikácia - QuizBrothers</title>
+    <meta property="og:type" content="website">
+    <meta property="og:title" content="O nás - QuizBrothers">
+    <meta property="og:description" content="Sme bratia Branči a Marcel. Kvízy sú našou srdcovkou od roku 2018. Pridaj sa k našej komunite!">
+    <meta property="og:image" content="https://www.quizbrothers.sk/logo.png">
+    <meta property="og:url" content="https://www.quizbrothers.sk/onas/">
+    <title>O nás - QuizBrothers</title>
     <link rel="stylesheet" href="../style.css">
     <link rel="icon" href="../favicon.webp" type="image/webp">
 </head>
@@ -20,75 +25,33 @@
                 <ul id="nav-list">
                     <li><a href="../">Domov</a></li>
                     <li><a href="../rezervacia/">Rezervácia stola</a></li>
-                    <li><a href="../aplikacia/" class="active">Aplikácia</a></li>
-                    <li><a href="../onas/">O nás</a></li>
+                    <li><a href="../aplikacia/">Aplikácia</a></li>
+                    <li><a href="../onas/" class="active">O nás</a></li>
                 </ul>
             </nav>
         </div>
     </header>
 
     <div class="container">
-        <h1 id="app_main_title" style="text-align: center; margin-bottom: 20px;">Naša aplikácia</h1>
+        <h1 id="about_who_title">Kto sme?</h1>
+        <p id="about_who_text">Sme bratia Branči a Marcel a kvízy sú našou srdcovkou už od roku 2018. To, čo začalo ako voľnočasový projekt v bare Fontána prerástlo do komunity, ktorá sa už roky pravidelne stretáva pri vedomostných súbojoch.</p>
         
-        <!-- Stiahnutie aplikácie -->
-        <div style="text-align: center; margin-bottom: 50px;">
-            <div style="display: flex; justify-content: center; align-items: center; gap: 40px; flex-wrap: wrap; margin-bottom: 30px;">
-                <div>
-                    <img src="../qr-code.png" alt="QR kód na stiahnutie aplikácie" style="max-width: 250px; width: 100%; border-radius: 10px; box-shadow: 0 4px 15px rgba(34,36,84,0.2);">
-                    <p id="app_qr_text" style="margin-top: 15px; color: #666; font-size: 0.9em;">Naskenujte QR kód</p>
-                </div>
-                <div style="text-align: left;">
-                    <h2 id="app_download_title" style="color: #222454; margin-bottom: 15px;">Stiahnuť aplikáciu</h2>
-                    <p id="app_download_description" style="margin-bottom: 20px; font-size: 1.1em;">Aplikácia je dostupná na Google Play</p>
-                    <a href="https://play.google.com/store/apps/details?id=sk.quizbrother.app" target="_blank" class="btn btn-primary" id="app_download_btn" style="display: inline-block;">
-                        📱 Stiahnuť z Google Play
-                    </a>
-                </div>
-            </div>
-        </div>
+        <h2 id="about_why_title">Prečo prísť na náš kvíz?</h2>
+        <h3 id="about_why_subtitle1">Zábava pri jednom stole</h3>
+        <p id="about_why_text1">Naše otázky sú všeobecné a férové. Nechceme, aby ste sypali z rukáva letopočty, ale aby ste sa v tíme poradili, zapojili logiku a spoločne prišli na odpoveď. Ten pocit, keď „niečo tušíte" a nakoniec je to správne, je na nezaplatenie.</p>
+        
+        <h3 id="about_why_subtitle2">Dobrá nálada aj súťaživosť</h3>
+        <p id="about_why_text2">V Lukia's Lounge & More to každé dva týždne žije. Je to priateľské, uvoľnené, ale keď ide do tuhého a na stole sú fľaše kvalitného alkoholu pre víťazov, atmosféra vie poriadne zhustnúť!</p>
+        
+        <h3 id="about_why_subtitle3">Ideme s dobou</h3>
+        <p id="about_why_text3">Nie sme len moderátori s papiermi. Sme technickí nadšenci a pre naše kvízy sme vyvinuli vlastnú aplikáciu (dostupnú na Google Play), ktorá posúva zážitok z hry na úplne inú úroveň.</p>
 
-        <!-- Prečo vlastná aplikácia -->
-        <div class="card" style="margin-bottom: 40px; text-align: left;">
-            <h2 id="app_why_title" style="color: #222454; margin-bottom: 20px;">Prečo vlastná aplikácia?</h2>
-            <p id="app_why_text" style="font-size: 1.1em; line-height: 1.8;">
-                Keďže žiadna z dostupných aplikácií na trhu nedokázala spraviť to, čo sme potrebovali, tak sme si spravili vlastnú. Kvízy teda fungujú úplne rovnako ako fungovali bez nej, avšak je to oveľa efektívnejšie. V aplikácii je zabudovaná aj detekcia podvádzania, takže to ani neskúšajte lebo prídete o body 😂. Cez aplikáciu vám tiež budeme posielať dôležité oznámenia ako napr. dátum ďalšieho kvízu.
-            </p>
-        </div>
-
-        <!-- Ako funguje -->
-        <div style="margin-bottom: 50px;">
-            <h2 id="app_how_title" style="text-align: center; color: #222454; margin-bottom: 30px;">Ako funguje aplikácia?</h2>
-            <div class="card-grid">
-                <div class="card">
-                    <h3 id="app_feature1_title">📲 Hlasovanie mobilom</h3>
-                    <p id="app_feature1_text">Žiadne papiere. Odpovede posielaš priamo cez appku.</p>
-                </div>
-                <div class="card">
-                    <h3 id="app_feature2_title">⚡ Okamžité vyhodnotenie</h3>
-                    <p id="app_feature2_text">Aplikácia dokáže zobraziť rôzne typy otázok a tvoju odpoveď náš systém vyhodnotí okamžite.</p>
-                </div>
-                <div class="card">
-                    <h3 id="app_feature3_title">🛡️ Ochrana proti podvádzaniu</h3>
-                    <p id="app_feature3_text">Zabudovaná detekcia podvádzania zabezpečuje férovú hru pre všetkých.</p>
-                </div>
-                <div class="card">
-                    <h3 id="app_feature4_title">🔔 Dôležité oznámenia</h3>
-                    <p id="app_feature4_text">Dostávajte upozornenia na dátum ďalšieho kvízu a ďalšie dôležité informácie.</p>
-                </div>
-            </div>
-        </div>
-
-        <!-- Postup -->
-        <div class="card" style="background: linear-gradient(135deg, rgba(34,36,84,0.05) 0%, rgba(39,174,96,0.05) 100%); border: 2px solid rgba(34,36,84,0.1);">
-            <h2 id="app_steps_title" style="color: #222454; margin-bottom: 30px; text-align: center;">Ako postupovať?</h2>
-            <ol id="app_steps_list" style="font-size: 1.1em; line-height: 2.2; padding-left: 20px; max-width: 800px; margin: 0 auto;">
-                <li id="app_step1" style="margin-bottom: 15px;"><strong>Stiahnite si aplikáciu</strong> - použite QR kód vyššie alebo odkaz na Google Play</li>
-                <li id="app_step2" style="margin-bottom: 15px;"><strong>Nainštalujte</strong> aplikáciu na svoj Android telefón</li>
-                <li id="app_step3" style="margin-bottom: 15px;"><strong>Vypnite dáta a pripojte sa v bare na našu lokálnu sieť QuizBrothers</strong></li>
-                <li id="app_step4" style="margin-bottom: 15px;"><strong>Zadajte názov svojho tímu alebo kliknite na tlačidlo "Vybrať tím"</strong> - nájdite svoj tím v zozname a pripojte sa</li>
-                <li id="app_step5" style="margin-bottom: 15px;"><strong>HOTOVO</strong> - môžete začať hrať! 🎉</li>
-            </ol>
-        </div>
+        <h2 id="about_journey_title">Naša cesta v skratke</h2>
+        <p id="about_journey_text1"><strong>2018 – 2020:</strong> Štartovacia čiara v bare Fontána.</p>
+        <p id="about_journey_text2"><strong>2020 – 2023:</strong> Presun do Šugáru.</p>
+        <p id="about_journey_text3"><strong>2024 – súčasnosť:</strong> Naša nová základňa v Lukia's Lounge & More.</p>
+        
+        <p id="about_final_text" style="margin-top: 30px; font-size: 1.1em; font-weight: bold; color: #222454;">Príďte si vyvetrať hlavu, niečo nové sa naučiť a ukázať, že váš tím na to má. Vidíme sa pri ďalšom kole!</p>
     </div>
 
     <footer>
@@ -114,32 +77,24 @@
         const db = getFirestore(app);
 
         function loadWebContent() {
-            const contentDoc = doc(db, "web_content", "app");
+            const contentDoc = doc(db, "web_content", "about");
             onSnapshot(contentDoc, (docSnap) => {
                 if (docSnap.exists()) {
                     const data = docSnap.data();
-                    if (data.app_main_title) document.getElementById('app_main_title').textContent = data.app_main_title;
-                    if (data.app_qr_text) document.getElementById('app_qr_text').textContent = data.app_qr_text;
-                    if (data.app_download_title) document.getElementById('app_download_title').textContent = data.app_download_title;
-                    if (data.app_download_description) document.getElementById('app_download_description').textContent = data.app_download_description;
-                    if (data.app_download_btn) document.getElementById('app_download_btn').textContent = data.app_download_btn;
-                    if (data.app_why_title) document.getElementById('app_why_title').textContent = data.app_why_title;
-                    if (data.app_why_text) document.getElementById('app_why_text').textContent = data.app_why_text;
-                    if (data.app_how_title) document.getElementById('app_how_title').textContent = data.app_how_title;
-                    if (data.app_feature1_title) document.getElementById('app_feature1_title').textContent = data.app_feature1_title;
-                    if (data.app_feature1_text) document.getElementById('app_feature1_text').textContent = data.app_feature1_text;
-                    if (data.app_feature2_title) document.getElementById('app_feature2_title').textContent = data.app_feature2_title;
-                    if (data.app_feature2_text) document.getElementById('app_feature2_text').textContent = data.app_feature2_text;
-                    if (data.app_feature3_title) document.getElementById('app_feature3_title').textContent = data.app_feature3_title;
-                    if (data.app_feature3_text) document.getElementById('app_feature3_text').textContent = data.app_feature3_text;
-                    if (data.app_feature4_title) document.getElementById('app_feature4_title').textContent = data.app_feature4_title;
-                    if (data.app_feature4_text) document.getElementById('app_feature4_text').textContent = data.app_feature4_text;
-                    if (data.app_steps_title) document.getElementById('app_steps_title').textContent = data.app_steps_title;
-                    if (data.app_step1) document.getElementById('app_step1').innerHTML = data.app_step1;
-                    if (data.app_step2) document.getElementById('app_step2').innerHTML = data.app_step2;
-                    if (data.app_step3) document.getElementById('app_step3').innerHTML = data.app_step3;
-                    if (data.app_step4) document.getElementById('app_step4').innerHTML = data.app_step4;
-                    if (data.app_step5) document.getElementById('app_step5').innerHTML = data.app_step5;
+                    if (data.about_who_title) document.getElementById('about_who_title').textContent = data.about_who_title;
+                    if (data.about_who_text) document.getElementById('about_who_text').textContent = data.about_who_text;
+                    if (data.about_why_title) document.getElementById('about_why_title').textContent = data.about_why_title;
+                    if (data.about_why_subtitle1) document.getElementById('about_why_subtitle1').textContent = data.about_why_subtitle1;
+                    if (data.about_why_text1) document.getElementById('about_why_text1').textContent = data.about_why_text1;
+                    if (data.about_why_subtitle2) document.getElementById('about_why_subtitle2').textContent = data.about_why_subtitle2;
+                    if (data.about_why_text2) document.getElementById('about_why_text2').textContent = data.about_why_text2;
+                    if (data.about_why_subtitle3) document.getElementById('about_why_subtitle3').textContent = data.about_why_subtitle3;
+                    if (data.about_why_text3) document.getElementById('about_why_text3').textContent = data.about_why_text3;
+                    if (data.about_journey_title) document.getElementById('about_journey_title').textContent = data.about_journey_title;
+                    if (data.about_journey_text1) document.getElementById('about_journey_text1').innerHTML = data.about_journey_text1;
+                    if (data.about_journey_text2) document.getElementById('about_journey_text2').innerHTML = data.about_journey_text2;
+                    if (data.about_journey_text3) document.getElementById('about_journey_text3').innerHTML = data.about_journey_text3;
+                    if (data.about_final_text) document.getElementById('about_final_text').textContent = data.about_final_text;
                 }
             });
         }
