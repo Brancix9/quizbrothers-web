@@ -269,13 +269,13 @@
 
     <!-- Custom PIN Modal Dialog -->
     <div id="pinModalOverlay" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.7); z-index:9998; pointer-events:auto;"></div>
-    <div id="pinModal" style="display:none; position:fixed; top:50%; left:50%; transform:translate(-50%,-50%); background:white; padding:40px; border-radius:15px; z-index:9999; box-shadow:0 0 50px rgba(0,0,0,0.5); min-width:350px; pointer-events:auto;">
-        <h3 style="margin-top:0; margin-bottom:20px; color:#222454; font-size:20px;">🔒 Zadaj PIN kód</h3>
-        <p style="color:#555; margin-bottom:25px; font-size:14px;">Pre potvrdenie tejto akcie zadaj svoj PIN.</p>
-        <input type="text" id="pinModalInput" inputmode="numeric" pattern="[0-9]*" placeholder="Napr. 1234" style="width:100%; padding:12px; border:2px solid #222454; border-radius:8px; font-size:18px; box-sizing:border-box; margin-bottom:25px; text-align:center; letter-spacing:4px;">
+    <div id="pinModal" style="display:none; position:fixed; top:50%; left:50%; transform:translate(-50%,-50%); background:white; padding:30px; border-radius:15px; z-index:9999; box-shadow:0 0 50px rgba(0,0,0,0.5); width:90%; max-width:320px; pointer-events:auto; contain:layout style paint;">
+        <h3 style="margin-top:0; margin-bottom:15px; color:#222454; font-size:18px;">🔒 Zadaj PIN kód</h3>
+        <p style="color:#555; margin:0 0 20px 0; font-size:13px;">Pre potvrdenie zadaj PIN.</p>
+        <input type="text" id="pinModalInput" inputmode="numeric" pattern="[0-9]*" placeholder="Napr. 1234" style="width:100%; padding:10px; border:2px solid #222454; border-radius:8px; font-size:16px; box-sizing:border-box; margin-bottom:20px; text-align:center; letter-spacing:2px;">
         <div style="display:flex; gap:10px;">
-            <button onclick="window.confirmPin()" style="flex:1; background:#222454; color:white; border:none; padding:12px; border-radius:8px; font-weight:bold; cursor:pointer; font-size:16px;">✓ OK</button>
-            <button onclick="window.cancelPin()" style="flex:1; background:#ccc; color:#333; border:none; padding:12px; border-radius:8px; font-weight:bold; cursor:pointer; font-size:16px;">✗ Zrušiť</button>
+            <button onclick="window.confirmPin()" style="flex:1; background:#222454; color:white; border:none; padding:10px; border-radius:8px; font-weight:bold; cursor:pointer; font-size:14px;">✓ OK</button>
+            <button onclick="window.cancelPin()" style="flex:1; background:#ccc; color:#333; border:none; padding:10px; border-radius:8px; font-weight:bold; cursor:pointer; font-size:14px;">✗ Zrušiť</button>
         </div>
     </div>
 
