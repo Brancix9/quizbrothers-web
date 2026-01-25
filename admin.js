@@ -313,10 +313,12 @@
     // Získanie názvu stránky
     function getPageName() {
         const path = window.location.pathname;
-        let page = path.split('/').pop() || 'index.html';
-        // Normalizácia názvu súboru (rezervácia.html -> rezervacia.html pre localStorage)
-        if (page === 'rezervácia.html') page = 'rezervacia.html';
-        return page;
+        // Rozpoznanie podpriečinkov
+        if (path.includes('/onas')) return 'onas';
+        if (path.includes('/aplikacia')) return 'aplikacia';
+        if (path.includes('/rezervacia')) return 'rezervacia';
+        // Fallback na index
+        return 'index';
     }
     
     // Aktivácia admin módu
@@ -376,8 +378,9 @@
         console.time('⏱️ Text IDs Init');
         
         // WHITELIST prvkov ktoré SMÚ byť editovateľné - NO COMPLEX SELECTORS!
-        const editableSelectors = ['H1', 'H2', 'H3'];
+        const editableSelectors = ['H1', 'H2', 'H3', 'LI'];
         const pElements = document.querySelectorAll('p');
+        const liElements = document.querySelectorAll('li[id]');
         const editableElements = [];
         
         // Zbieraj len prvky bez zbytočných closest() volaní
@@ -400,6 +403,14 @@
         pElements.forEach(el => {
             if (!elementsToIgnore[el.id] && !el.closest('header') && !el.closest('footer') && 
                 !el.closest('#adminSection') && !el.closest('form')) {
+                editableElements.push(el);
+            }
+        });
+        
+        // Zbieraj LI s ID (pre zoznamy ako "Ako postupovať?")
+        liElements.forEach(el => {
+            if (!elementsToIgnore[el.id] && !el.closest('header') && !el.closest('footer') && 
+                !el.closest('#adminSection') && !el.closest('form') && !el.closest('nav')) {
                 editableElements.push(el);
             }
         });
@@ -435,8 +446,8 @@
             initializeTextIds();
         }
         
-        // WHITELIST prvkov ktoré SMÚ byť editovateľné
-        const editableSelectors = 'h1, h2, h3, p:not(#formMessage):not(#adminLoginPrompt p):not(#pinHelp):not(#teamReservedInfo)';
+        // WHITELIST prvkov ktoré SMÚ byť editovateľné (pridané li pre zoznamy)
+        const editableSelectors = 'h1, h2, h3, p:not(#formMessage):not(#adminLoginPrompt p):not(#pinHelp):not(#teamReservedInfo), li[id]';
         const editableElements = document.querySelectorAll(editableSelectors);
         const elementsToIgnore = [
             'displayCapacity', 'listReserved', 'listConfirmed', 'teamReservedInfo',
@@ -456,10 +467,8 @@
                 return;
             }
             
-            // Vylúč prvky ktoré sú spravované cez Firebase (majú ID-čka s prefixom home_, about_, app_)
-            if (el.id && (el.id.startsWith('home_') || el.id.startsWith('about_') || el.id.startsWith('app_'))) {
-                return;
-            }
+            // POZNÁMKA: Prvky s home_, about_, app_ prefixmi SÚ teraz editovateľné
+            // a ukladajú sa priamo do web_content kolekcie (viď saveTextToFirebase)
             
             // Vylúč prvky v headeri, footeri, admin paneli
             if (el.closest('header') || el.closest('footer') || el.closest('#admin-edit-panel') || el.closest('#admin-login-modal')) {
@@ -471,13 +480,12 @@
                 return;
             }
             
-            // Použij existujúci data-text-id alebo ho vytvor
-            let textId = el.getAttribute('data-text-id');
+            // Použij element ID ak existuje (pre home_, about_, app_ elementy), inak data-text-id alebo vygeneruj nové
+            let textId = el.id || el.getAttribute('data-text-id');
             if (!textId) {
-                // Toto by sa nemalo stať, ale pre istotu
                 textId = `text-${getPageName()}-${Math.random().toString(36).substr(2, 9)}`;
-                el.setAttribute('data-text-id', textId);
             }
+            el.setAttribute('data-text-id', textId);
             
             // Ak element ešte nie je editovateľný, nastav ho
             if (!el.classList.contains('editable-text')) {
@@ -522,7 +530,8 @@
                         if (!savedTexts[pName]) savedTexts[pName] = {};
                         if (currentText !== savedTexts[pName][tId]) {
                             savedTexts[pName][tId] = currentText;
-                            await saveToStorage();
+                            // Použiť novú funkciu ktorá ukladá do správnej kolekcie
+                            await saveTextToFirebase(tId, currentText);
                         }
                     });
                     
@@ -532,7 +541,57 @@
         });
     }
     
-    // Uloženie do Firebase alebo localStorage
+    // Uloženie textu do správnej Firebase kolekcie podľa prefixu ID
+    async function saveTextToFirebase(textId, text) {
+        await initFirebase();
+        
+        if (!db) {
+            // Fallback na localStorage
+            const pageName = getPageName();
+            if (!savedTexts[pageName]) savedTexts[pageName] = {};
+            savedTexts[pageName][textId] = text;
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(savedTexts));
+            return false;
+        }
+        
+        try {
+            const { doc, setDoc } = await import("https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js");
+            
+            // Určenie kolekcie podľa prefixu ID
+            if (textId.startsWith('home_')) {
+                const docRef = doc(db, 'web_content', 'home');
+                await setDoc(docRef, { [textId]: text }, { merge: true });
+                console.log(`✅ Uložené do web_content/home: ${textId}`);
+            } else if (textId.startsWith('about_')) {
+                const docRef = doc(db, 'web_content', 'about');
+                await setDoc(docRef, { [textId]: text }, { merge: true });
+                console.log(`✅ Uložené do web_content/about: ${textId}`);
+            } else if (textId.startsWith('app_')) {
+                const docRef = doc(db, 'web_content', 'app');
+                await setDoc(docRef, { [textId]: text }, { merge: true });
+                console.log(`✅ Uložené do web_content/app: ${textId}`);
+            } else {
+                // Ostatné texty do config/pageTexts
+                const pageName = getPageName();
+                const docRef = doc(db, 'config', 'pageTexts');
+                await setDoc(docRef, { [pageName]: { [textId]: text } }, { merge: true });
+                console.log(`✅ Uložené do config/pageTexts/${pageName}: ${textId}`);
+            }
+            
+            // Tiež ulož do localStorage ako backup
+            const pageName = getPageName();
+            if (!savedTexts[pageName]) savedTexts[pageName] = {};
+            savedTexts[pageName][textId] = text;
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(savedTexts));
+            
+            return true;
+        } catch (error) {
+            console.error("Chyba pri ukladaní do Firebase:", error);
+            return false;
+        }
+    }
+    
+    // Uloženie do Firebase alebo localStorage (zachované pre kompatibilitu)
     async function saveToStorage() {
         await initFirebase();
         
@@ -558,17 +617,23 @@
     async function saveAll() {
         const pageName = getPageName();
         const editableElements = document.querySelectorAll('[data-text-id]');
+        let savedCount = 0;
         
-        editableElements.forEach(el => {
+        for (const el of editableElements) {
             const textId = el.getAttribute('data-text-id');
             if (textId) {
+                const currentText = el.textContent.trim();
                 if (!savedTexts[pageName]) savedTexts[pageName] = {};
-                savedTexts[pageName][textId] = el.textContent.trim();
+                // Uložiť len ak sa text zmenil
+                if (savedTexts[pageName][textId] !== currentText) {
+                    savedTexts[pageName][textId] = currentText;
+                    await saveTextToFirebase(textId, currentText);
+                    savedCount++;
+                }
             }
-        });
+        }
         
-        await saveToStorage();
-        alert('✅ Všetky zmeny boli uložené!');
+        alert(`✅ Uložené! (${savedCount} zmien)`);
     }
     
     // Reset stránky
