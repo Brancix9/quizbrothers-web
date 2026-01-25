@@ -562,11 +562,9 @@
         window.auth = authInstance;
 
         let teamsData = []; 
-        let globalSettings = { quizDate: null, masterPin: "9999", maxCapacity: 83 };
+        let globalSettings = { quizDate: null, masterPin: "9999", maxCapacity: 83, deadlineHour: 16, deadlineMinute: 30 };
         let MAX_CAPACITY = 83;
         let autoCleanupTimeout = null; // Timeout pre automatické čistenie o polnoci
-        const DEADLINE_HOUR = 16;
-        const DEADLINE_MINUTE = 30;
 
         // ZOZNAM PRE PRVÉ NAHRATIE (SEED)
         const defaultTeamsList = [
@@ -988,7 +986,9 @@
             const btn = document.getElementById('submitBtn');
             if (!globalSettings.quizDate) { if(btn) { btn.disabled = true; btn.innerText = "Čaká sa na spustenie"; } return false; }
             const now = new Date();
-            const deadline = new Date(`${globalSettings.quizDate}T${DEADLINE_HOUR}:${DEADLINE_MINUTE}:00`);
+            const deadlineHour = globalSettings.deadlineHour || 16;
+            const deadlineMinute = globalSettings.deadlineMinute || 30;
+            const deadline = new Date(`${globalSettings.quizDate}T${String(deadlineHour).padStart(2, '0')}:${String(deadlineMinute).padStart(2, '0')}:00`);
             if (now > deadline) { if(btn) { btn.disabled = true; btn.innerText = "Registrácia ukončená"; } return false; }
             
             const remaining = MAX_CAPACITY - calculateOccupied();
