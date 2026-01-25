@@ -1075,9 +1075,9 @@
         function calculateOccupied() { 
             const releaseInFuture = isReleaseTimeInFuture();
             return teamsData.reduce((sum, t) => {
-                // Ak je čas uvoľnenia v budúcnosti, statické tímy majú Reserved miesto (default hodnota)
+                // Ak je čas uvoľnenia v budúcnosti, statické tímy majú Reserved miesto (current hodnota - ak je 0, tak neuberajú miesto!)
                 if (releaseInFuture && t.isStatic && !t.confirmed) {
-                    return sum + (t.default || 0);
+                    return sum + (t.current || 0);
                 }
                 // Ak je čas uvoľnenia v minulosti a tím je statický a nepotvrdený, nepočítaj ho
                 if (!releaseInFuture && t.isStatic && !t.confirmed) {
@@ -1723,7 +1723,7 @@
                 document.getElementById('teamPin').value = "";
                 document.getElementById('customTeamName').value = "";
                 document.getElementById('declineBtn').style.display = 'none';
-                window.handleTeamChange();
+                setTimeout(() => { updateDashboard(); populateTeamSelect(); handleTeamChange(); }, 100);
                 
             } catch (err) {
                 console.error("Chyba pri odvolaní účasti:", err);
