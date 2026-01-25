@@ -3,14 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta property="og:type" content="website">
-    <meta property="og:title" content="Registrácia - QuizBrothers">
-    <meta property="og:description" content="Rezervuj si miesto na ďalší kvíz! Vyber si svoj tím a priprav sa na kvízvanie.">
-    <meta property="og:image" content="https://www.quizbrothers.sk/logo.png">
-    <meta property="og:url" content="https://www.quizbrothers.sk/rezervacia/">
     <title>Registrácia QuizBrothers</title>
     <link rel="stylesheet" href="../style.css">
-    <link rel="icon" href="../favicon.webp" type="image/webp">
+    <link rel="icon" href="../logo.png" type="image/png">
     <style>
         /* Špecifické štýly pre rezerváciu */
         body { margin: 0; padding: 0; }
@@ -44,6 +39,8 @@
         
         button.btn-submit { width: 100%; background: #222454; color: white; border: none; padding: 15px; font-size: 18px; font-weight: bold; border-radius: 8px; margin-top: 25px; cursor: pointer; transition: 0.2s; }
         button.btn-submit:hover { background: #2d2f6a; }
+        button.btn-decline { width: 100%; background: #e67e22; color: white; border: none; padding: 12px; font-size: 14px; font-weight: bold; border-radius: 8px; margin-top: 10px; cursor: pointer; transition: 0.2s; }
+        button.btn-decline:hover { background: #d35400; }
         button:disabled { background: #ccc; cursor: not-allowed; }
 
         /* ADMIN SEKCIA */
@@ -315,6 +312,7 @@
                 </div>
                 
                 <button type="submit" id="submitBtn" class="btn-submit">Potvrdiť účasť</button>
+                <button type="button" id="declineBtn" class="btn-decline" style="display: none;" onclick="window.declineTeamParticipation()">Neprídeme</button>
                 <button type="button" id="cancelBtn" class="btn-submit" style="background: #c0392b; display: none; margin-top: 10px;" onclick="window.cancelTeamParticipation()">🚫 Zrušiť účasť</button>
             </form>
             <p id="formMessage" style="color: green; font-weight: bold; margin-top: 15px;"></p>
@@ -860,6 +858,7 @@
             const teamPinInput = document.getElementById('teamPin');
             const teamReservedInfo = document.getElementById('teamReservedInfo');
             const cancelBtn = document.getElementById('cancelBtn');
+            const declineBtn = document.getElementById('declineBtn');
             const customTeamInput = document.getElementById('customTeamName');
             const releaseInFuture = isReleaseTimeInFuture();
             teamPinInput.value = "";
@@ -869,6 +868,7 @@
                 countInput.value = 4;
                 pinLabel.style.color = "#27ae60";
                 teamReservedInfo.style.display = 'none';
+                declineBtn.style.display = 'none';
                 
                 const customName = customTeamInput.value.trim();
                 if (customName) {
@@ -901,19 +901,23 @@
                         teamReservedInfo.innerText = `⏳ Rezervovaný počet: ${team.default} os.`;
                         teamReservedInfo.style.color = '#222454';
                         cancelBtn.style.display = 'none';
+                        declineBtn.style.display = 'block';
                     } else if (team.confirmed) {
                         teamReservedInfo.style.display = 'block';
                         teamReservedInfo.innerText = `✅ Potvrdený počet: ${team.current} os.`;
                         teamReservedInfo.style.color = '#27ae60';
                         cancelBtn.style.display = 'block';
+                        declineBtn.style.display = 'none';
                     } else {
                         teamReservedInfo.style.display = 'none';
                         cancelBtn.style.display = 'none';
+                        declineBtn.style.display = 'none';
                     }
                     countInput.value = team.current || team.default || 4;
                 } else {
                     teamReservedInfo.style.display = 'none';
                     cancelBtn.style.display = 'none';
+                    declineBtn.style.display = 'none';
                 }
                 pinLabel.innerText = `Zadaj PIN pre tím ${select.value}:`; 
                 pinLabel.style.color = "#27ae60";
@@ -1175,17 +1179,6 @@
             const playerCountInput = document.getElementById('playerCount');
             const isFull = remaining <= 0;
             
-            // Zistí či je vybraný tím potvrdený
-            let isTeamConfirmed = false;
-            if (teamSelect && teamSelect.value !== 'new') {
-                const existing = teamsData.find(t => t.id === teamSelect.value);
-                if(existing && existing.confirmed) isTeamConfirmed = true;
-            } else if (document.getElementById('customTeamName')) {
-                const newName = document.getElementById('customTeamName').value;
-                const existing = teamsData.find(t => t.id === newName);
-                if(existing && existing.confirmed) isTeamConfirmed = true;
-            }
-            
             if (isFull && btn) {
                 let currentTeamCount = 0;
                 if (teamSelect && teamSelect.value !== 'new') {
@@ -1208,9 +1201,8 @@
                     btn.innerText = "PLNO - zmeniť iba na menší počet";
                 }
             } else if (btn && remaining > 0) { 
-                btn.disabled = false;
-                // Ak je tím potvrdený, zobraz "Upraviť počet"
-                btn.innerText = isTeamConfirmed ? "Upraviť počet" : "Potvrdiť účasť"; 
+                btn.disabled = false; 
+                btn.innerText = "Potvrdiť účasť"; 
             }
             return true;
         }
@@ -1664,6 +1656,50 @@
             } catch (err) {
                 console.error("Chyba pri zrušení účasti:", err);
                 alert("❌ Chyba pri zrušení účasti: " + err.message);
+            }
+        }
+        
+        window.declineTeamParticipation = async function() {
+            const teamSelect = document.getElementById('teamSelect');
+            let teamId = teamSelect.value;
+            
+            if (teamId === 'new') {
+                alert("❌ Vyber si svoj tím!");
+                return;
+            }
+            
+            const team = teamsData.find(t => t.id === teamId);
+            if (!team) {
+                alert("❌ Tím nebol nájdený!");
+                return;
+            }
+            
+            if (!team.isStatic || team.confirmed) {
+                alert("❌ Toto tlačidlo je iba pre rezervované tímy!");
+                return;
+            }
+            
+            const confirmMsg = `⚠️ Chceš odvolať účasť tímu "${teamId}"?\n\nTým sa uvoľní ${team.default} miest pre iné tímy.\n\nPôvodný počet miest ostane zachovaný - môžeš sa kedykoľvek zaregistrovať späť.`;
+            
+            if (!confirm(confirmMsg)) {
+                return;
+            }
+            
+            try {
+                await updateDoc(doc(db, "teams", teamId), { 
+                    current: 0
+                });
+                alert(`✅ Miesta tímu "${teamId}" bola úspešne uvoľnená!\n\n${team.default} miest je teraz dostupných pre iné tímy.`);
+                
+                document.getElementById('teamSelect').value = 'new';
+                document.getElementById('teamPin').value = "";
+                document.getElementById('customTeamName').value = "";
+                document.getElementById('declineBtn').style.display = 'none';
+                window.handleTeamChange();
+                
+            } catch (err) {
+                console.error("Chyba pri odvolaní účasti:", err);
+                alert("❌ Chyba pri odvolaní účasti: " + err.message);
             }
         }
         
