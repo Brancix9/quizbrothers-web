@@ -576,6 +576,14 @@
         
         teamsData = JSON.parse(JSON.stringify(defaultTeamsList));
 
+        // Skry loading overlay hneď na začiatku
+        setTimeout(() => {
+            const overlay = document.getElementById('loadingOverlay');
+            if (overlay) {
+                overlay.style.display = 'none';
+            }
+        }, 100);
+
         function hideLoadingOverlay() {
             const overlay = document.getElementById('loadingOverlay');
             if (overlay) {
@@ -661,7 +669,7 @@
                     checkDeadline();
                 });
             }
-        }, 5000);
+        }, 1000);
 
         window.handleTeamChange = function() {
             const select = document.getElementById('teamSelect');
