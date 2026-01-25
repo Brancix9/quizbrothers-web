@@ -539,10 +539,33 @@
     </div>
 
     <script type="module">
+        // 📊 LOGGING: Performance tracking
+        const perf = {
+            markers: {},
+            mark: (name) => {
+                perf.markers[name] = performance.now();
+                console.log(`⏱️ [${name}] ${perf.markers[name].toFixed(0)}ms`);
+            },
+            measure: (name, start, end) => {
+                const duration = perf.markers[end] - perf.markers[start];
+                console.log(`📊 [${name}] ${duration.toFixed(0)}ms`);
+            }
+        };
+        
+        console.log("🚀 === FIREBASE LOADING ANALYSIS START ===");
+        perf.mark('script-start');
+
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        console.log("✅ Firebase App module imported");
+        
+        perf.mark('firestore-import-start');
         import { getFirestore, collection, doc, setDoc, getDoc, updateDoc, onSnapshot, deleteDoc, writeBatch } 
         from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+        perf.mark('firestore-import-end');
+        
+        perf.mark('auth-import-start');
         import { getAuth } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+        perf.mark('auth-import-end');
 
         const firebaseConfig = {
             apiKey: "AIzaSyCgKeENYtYJWf2_DZOw4irg6GPLq3XKhEc",
@@ -554,13 +577,24 @@
             measurementId: "G-0LKTHWLKH5"
         };
 
+        perf.mark('init-app-start');
         window.app = initializeApp(firebaseConfig);
+        perf.mark('init-app-end');
+        
+        perf.mark('get-firestore-start');
         window.db = getFirestore(window.app);
+        perf.mark('get-firestore-end');
+        
         const app = window.app;
         const db = window.db;
 
         let authInstance = window.auth || getAuth(window.app);
         window.auth = authInstance;
+
+        perf.measure('Firestore Import', 'firestore-import-start', 'firestore-import-end');
+        perf.measure('Auth Import', 'auth-import-start', 'auth-import-end');
+        perf.measure('InitializeApp', 'init-app-start', 'init-app-end');
+        perf.measure('GetFirestore', 'get-firestore-start', 'get-firestore-end');
 
         let teamsData = []; 
         let globalSettings = { quizDate: null, masterPin: "9999", maxCapacity: 83, deadlineHour: 16, deadlineMinute: 30, releaseHour: 15, releaseMinute: 0 };
@@ -568,18 +602,22 @@
         let autoCleanupTimeout = null;
         let pinModalPromise = null;
 
-        // 🚀 OPTIMIZÁCIA: Sledovanie stavu načítavania Firebase
+        // 🚀 OPTIMIZÁCIA: IHNEĎ skry loading keď máme DEFAULT dáta
+        console.time('⏱️ Page Load Time');
         let firebaseTeamsLoaded = false;
         let firebaseSettingsLoaded = false;
+        let overlayHidden = false;
         
         function tryHideLoadingOverlay() {
-            // Skry loading len keď sú obe Firebase dáta načítané
-            if (firebaseTeamsLoaded && firebaseSettingsLoaded) {
-                const overlay = document.getElementById('loadingOverlay');
-                if (overlay) {
-                    console.log("✅ Firebase dáta sú hotové - skrývam loading");
-                    overlay.style.display = 'none';
-                }
+            if (overlayHidden) return;
+            
+            const overlay = document.getElementById('loadingOverlay');
+
+            if (overlay) {
+                console.log("✅ Dáta dostupné - skrývam loading");
+                console.timeEnd('⏱️ Page Load Time');
+                overlay.style.display = 'none';
+                overlayHidden = true;
             }
         }
 
@@ -660,14 +698,14 @@
         
         teamsData = JSON.parse(JSON.stringify(defaultTeamsList));
 
-        // 🚀 OPTIMIZÁCIA: Okamžité zobrazenie cache bez akýchkoľvek delays
+        // 🚀 OPTIMIZÁCIA: Načítaj cache IHNEĎ PRED Firebase listenermi
         const cachedTeams = localStorage.getItem('teams_cache');
         if (cachedTeams) {
             try {
                 teamsData = JSON.parse(cachedTeams);
-                console.log("⚡ Teams načítané z cache - IHNEĎ k dispozícii");
+                console.log("⚡ Teams z cache");
             } catch(e) {
-                console.error("Chyba pri načítaní cache tímov");
+                console.log("Cache teams invalid - používam DEFAULT");
             }
         }
 
@@ -675,26 +713,31 @@
         if (cachedSettings) {
             try {
                 globalSettings = JSON.parse(cachedSettings);
-                console.log("⚡ Settings načítané z cache - IHNEĎ k dispozícii");
+                console.log("⚡ Settings z cache");
             } catch(e) {
-                console.error("Chyba pri načítaní cache nastavení");
+                console.log("Cache settings invalid - používam DEFAULT");
             }
         }
+        
+        // 🚀 OPTIMIZÁCIA: IHNEĎ zobraz DEFAULT dáta - SKRY LOADING!
+        updateDashboard();
+        populateTeamSelect();
+        updateHeaderDate();
+        checkDeadline();
+        tryHideLoadingOverlay(); // SKRY loading teraz - máme DEFAULT dáta!
 
-        // 🚀 OPTIMIZÁCIA: Prápravy na skrytie loading - cache je dostupná
-        let cacheReady = !!(cachedTeams && cachedSettings);
-        if (cacheReady) {
-            firebaseTeamsLoaded = true;
-            firebaseSettingsLoaded = true;
-            tryHideLoadingOverlay();
-        }
-
+        // 📊 FIREBASE LISTENERS START
+        perf.mark('snapshot-teams-start');
         onSnapshot(collection(db, "teams"), (snapshot) => {
+            perf.mark('snapshot-teams-received');
+            console.log(`📦 Teams snapshot prijatý - ${perf.markers['snapshot-teams-received'] - perf.markers['snapshot-teams-start']}ms od otvorenia listenera`);
+            console.log(`📦 Počet dokumentov: ${snapshot.size}`);
+            console.log(`📦 Čas od štartu stránky: ${(perf.markers['snapshot-teams-received'] - perf.markers['script-start']).toFixed(0)}ms`);
             teamsData = [];
             snapshot.forEach(doc => { teamsData.push({ id: doc.id, ...doc.data() }); });
             
             localStorage.setItem('teams_cache', JSON.stringify(teamsData));
-            console.log("✅ Teams z Firebase sú hotové a cachované");
+            console.log("✅ Teams z Firebase sú hotové");
             
             updateDashboard(); 
             populateTeamSelect(); 
@@ -708,17 +751,19 @@
                 updateMapVisuals();
             }
             
-            // 🚀 OPTIMIZÁCIA: Oznám že teams sú hotové
             firebaseTeamsLoaded = true;
             tryHideLoadingOverlay();
         }, (error) => {
-            console.error("Chyba pri načítaní tímov:", error);
-            // 🚀 OPTIMIZÁCIA: Aj pri chybe označíme ako hotovo (máme cache)
+            console.error("❌ Chyba pri načítaní tímov:", error);
             firebaseTeamsLoaded = true;
             tryHideLoadingOverlay();
         });
 
+        perf.mark('snapshot-settings-start');
         onSnapshot(doc(db, "config", "settings"), (docSnap) => {
+            perf.mark('snapshot-settings-received');
+            console.log(`⚙️ Settings snapshot prijatý - ${perf.markers['snapshot-settings-received'] - perf.markers['snapshot-settings-start']}ms od otvorenia listenera`);
+            console.log(`⚙️ Čas od štartu stránky: ${(perf.markers['snapshot-settings-received'] - perf.markers['script-start']).toFixed(0)}ms`);
             if (docSnap.exists()) {
                 const data = docSnap.data();
                 globalSettings = {
@@ -732,7 +777,7 @@
                 };
                 MAX_CAPACITY = globalSettings.maxCapacity;
                 localStorage.setItem('settings_cache', JSON.stringify(globalSettings));
-                console.log("✅ Settings z Firebase sú hotové a cachované");
+                console.log("✅ Settings z Firebase sú hotové");
             } else {
                 setDoc(doc(db, "config", "settings"), { quizDate: null, masterPin: "9999", deadlineHour: 16, deadlineMinute: 30, maxCapacity: 83, releaseHour: 15, releaseMinute: 0 });
             }
@@ -765,32 +810,23 @@
             }
             updateDashboard();
             
-            // 🚀 OPTIMIZÁCIA: Oznám že settings sú hotové
             firebaseSettingsLoaded = true;
             tryHideLoadingOverlay();
         }, (error) => {
-            console.error("Chyba pri načítaní nastavení:", error);
+            console.error("❌ Chyba pri načítaní nastavení:", error);
+            console.log("Settings error type:", error.code);
             const cached = localStorage.getItem('settings_cache');
             if (cached) {
                 try {
                     globalSettings = JSON.parse(cached);
-                    console.log("✅ Settings načítané z cache (fallback po chybe)");
+                    console.log("✅ Settings načítané z cache (fallback)");
                 } catch(e) {
                     console.error("Chyba pri načítaní cache nastavení");
                 }
             }
-            // 🚀 OPTIMIZÁCIA: Aj pri chybe označíme ako hotovo (máme cache)
             firebaseSettingsLoaded = true;
             tryHideLoadingOverlay();
         });
-
-        // 🚀 OPTIMIZÁCIA: Ak je cache hotová, hneď aplikuj - funkcié sú už dostupné
-        if (cacheReady) {
-            updateDashboard();
-            populateTeamSelect();
-            updateHeaderDate();
-            checkDeadline();
-        }
 
         // 🚀 OPTIMIZÁCIA: Inicializácia event listenerov bez zbytočného delay
         const playerCountInput = document.getElementById('playerCount');
