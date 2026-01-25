@@ -34,6 +34,7 @@
         .cap-safe { color: #27ae60; } .cap-warn { color: #e67e22; } .cap-crit { color: #c0392b; }
         
         label { display: block; text-align: left; margin: 15px 0 5px; font-weight: bold; color: #222454; }
+        #pinSection { display: block !important; margin-top: 15px; padding: 15px; background: #f9f9f9; border-radius: 8px; border-left: 4px solid #27ae60; }
         select, input { width: 100%; padding: 12px; border: 2px solid rgba(34,36,84,0.3); border-radius: 8px; font-size: 16px; box-sizing: border-box; }
         select:focus, input:focus { outline: none; border-color: #222454; }
         
@@ -856,22 +857,23 @@
             const countInput = document.getElementById('playerCount');
             const pinLabel = document.getElementById('pinLabel');
             const pinHelp = document.getElementById('pinHelp');
-            const pinSection = document.getElementById('pinSection');
-            const teamPinInput = document.getElementById('teamPin');
             const teamReservedInfo = document.getElementById('teamReservedInfo');
             const cancelBtn = document.getElementById('cancelBtn');
             const declineBtn = document.getElementById('declineBtn');
             const customTeamInput = document.getElementById('customTeamName');
             const releaseInFuture = isReleaseTimeInFuture();
-            teamPinInput.value = "";
+            
+            // ✅ PIN SEKCIA JE VŽDY VIDITEĽNÁ - neskrývame ju!
             
             if (select.value === 'new') {
                 customInputDiv.style.display = 'block';
-                pinSection.style.display = 'block';
                 countInput.value = 4;
-                pinLabel.style.color = "#27ae60";
                 teamReservedInfo.style.display = 'none';
                 declineBtn.style.display = 'none';
+                
+                // Nadpisy PIN sekcie pre nový tím
+                pinLabel.innerText = "Vytvor si PIN kód:";
+                pinHelp.innerText = "Zapamätaj si ho pre budúce zmeny a zmenu účasti.";
                 
                 const customName = customTeamInput.value.trim();
                 if (customName) {
@@ -885,54 +887,43 @@
                         cancelBtn.style.display = 'block';
                         countInput.value = existingTeam.current;
                     } else {
-                        pinLabel.innerText = "Vytvor si PIN kód:";
-                        pinHelp.innerText = "Zapamätaj si ho pre budúce zmeny.";
                         cancelBtn.style.display = 'none';
                     }
                 } else {
-                    pinLabel.innerText = "Vytvor si PIN kód:";
-                    pinHelp.innerText = "Zapamätaj si ho pre budúce zmeny.";
                     cancelBtn.style.display = 'none';
                 }
             } else {
                 customInputDiv.style.display = 'none';
-                pinSection.style.display = 'block';
                 const team = teamsData.find(t => t.id === select.value);
                 if (team) {
-                    // ✅ ZMENA: Zobraz informácie na základe času uvoľnenia
+                    // Nastav PIN label podľa typu tímu
+                    pinLabel.innerText = `Zadaj PIN pre tím ${select.value}:`;
+                    pinHelp.innerText = "Potrebný pre zmenu alebo zrušenie účasti.";
+                    
+                    // Zobraz informácie na základe času uvoľnenia
                     if (team.isStatic && !team.confirmed && releaseInFuture) {
                         teamReservedInfo.style.display = 'block';
                         teamReservedInfo.innerText = `⏳ Rezervovaný počet: ${team.default} os.`;
                         teamReservedInfo.style.color = '#222454';
                         cancelBtn.style.display = 'none';
                         declineBtn.style.display = 'block';
-                        pinLabel.innerText = `Zadaj PIN pre tím ${select.value}:`; 
-                        pinLabel.style.color = "#27ae60";
-                        pinHelp.innerText = "PIN nie je potrebný - len pre budúce zmeny.";
                     } else if (team.confirmed) {
                         teamReservedInfo.style.display = 'block';
                         teamReservedInfo.innerText = `✅ Potvrdený počet: ${team.current} os.`;
                         teamReservedInfo.style.color = '#27ae60';
                         cancelBtn.style.display = 'block';
                         declineBtn.style.display = 'none';
-                        pinLabel.innerText = `Zadaj PIN pre tím ${select.value}:`; 
-                        pinLabel.style.color = "#27ae60";
-                        pinHelp.innerText = "Ak si zabudol PIN, kontaktuj organizátora.";
                     } else {
                         teamReservedInfo.style.display = 'none';
                         cancelBtn.style.display = 'none';
                         declineBtn.style.display = 'none';
-                        pinLabel.innerText = `Zadaj PIN pre tím ${select.value}:`; 
-                        pinLabel.style.color = "#27ae60";
-                        pinHelp.innerText = "Ak si zabudol PIN, kontaktuj organizátora.";
                     }
                     countInput.value = team.current || team.default || 4;
                 } else {
                     teamReservedInfo.style.display = 'none';
                     cancelBtn.style.display = 'none';
                     declineBtn.style.display = 'none';
-                    pinLabel.innerText = `Zadaj PIN pre tím ${select.value}:`; 
-                    pinLabel.style.color = "#27ae60";
+                    pinLabel.innerText = `Zadaj PIN pre tím ${select.value}:`;
                     pinHelp.innerText = "Ak si zabudol PIN, kontaktuj organizátora.";
                 }
             }
@@ -978,28 +969,22 @@
                         return;
                     }
                     
-                    const isAdmin = window.qbAdmin && window.qbAdmin.isUserAdmin();
-                    const isAdminLoggedIn = window.adminLoggedIn === true;
-                    const adminAuth = window.auth && window.auth.currentUser;
-                    const finalIsAdmin = isAdmin || isAdminLoggedIn || (adminAuth ? true : false);
-                    
-                    console.log("Admin check:", { isAdmin, isAdminLoggedIn, hasAuthUser: !!adminAuth, finalIsAdmin });
-                    
-                    if (!finalIsAdmin) {
-                        if (!enteredPin) {
-                            const promptedPin = await window.promptPin("❓ Zadaj PIN kód:");
-                            if (!promptedPin) {
-                                return;
-                            }
-                            enteredPin = promptedPin;
-                        }
-                        const pinTrimmed = enteredPin.trim();
-                        const teamPinTrimmed = String(team.pin || "").trim();
-                        const masterPinTrimmed = String(globalSettings.masterPin || "").trim();
-                        if (pinTrimmed !== teamPinTrimmed && pinTrimmed !== masterPinTrimmed) {
-                            alert("❌ Nesprávny PIN!");
+                    // 🔐 PIN MUSÍ BYŤ VŽDY VALIDOVANÝ, NIKDY SKIPOVAŤ!
+                    if (!enteredPin || !enteredPin.trim()) {
+                        const promptedPin = await window.promptPin("❓ Zadaj PIN kód:");
+                        if (!promptedPin) {
                             return;
                         }
+                        enteredPin = promptedPin;
+                    }
+                    
+                    const pinTrimmed = enteredPin.trim();
+                    const teamPinTrimmed = String(team.pin || "").trim();
+                    const masterPinTrimmed = String(globalSettings.masterPin || "").trim();
+                    
+                    if (pinTrimmed !== teamPinTrimmed && pinTrimmed !== masterPinTrimmed) {
+                        alert("❌ Nesprávny PIN!");
+                        return;
                     }
                     
                     console.log("📝 Skúšam updatovať tím:", team.id, { current: count, confirmed: true });
@@ -1020,37 +1005,31 @@
                         return;
                     }
                     
-                    const isAdmin = window.qbAdmin && window.qbAdmin.isUserAdmin();
-                    const isAdminLoggedIn = window.adminLoggedIn === true;
-                    const adminAuth = window.auth && window.auth.currentUser;
-                    const finalIsAdmin = isAdmin || isAdminLoggedIn || (adminAuth ? true : false);
-                    
-                    if (!finalIsAdmin && !enteredPin) {
-                        const promptedPin = await window.promptPin("❓ Zadaj PIN kód:");
-                        if (!promptedPin) {
-                            return;
-                        }
-                        enteredPin = promptedPin;
+                    // 🔐 PIN MUSÍ BYŤ VŽDY ZADANÝ A VALIDOVANÝ!
+                    let newTeamPin = document.getElementById('teamPin').value.trim();
+                    if (!newTeamPin) {
+                        alert("❌ Zadaj si PIN kód pre nový tím!");
+                        return;
                     }
+                    
                     const existing = teamsData.find(t => t.id === newName);
                     if (existing) {
-                        if (!finalIsAdmin) {
-                            const pinTrimmed = enteredPin.trim();
-                            const existingPinTrimmed = String(existing.pin || "").trim();
-                            const masterPinTrimmed = String(globalSettings.masterPin || "").trim();
-                            if (pinTrimmed !== existingPinTrimmed && pinTrimmed !== masterPinTrimmed) {
-                                alert("❌ Tím už existuje. Zlý PIN.");
-                                return;
-                            }
+                        // 🔐 AJ EXISTUJÚCI TÍM MUSÍ MÁŤ VALIDOVANÝ PIN
+                        const pinTrimmed = newTeamPin;
+                        const existingPinTrimmed = String(existing.pin || "").trim();
+                        const masterPinTrimmed = String(globalSettings.masterPin || "").trim();
+                        if (pinTrimmed !== existingPinTrimmed && pinTrimmed !== masterPinTrimmed) {
+                            alert("❌ Tím už existuje. Zlý PIN.");
+                            return;
                         }
                         await updateDoc(doc(db, "teams", newName), { current: count, confirmed: true });
                         setTimeout(() => { updateDashboard(); populateTeamSelect(); }, 100);
                         document.getElementById('formMessage').innerText = `✅ Tím ${newName} upravený!`;
                         document.getElementById('formMessage').style.color = 'green';
                     } else {
-                        const finalPin = String((enteredPin && enteredPin.trim()) || "0000");
+                        // 🔐 NOVÝ TÍM MUSÍ MÁŤ PIN - JE JUŽ OVERENÝ
                         await setDoc(doc(db, "teams", newName), {
-                            default: count, current: count, pin: finalPin, confirmed: true, isStatic: false, tableId: ""
+                            default: count, current: count, pin: newTeamPin, confirmed: true, isStatic: false, tableId: "", declined: false
                         });
                         setTimeout(() => { updateDashboard(); populateTeamSelect(); }, 100);
                         document.getElementById('formMessage').innerText = `✅ Tím ${newName} zaregistrovaný!`;
@@ -1108,8 +1087,16 @@
                 opt.value = t.id; opt.innerText = t.id; select.appendChild(opt);
             });
             
-            // ✅ Vždy aktualizuj PIN sekciu keď sa zmenia tímy
-            window.handleTeamChange();
+            // ✅ Vždy aktualizuj PIN sekciu keď sa zmenia tímy - ale bezpečne
+            try {
+                setTimeout(() => {
+                    if (window.handleTeamChange) {
+                        window.handleTeamChange();
+                    }
+                }, 10);
+            } catch (e) {
+                console.log("Note: handleTeamChange delayed call");
+            }
         }
 
         function updateDashboard() {
