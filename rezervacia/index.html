@@ -1116,22 +1116,26 @@
             const reservedDisplay = document.getElementById('reservedDeadlineDisplay');
             if (globalSettings.quizDate) {
                 const d = new Date(globalSettings.quizDate);
+                const deadlineHour = globalSettings.deadlineHour || 16;
+                const deadlineMinute = globalSettings.deadlineMinute || 30;
                 const releaseHour = globalSettings.releaseHour || 15;
                 const releaseMinute = globalSettings.releaseMinute || 0;
                 dateEl.innerText = `Kvíz sa koná: ${d.getDate()}.${d.getMonth()+1}.${d.getFullYear()}`;
                 dateEl.style.color = "#222454";
-                deadEl.innerText = `⚠️ Registrácia do: ${d.getDate()}.${d.getMonth()+1}. ${String(releaseHour).padStart(2, '0')}:${String(releaseMinute).padStart(2, '0')}`;
+                deadEl.innerText = `⚠️ Registrácia do: ${d.getDate()}.${d.getMonth()+1}. ${String(deadlineHour).padStart(2, '0')}:${String(deadlineMinute).padStart(2, '0')}`;
                 if (reservedDisplay) {
                     reservedDisplay.innerText = `${String(releaseHour).padStart(2, '0')}:${String(releaseMinute).padStart(2, '0')}`;
                 }
                 
                 scheduleAutoCleanup();
+                updateDashboard();
             } else {
                 dateEl.innerText = "Termín najbližšieho kvízu zatiaľ nie je určený.";
                 dateEl.style.color = "#666"; deadEl.innerText = "";
                 
                 cancelAutoCleanup();
                 cancelAutoRelease();
+                updateDashboard();
             }
         }
         
