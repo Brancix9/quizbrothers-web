@@ -596,7 +596,7 @@
 
         // LISTENERS
         onSnapshot(collection(db, "teams"), (snapshot) => {
-            teamsData = [];
+            teamsData = []; // Vyčisti pole - nikdy nepridávaj, nahraď!
             snapshot.forEach(doc => { teamsData.push({ id: doc.id, ...doc.data() }); });
             
             // CACHUJ do localStorage pre offline režim
@@ -834,13 +834,7 @@
                     try {
                         await updateDoc(doc(db, "teams", team.id), { current: count, confirmed: true });
                         console.log("✅ Tím úspešne updatovaný!");
-                        // Okamžite aktualizuj lokálne dáta a UI
-                        const idx = teamsData.findIndex(t => t.id === team.id);
-                        if (idx !== -1) {
-                            teamsData[idx].current = count;
-                            teamsData[idx].confirmed = true;
-                        }
-                        try { updateDashboard(); } catch(e) { console.warn("updateDashboard error:", e); }
+                        // Firebase listener automaticky aktualizuje teamsData a renderuje UI
                     } catch (updateErr) {
                         console.warn("⚠️ updateDoc chyba (možno offline):", updateErr);
                         throw updateErr; // Preskupuj chybu vyššie na catch handler
@@ -879,13 +873,7 @@
                         }
                         // Ak je admin, preskoči PIN check
                         await updateDoc(doc(db, "teams", newName), { current: count, confirmed: true });
-                        // Okamžite aktualizuj lokálne dáta a UI
-                        const idx2 = teamsData.findIndex(t => t.id === newName);
-                        if (idx2 !== -1) {
-                            teamsData[idx2].current = count;
-                            teamsData[idx2].confirmed = true;
-                        }
-                        try { updateDashboard(); } catch(e) { console.warn("updateDashboard error:", e); }
+                        // Firebase listener automaticky aktualizuje teamsData a renderuje UI
                         document.getElementById('formMessage').innerText = `✅ Tím ${newName} upravený!`;
                         document.getElementById('formMessage').style.color = 'green';
                     } else {
@@ -894,17 +882,7 @@
                         await setDoc(doc(db, "teams", newName), {
                             default: count, current: count, pin: finalPin, confirmed: true, isStatic: false, tableId: ""
                         });
-                        // Okamžite aktualizuj lokálne dáta a UI
-                        teamsData.push({
-                            id: newName,
-                            default: count,
-                            current: count,
-                            pin: finalPin,
-                            confirmed: true,
-                            isStatic: false,
-                            tableId: ""
-                        });
-                        try { updateDashboard(); } catch(e) { console.warn("updateDashboard error:", e); }
+                        // Firebase listener automaticky aktualizuje teamsData a UI - netreba manual push!
                         document.getElementById('formMessage').innerText = `✅ Tím ${newName} zaregistrovaný!`;
                         document.getElementById('formMessage').style.color = 'green';
                     }
