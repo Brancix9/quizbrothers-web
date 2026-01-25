@@ -1156,23 +1156,19 @@
             if (timeUntilRelease > 0) {
                 console.log(`⏰ Automatické uvoľnenie naplánované na: ${releaseTime.toLocaleString()}`);
                 autoReleaseTimeout = setTimeout(async () => {
-                    console.log("🔓 Spúšťam automatické uvoľnenie rezervovaných miest...");
+                    console.log("🔓 Spúšťam automatické uvoľnenie miest od nepotvrdených rezervovaných tímov...");
                     try {
                         const batch = writeBatch(db);
                         teamsData.forEach(team => {
-                            if (team.confirmed) {
+                            // Len statické tímy, ktoré NEPOTVRDILI - vráť ich počet na 0
+                            if (team.isStatic && !team.confirmed) {
                                 const ref = doc(db, "teams", team.id);
-                                if (team.isStatic) {
-                                    // Vrátiť statické tímy na default počet a nepotvrdený status
-                                    batch.update(ref, { current: team.default, confirmed: false });
-                                } else {
-                                    // Vymazať nové tímy
-                                    batch.delete(ref);
-                                }
+                                batch.update(ref, { current: 0 });
                             }
+                            // Potvrdené tímy (bez ohľadu či sú statické alebo nie) ostanú nezmenené!
                         });
                         await batch.commit();
-                        console.log("✅ Miesta boli úspešne uvoľnené!");
+                        console.log("✅ Miesta od nepotvrdených tímov boli úspešne uvoľnené!");
                         updateDashboard();
                         populateTeamSelect();
                     } catch (err) {
