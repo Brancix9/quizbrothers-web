@@ -856,6 +856,7 @@
             const countInput = document.getElementById('playerCount');
             const pinLabel = document.getElementById('pinLabel');
             const pinHelp = document.getElementById('pinHelp');
+            const pinSection = document.getElementById('pinSection');
             const teamPinInput = document.getElementById('teamPin');
             const teamReservedInfo = document.getElementById('teamReservedInfo');
             const cancelBtn = document.getElementById('cancelBtn');
@@ -865,7 +866,8 @@
             teamPinInput.value = "";
             
             if (select.value === 'new') {
-                customInputDiv.style.display = 'block'; 
+                customInputDiv.style.display = 'block';
+                pinSection.style.display = 'block';
                 countInput.value = 4;
                 pinLabel.style.color = "#27ae60";
                 teamReservedInfo.style.display = 'none';
@@ -894,6 +896,7 @@
                 }
             } else {
                 customInputDiv.style.display = 'none';
+                pinSection.style.display = 'block';
                 const team = teamsData.find(t => t.id === select.value);
                 if (team) {
                     // ✅ ZMENA: Zobraz informácie na základe času uvoľnenia
