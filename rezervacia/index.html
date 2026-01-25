@@ -741,6 +741,7 @@
                     scheduleAutoCleanup();
                     scheduleAutoRelease();
                 }
+                updateDashboard();
             } else {
                 setDoc(doc(db, "config", "settings"), { quizDate: null, masterPin: "9999", deadlineHour: 16, deadlineMinute: 30, maxCapacity: 83, releaseHour: 15, releaseMinute: 0 });
             }
