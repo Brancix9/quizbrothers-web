@@ -1107,6 +1107,9 @@
                 let opt = document.createElement('option');
                 opt.value = t.id; opt.innerText = t.id; select.appendChild(opt);
             });
+            
+            // ✅ Vždy aktualizuj PIN sekciu keď sa zmenia tímy
+            window.handleTeamChange();
         }
 
         function updateDashboard() {
