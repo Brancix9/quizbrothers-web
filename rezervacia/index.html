@@ -568,6 +568,21 @@
         let autoCleanupTimeout = null;
         let pinModalPromise = null;
 
+        // 🚀 OPTIMIZÁCIA: Sledovanie stavu načítavania Firebase
+        let firebaseTeamsLoaded = false;
+        let firebaseSettingsLoaded = false;
+        
+        function tryHideLoadingOverlay() {
+            // Skry loading len keď sú obe Firebase dáta načítané
+            if (firebaseTeamsLoaded && firebaseSettingsLoaded) {
+                const overlay = document.getElementById('loadingOverlay');
+                if (overlay) {
+                    console.log("✅ Firebase dáta sú hotové - skrývam loading");
+                    overlay.style.display = 'none';
+                }
+            }
+        }
+
         // Vyčistenie chybných admin cache dát pri štarte
         (function() {
             try {
@@ -645,22 +660,12 @@
         
         teamsData = JSON.parse(JSON.stringify(defaultTeamsList));
 
-        // Skry loading overlay hneď na začiatku
-        setTimeout(() => {
-            const overlay = document.getElementById('loadingOverlay');
-            if (overlay) {
-                overlay.style.display = 'none';
-            }
-        }, 100);
-
-        // Načítaj cached data hneď na začiatku
+        // 🚀 OPTIMIZÁCIA: Okamžité zobrazenie cache bez akýchkoľvek delays
         const cachedTeams = localStorage.getItem('teams_cache');
         if (cachedTeams) {
             try {
                 teamsData = JSON.parse(cachedTeams);
-                console.log("✅ Teams načítané z cache - rýchle zobrazenie");
-                updateDashboard();
-                populateTeamSelect();
+                console.log("⚡ Teams načítané z cache - IHNEĎ k dispozícii");
             } catch(e) {
                 console.error("Chyba pri načítaní cache tímov");
             }
@@ -670,26 +675,18 @@
         if (cachedSettings) {
             try {
                 globalSettings = JSON.parse(cachedSettings);
-                console.log("✅ Settings načítané z cache");
-                // Hneď inicializuj čas v headeri aby sa nezobrazovala hardkódovaná hodnota
-                const reservedDisplay = document.getElementById('reservedDeadlineDisplay');
-                if (reservedDisplay) {
-                    const hour = String(globalSettings.releaseHour || 15).padStart(2, '0');
-                    const minute = String(globalSettings.releaseMinute || 0).padStart(2, '0');
-                    reservedDisplay.innerText = `${hour}:${minute}`;
-                }
-                updateHeaderDate();
-                checkDeadline();
+                console.log("⚡ Settings načítané z cache - IHNEĎ k dispozícii");
             } catch(e) {
                 console.error("Chyba pri načítaní cache nastavení");
             }
         }
 
-        function hideLoadingOverlay() {
-            const overlay = document.getElementById('loadingOverlay');
-            if (overlay) {
-                overlay.style.display = 'none';
-            }
+        // 🚀 OPTIMIZÁCIA: Prápravy na skrytie loading - cache je dostupná
+        let cacheReady = !!(cachedTeams && cachedSettings);
+        if (cacheReady) {
+            firebaseTeamsLoaded = true;
+            firebaseSettingsLoaded = true;
+            tryHideLoadingOverlay();
         }
 
         onSnapshot(collection(db, "teams"), (snapshot) => {
@@ -697,7 +694,7 @@
             snapshot.forEach(doc => { teamsData.push({ id: doc.id, ...doc.data() }); });
             
             localStorage.setItem('teams_cache', JSON.stringify(teamsData));
-            console.log("✅ Teams cachované do localStorage:", teamsData);
+            console.log("✅ Teams z Firebase sú hotové a cachované");
             
             updateDashboard(); 
             populateTeamSelect(); 
@@ -710,10 +707,15 @@
                 renderAdminPinTable(); 
                 updateMapVisuals();
             }
-            hideLoadingOverlay();
+            
+            // 🚀 OPTIMIZÁCIA: Oznám že teams sú hotové
+            firebaseTeamsLoaded = true;
+            tryHideLoadingOverlay();
         }, (error) => {
             console.error("Chyba pri načítaní tímov:", error);
-            hideLoadingOverlay();
+            // 🚀 OPTIMIZÁCIA: Aj pri chybe označíme ako hotovo (máme cache)
+            firebaseTeamsLoaded = true;
+            tryHideLoadingOverlay();
         });
 
         onSnapshot(doc(db, "config", "settings"), (docSnap) => {
@@ -730,64 +732,76 @@
                 };
                 MAX_CAPACITY = globalSettings.maxCapacity;
                 localStorage.setItem('settings_cache', JSON.stringify(globalSettings));
-                updateHeaderDate(); checkDeadline();
-                if(document.getElementById('adminQuizDate')) document.getElementById('adminQuizDate').value = globalSettings.quizDate || "";
-                if(document.getElementById('adminDeadlineTime')) {
-                    const hour = String(globalSettings.deadlineHour).padStart(2, '0');
-                    const minute = String(globalSettings.deadlineMinute).padStart(2, '0');
-                    document.getElementById('adminDeadlineTime').value = `${hour}:${minute}`;
-                }
-                if(document.getElementById('adminReleaseTime')) {
-                    const hour = String(globalSettings.releaseHour).padStart(2, '0');
-                    const minute = String(globalSettings.releaseMinute).padStart(2, '0');
-                    document.getElementById('adminReleaseTime').value = `${hour}:${minute}`;
-                }
-                if(document.getElementById('adminMaxCapacity')) document.getElementById('adminMaxCapacity').value = globalSettings.maxCapacity || 83;
-                
-                // Aktualizuj čas v headeri hneď
-                const reservedDisplay = document.getElementById('reservedDeadlineDisplay');
-                if (reservedDisplay) {
-                    const hour = String(globalSettings.releaseHour || 15).padStart(2, '0');
-                    const minute = String(globalSettings.releaseMinute || 0).padStart(2, '0');
-                    reservedDisplay.innerText = `${hour}:${minute}`;
-                }
-                
-                if (globalSettings.quizDate) {
-                    scheduleAutoCleanup();
-                    scheduleAutoRelease();
-                }
-                updateDashboard();
+                console.log("✅ Settings z Firebase sú hotové a cachované");
             } else {
                 setDoc(doc(db, "config", "settings"), { quizDate: null, masterPin: "9999", deadlineHour: 16, deadlineMinute: 30, maxCapacity: 83, releaseHour: 15, releaseMinute: 0 });
             }
-            hideLoadingOverlay();
+            
+            updateHeaderDate(); 
+            checkDeadline();
+            if(document.getElementById('adminQuizDate')) document.getElementById('adminQuizDate').value = globalSettings.quizDate || "";
+            if(document.getElementById('adminDeadlineTime')) {
+                const hour = String(globalSettings.deadlineHour).padStart(2, '0');
+                const minute = String(globalSettings.deadlineMinute).padStart(2, '0');
+                document.getElementById('adminDeadlineTime').value = `${hour}:${minute}`;
+            }
+            if(document.getElementById('adminReleaseTime')) {
+                const hour = String(globalSettings.releaseHour).padStart(2, '0');
+                const minute = String(globalSettings.releaseMinute).padStart(2, '0');
+                document.getElementById('adminReleaseTime').value = `${hour}:${minute}`;
+            }
+            if(document.getElementById('adminMaxCapacity')) document.getElementById('adminMaxCapacity').value = globalSettings.maxCapacity || 83;
+            
+            const reservedDisplay = document.getElementById('reservedDeadlineDisplay');
+            if (reservedDisplay) {
+                const hour = String(globalSettings.releaseHour || 15).padStart(2, '0');
+                const minute = String(globalSettings.releaseMinute || 0).padStart(2, '0');
+                reservedDisplay.innerText = `${hour}:${minute}`;
+            }
+            
+            if (globalSettings.quizDate) {
+                scheduleAutoCleanup();
+                scheduleAutoRelease();
+            }
+            updateDashboard();
+            
+            // 🚀 OPTIMIZÁCIA: Oznám že settings sú hotové
+            firebaseSettingsLoaded = true;
+            tryHideLoadingOverlay();
         }, (error) => {
             console.error("Chyba pri načítaní nastavení:", error);
             const cached = localStorage.getItem('settings_cache');
             if (cached) {
                 try {
                     globalSettings = JSON.parse(cached);
-                    console.log("✅ Settings načítané z cache");
+                    console.log("✅ Settings načítané z cache (fallback po chybe)");
                 } catch(e) {
                     console.error("Chyba pri načítaní cache nastavení");
                 }
             }
-            hideLoadingOverlay();
+            // 🚀 OPTIMIZÁCIA: Aj pri chybe označíme ako hotovo (máme cache)
+            firebaseSettingsLoaded = true;
+            tryHideLoadingOverlay();
         });
 
-        setTimeout(() => {
-            hideLoadingOverlay();
-            
-            const playerCountInput = document.getElementById('playerCount');
-            if (playerCountInput) {
-                playerCountInput.addEventListener('change', function() {
-                    checkDeadline();
-                });
-                playerCountInput.addEventListener('input', function() {
-                    checkDeadline();
-                });
-            }
-        }, 3000);
+        // 🚀 OPTIMIZÁCIA: Ak je cache hotová, hneď aplikuj - funkcié sú už dostupné
+        if (cacheReady) {
+            updateDashboard();
+            populateTeamSelect();
+            updateHeaderDate();
+            checkDeadline();
+        }
+
+        // 🚀 OPTIMIZÁCIA: Inicializácia event listenerov bez zbytočného delay
+        const playerCountInput = document.getElementById('playerCount');
+        if (playerCountInput) {
+            playerCountInput.addEventListener('change', function() {
+                checkDeadline();
+            });
+            playerCountInput.addEventListener('input', function() {
+                checkDeadline();
+            });
+        }
 
         window.handleTeamChange = function() {
             const select = document.getElementById('teamSelect');
