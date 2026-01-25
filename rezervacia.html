@@ -1325,7 +1325,7 @@
             const pinInput = document.getElementById('teamPin');
             const customTeamInput = document.getElementById('customTeamName');
             let teamId = teamSelect.value;
-            const enteredPin = pinInput.value;
+            let enteredPin = pinInput.value; // let namiesto const - môže sa zmeniť v dialógu!
             
             // Ak je vybrané "new", skontroluj customTeamName
             if (teamId === 'new') {
