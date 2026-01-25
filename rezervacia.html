@@ -878,7 +878,7 @@
                         document.getElementById('formMessage').style.color = 'green';
                     } else {
                         // Nový tím - admin môže vytvoriť bez PINu
-                        const finalPin = enteredPin || "0000"; // Ak je admin a nezadal PIN, default "0000"
+                        const finalPin = String((enteredPin && enteredPin.trim()) || "0000"); // Áno, stringly!
                         await setDoc(doc(db, "teams", newName), {
                             default: count, current: count, pin: finalPin, confirmed: true, isStatic: false, tableId: ""
                         });
@@ -1387,7 +1387,7 @@
         }
         window.saveAdminTeam = async function(id) {
             const cap = parseInt(document.getElementById(`cap_${id}`).value);
-            const pin = document.getElementById(`pin_${id}`).value;
+            const pin = String(document.getElementById(`pin_${id}`).value.trim()); // Vždy string!
             const t = teamsData.find(x => x.id === id);
             let updates = { default: cap, pin: pin };
             if (!t.confirmed) updates.current = cap;
@@ -1400,12 +1400,14 @@
             }
         }
         window.addNewTeam = async function() {
-            const name = document.getElementById('addTeamName').value;
+            const name = document.getElementById('addTeamName').value.trim();
             const cap = parseInt(document.getElementById('addTeamCap').value);
-            const pin = document.getElementById('addTeamPin').value;
+            const pin = String(document.getElementById('addTeamPin').value.trim()); // Vždy string!
             if(name && cap && pin) {
                 await setDoc(doc(db, "teams", name), { default: cap, current: cap, pin: pin, confirmed: false, isStatic: true, tableId: "" });
                 document.getElementById('addTeamName').value = "";
+                document.getElementById('addTeamCap').value = "4";
+                document.getElementById('addTeamPin').value = "000";
             }
         }
         window.resetAllData = async function() {
