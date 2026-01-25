@@ -1170,6 +1170,17 @@
             const playerCountInput = document.getElementById('playerCount');
             const isFull = remaining <= 0;
             
+            // Zistí či je vybraný tím potvrdený
+            let isTeamConfirmed = false;
+            if (teamSelect && teamSelect.value !== 'new') {
+                const existing = teamsData.find(t => t.id === teamSelect.value);
+                if(existing && existing.confirmed) isTeamConfirmed = true;
+            } else if (document.getElementById('customTeamName')) {
+                const newName = document.getElementById('customTeamName').value;
+                const existing = teamsData.find(t => t.id === newName);
+                if(existing && existing.confirmed) isTeamConfirmed = true;
+            }
+            
             if (isFull && btn) {
                 let currentTeamCount = 0;
                 if (teamSelect && teamSelect.value !== 'new') {
@@ -1192,8 +1203,9 @@
                     btn.innerText = "PLNO - zmeniť iba na menší počet";
                 }
             } else if (btn && remaining > 0) { 
-                btn.disabled = false; 
-                btn.innerText = "Potvrdiť účasť"; 
+                btn.disabled = false;
+                // Ak je tím potvrdený, zobraz "Upraviť počet"
+                btn.innerText = isTeamConfirmed ? "Upraviť počet" : "Potvrdiť účasť"; 
             }
             return true;
         }
