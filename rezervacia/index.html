@@ -671,6 +671,13 @@
             try {
                 globalSettings = JSON.parse(cachedSettings);
                 console.log("✅ Settings načítané z cache");
+                // Hneď inicializuj čas v headeri aby sa nezobrazovala hardkódovaná hodnota
+                const reservedDisplay = document.getElementById('reservedDeadlineDisplay');
+                if (reservedDisplay) {
+                    const hour = String(globalSettings.releaseHour || 15).padStart(2, '0');
+                    const minute = String(globalSettings.releaseMinute || 0).padStart(2, '0');
+                    reservedDisplay.innerText = `${hour}:${minute}`;
+                }
                 updateHeaderDate();
                 checkDeadline();
             } catch(e) {
