@@ -277,7 +277,7 @@
 
     <div class="main-container">
         <div class="sidebar left-panel">
-            <h3 style="color:#222454;">⏳ Rezervované (do 15:00)</h3>
+            <h3 style="color:#222454;">⏳ Rezervované (do <span id="reservedDeadlineDisplay">15:00</span>)</h3>
             <ul id="listReserved" class="team-list"></ul>
         </div>
 
@@ -354,6 +354,13 @@
                 <div style="display:flex; gap:5px;">
                     <input type="time" id="adminDeadlineTime" style="padding:5px;">
                     <button class="btn-action" onclick="saveDeadlineTime()">Uložiť</button>
+                </div>
+            </div>
+            <div class="config-block">
+                <label>Uvoľnenie (čas):</label>
+                <div style="display:flex; gap:5px;">
+                    <input type="time" id="adminReleaseTime" style="padding:5px;">
+                    <button class="btn-action" onclick="saveReleaseTime()">Uložiť</button>
                 </div>
             </div>
             <div class="config-block">
@@ -556,7 +563,7 @@
         window.auth = authInstance;
 
         let teamsData = []; 
-        let globalSettings = { quizDate: null, masterPin: "9999", maxCapacity: 83, deadlineHour: 16, deadlineMinute: 30 };
+        let globalSettings = { quizDate: null, masterPin: "9999", maxCapacity: 83, deadlineHour: 16, deadlineMinute: 30, releaseHour: 15, releaseMinute: 0 };
         let MAX_CAPACITY = 83;
         let autoCleanupTimeout = null;
         let pinModalPromise = null;
@@ -710,7 +717,9 @@
                     masterPin: data.masterPin || "9999",
                     deadlineHour: data.deadlineHour || 16,
                     deadlineMinute: data.deadlineMinute || 30,
-                    maxCapacity: data.maxCapacity || 83
+                    maxCapacity: data.maxCapacity || 83,
+                    releaseHour: data.releaseHour || 15,
+                    releaseMinute: data.releaseMinute || 0
                 };
                 MAX_CAPACITY = globalSettings.maxCapacity;
                 localStorage.setItem('settings_cache', JSON.stringify(globalSettings));
@@ -721,13 +730,19 @@
                     const minute = String(globalSettings.deadlineMinute).padStart(2, '0');
                     document.getElementById('adminDeadlineTime').value = `${hour}:${minute}`;
                 }
+                if(document.getElementById('adminReleaseTime')) {
+                    const hour = String(globalSettings.releaseHour).padStart(2, '0');
+                    const minute = String(globalSettings.releaseMinute).padStart(2, '0');
+                    document.getElementById('adminReleaseTime').value = `${hour}:${minute}`;
+                }
                 if(document.getElementById('adminMaxCapacity')) document.getElementById('adminMaxCapacity').value = globalSettings.maxCapacity || 83;
                 
                 if (globalSettings.quizDate) {
                     scheduleAutoCleanup();
+                    scheduleAutoRelease();
                 }
             } else {
-                setDoc(doc(db, "config", "settings"), { quizDate: null, masterPin: "9999", deadlineHour: 16, deadlineMinute: 30, maxCapacity: 83 });
+                setDoc(doc(db, "config", "settings"), { quizDate: null, masterPin: "9999", deadlineHour: 16, deadlineMinute: 30, maxCapacity: 83, releaseHour: 15, releaseMinute: 0 });
             }
             hideLoadingOverlay();
         }, (error) => {
@@ -1064,13 +1079,19 @@
         function updateHeaderDate() {
             const dateEl = document.getElementById('publicQuizDate');
             const deadEl = document.getElementById('publicDeadlineInfo');
+            const reservedDisplay = document.getElementById('reservedDeadlineDisplay');
             if (globalSettings.quizDate) {
                 const d = new Date(globalSettings.quizDate);
                 const hour = globalSettings.deadlineHour || 16;
                 const minute = globalSettings.deadlineMinute || 30;
+                const releaseHour = globalSettings.releaseHour || 15;
+                const releaseMinute = globalSettings.releaseMinute || 0;
                 dateEl.innerText = `Kvíz sa koná: ${d.getDate()}.${d.getMonth()+1}.${d.getFullYear()}`;
                 dateEl.style.color = "#222454";
                 deadEl.innerText = `⚠️ Registrácia do: ${d.getDate()}.${d.getMonth()+1}. ${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`;
+                if (reservedDisplay) {
+                    reservedDisplay.innerText = `${String(releaseHour).padStart(2, '0')}:${String(releaseMinute).padStart(2, '0')}`;
+                }
                 
                 scheduleAutoCleanup();
             } else {
@@ -1078,6 +1099,7 @@
                 dateEl.style.color = "#666"; deadEl.innerText = "";
                 
                 cancelAutoCleanup();
+                cancelAutoRelease();
             }
         }
         
@@ -1114,6 +1136,62 @@
             }
         }
 
+        let autoReleaseTimeout = null;
+
+        function scheduleAutoRelease() {
+            cancelAutoRelease();
+            
+            if (!globalSettings.quizDate) return;
+            
+            const quizDate = new Date(globalSettings.quizDate);
+            const releaseHour = globalSettings.releaseHour || 15;
+            const releaseMinute = globalSettings.releaseMinute || 0;
+            
+            const releaseTime = new Date(quizDate);
+            releaseTime.setHours(releaseHour, releaseMinute, 0, 0);
+            
+            const now = new Date();
+            const timeUntilRelease = releaseTime.getTime() - now.getTime();
+            
+            if (timeUntilRelease > 0) {
+                console.log(`⏰ Automatické uvoľnenie naplánované na: ${releaseTime.toLocaleString()}`);
+                autoReleaseTimeout = setTimeout(async () => {
+                    console.log("🔓 Spúšťam automatické uvoľnenie rezervovaných miest...");
+                    try {
+                        const batch = writeBatch(db);
+                        teamsData.forEach(team => {
+                            if (team.confirmed) {
+                                const ref = doc(db, "teams", team.id);
+                                if (team.isStatic) {
+                                    // Vrátiť statické tímy na default počet a nepotvrdený status
+                                    batch.update(ref, { current: team.default, confirmed: false });
+                                } else {
+                                    // Vymazať nové tímy
+                                    batch.delete(ref);
+                                }
+                            }
+                        });
+                        await batch.commit();
+                        console.log("✅ Miesta boli úspešne uvoľnené!");
+                        updateDashboard();
+                        populateTeamSelect();
+                    } catch (err) {
+                        console.error("❌ Chyba pri uvoľňovaní miest:", err);
+                    }
+                }, timeUntilRelease);
+            } else {
+                console.log("⏰ Uvoľnenie už prebehlo alebo je naplánované na minulosť");
+            }
+        }
+
+        function cancelAutoRelease() {
+            if (autoReleaseTimeout) {
+                clearTimeout(autoReleaseTimeout);
+                autoReleaseTimeout = null;
+                console.log("❌ Automatické uvoľnenie zrušené");
+            }
+        }
+
         window.toggleAdmin = async function() {
             const pin = await window.promptPin("Admin PIN:");
             if (pin === globalSettings.masterPin) {
@@ -1127,6 +1205,7 @@
             if(val) {
                 await updateDoc(doc(db, "config", "settings"), { quizDate: val });
                 scheduleAutoCleanup();
+                scheduleAutoRelease();
             }
         }
         window.stopRegistration = async function() {
@@ -1134,6 +1213,7 @@
                 await updateDoc(doc(db, "config", "settings"), { quizDate: null });
                 document.getElementById('adminQuizDate').value = "";
                 cancelAutoCleanup();
+                cancelAutoRelease();
             }
         }
         window.saveMasterPin = async function() {
@@ -1157,6 +1237,30 @@
                     deadlineMinute: minute 
                 });
                 alert(`✅ Deadline čas bol nastavený na ${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}!`);
+            } catch (err) {
+                console.error("Chyba pri ukladaní:", err);
+                alert("❌ Chyba pri ukladaní: " + err.message);
+            }
+        }
+
+        window.saveReleaseTime = async function() {
+            const timeValue = document.getElementById('adminReleaseTime').value;
+            if (!timeValue) {
+                alert("❌ Zadaj čas!");
+                return;
+            }
+            const [hour, minute] = timeValue.split(':').map(Number);
+            if (isNaN(hour) || isNaN(minute) || hour < 0 || hour > 23 || minute < 0 || minute > 59) {
+                alert("❌ Neplatný čas!");
+                return;
+            }
+            try {
+                await updateDoc(doc(db, "config", "settings"), { 
+                    releaseHour: hour, 
+                    releaseMinute: minute 
+                });
+                alert(`✅ Čas uvoľnenia bol nastavený na ${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}!`);
+                scheduleAutoRelease();
             } catch (err) {
                 console.error("Chyba pri ukladaní:", err);
                 alert("❌ Chyba pri ukladaní: " + err.message);
