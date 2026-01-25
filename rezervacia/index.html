@@ -600,6 +600,7 @@
         let globalSettings = { quizDate: null, masterPin: "9999", maxCapacity: 83, deadlineHour: 16, deadlineMinute: 30, releaseHour: 15, releaseMinute: 0 };
         let MAX_CAPACITY = 83;
         let autoCleanupTimeout = null;
+        let autoReleaseTimeout = null;
         let pinModalPromise = null;
 
         // 🚀 OPTIMIZÁCIA: IHNEĎ skry loading keď máme DEFAULT dáta
@@ -1254,8 +1255,6 @@
                 console.log("❌ Automatické čistenie zrušené");
             }
         }
-
-        let autoReleaseTimeout = null;
 
         function scheduleAutoRelease() {
             cancelAutoRelease();
