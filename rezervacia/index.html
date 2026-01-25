@@ -395,6 +395,7 @@
                 <thead><tr><th>Tím</th><th>Predvolená Kap.</th><th>PIN</th><th>Akcie</th></tr></thead>
                 <tbody id="adminPinTableBody"></tbody>
             </table>
+            <button onclick="window.saveAllAdminTeams()" style="background:#27ae60; color:white; border:none; padding:10px 20px; cursor:pointer; font-weight:bold; border-radius:4px; margin-top:10px; width:100%;">💾 Uložiť všetky tímy naraz</button>
             <div class="add-team-form">
                 <div class="form-group"><label>Názov:</label><input type="text" id="addTeamName"></div>
                 <div class="form-group"><label>Kapacita:</label><input type="number" id="addTeamCap" value="4"></div>
@@ -1741,6 +1742,43 @@
             let updates = { default: cap, pin: pin, declined: false };
             if (!t.confirmed) updates.current = cap;
             await updateDoc(doc(db, "teams", id), updates); alert("Uložené");
+        }
+        
+        window.saveAllAdminTeams = async function() {
+            const batch = writeBatch(db);
+            let successCount = 0;
+            let errorCount = 0;
+            
+            teamsData.forEach((t) => {
+                const capInput = document.getElementById(`cap_${t.id}`);
+                const pinInput = document.getElementById(`pin_${t.id}`);
+                
+                if (capInput && pinInput) {
+                    const cap = parseInt(capInput.value);
+                    const pin = String(pinInput.value.trim());
+                    
+                    if (!isNaN(cap) && cap > 0) {
+                        let updates = { default: cap, pin: pin, declined: false };
+                        if (!t.confirmed) updates.current = cap;
+                        
+                        const ref = doc(db, "teams", t.id);
+                        batch.update(ref, updates);
+                        successCount++;
+                    } else {
+                        errorCount++;
+                    }
+                }
+            });
+            
+            try {
+                await batch.commit();
+                alert(`✅ Všetky tímy boli úspešne uložené!\n\nAktualizovaných: ${successCount}\nChýb: ${errorCount}`);
+                updateDashboard();
+                renderAdminPinTable();
+            } catch (err) {
+                console.error("Chyba pri hromadnom uložení:", err);
+                alert("❌ Chyba pri uložení: " + err.message);
+            }
         }
         window.deleteTeam = async function(id) { 
             if(confirm("Zmazať " + id + "?")) {
