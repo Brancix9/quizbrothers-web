@@ -405,8 +405,8 @@
                 return;
             }
             
-            // Vylúč prvky v headeri, footeri, admin paneli
-            if (el.closest('header') || el.closest('footer') || el.closest('#admin-edit-panel') || el.closest('#admin-login-modal')) {
+            // Vylúč prvky v headeri, footeri, admin paneli, PIN modali a loadingOverlay
+            if (el.closest('header') || el.closest('footer') || el.closest('#admin-edit-panel') || el.closest('#admin-login-modal') || el.closest('#pinModal') || el.closest('#loadingOverlay')) {
                 return;
             }
             
@@ -449,8 +449,8 @@
                 return;
             }
             
-            // Vylúč prvky v headeri, footeri, admin paneli
-            if (el.closest('header') || el.closest('footer') || el.closest('#admin-edit-panel') || el.closest('#admin-login-modal')) {
+            // Vylúč prvky v headeri, footeri, admin paneli, PIN modali a loadingOverlay
+            if (el.closest('header') || el.closest('footer') || el.closest('#admin-edit-panel') || el.closest('#admin-login-modal') || el.closest('#pinModal') || el.closest('#loadingOverlay')) {
                 return;
             }
             
