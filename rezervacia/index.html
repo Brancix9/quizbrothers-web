@@ -1011,6 +1011,12 @@
             const reservedContent = [];
             const confirmedContent = [];
             
+            const releaseHour = String(globalSettings.releaseHour || 15).padStart(2, '0');
+            const releaseMinute = String(globalSettings.releaseMinute || 0).padStart(2, '0');
+            
+            // Zisti či sú nejaké uvoľnené tímy (current === 0 pre statické)
+            const hasReleasedTeams = teamsData.some(t => t.isStatic && t.current === 0);
+            
             teamsData.forEach(t => {
                 const li = document.createElement('li'); 
                 li.className = 'team-item';
@@ -1018,10 +1024,22 @@
                     li.innerHTML = `${t.id} <span class="badge-count badge-confirmed">${t.current} ✔</span>`;
                     confirmedContent.push(li);
                 } else if (t.isStatic) {
-                    li.innerHTML = `${t.id} <span class="badge-count">${t.default}</span>`;
-                    reservedContent.push(li);
+                    // Ak je current > 0, zobraz tím normálne
+                    if (t.current > 0) {
+                        li.innerHTML = `${t.id} <span class="badge-count">${t.default}</span>`;
+                        reservedContent.push(li);
+                    }
+                    // Ak je current === 0, nezobrazuj tím individuálne
                 }
             });
+            
+            // Ak sú uvoľnené tímy, pridaj všeobecný oznam namiesto tímov
+            if (hasReleasedTeams && reservedContent.length === 0) {
+                const li = document.createElement('li');
+                li.className = 'team-item';
+                li.innerHTML = `<span style="color:#999; font-size:14px;">Rezerváciu bolo potrebné potvrdiť do ${releaseHour}:${releaseMinute} - ak je stále voľné miesto, môžete sa pridať</span>`;
+                reservedContent.push(li);
+            }
             
             listReserved.innerHTML = "";
             listConfirmed.innerHTML = "";
@@ -1082,13 +1100,11 @@
             const reservedDisplay = document.getElementById('reservedDeadlineDisplay');
             if (globalSettings.quizDate) {
                 const d = new Date(globalSettings.quizDate);
-                const hour = globalSettings.deadlineHour || 16;
-                const minute = globalSettings.deadlineMinute || 30;
                 const releaseHour = globalSettings.releaseHour || 15;
                 const releaseMinute = globalSettings.releaseMinute || 0;
                 dateEl.innerText = `Kvíz sa koná: ${d.getDate()}.${d.getMonth()+1}.${d.getFullYear()}`;
                 dateEl.style.color = "#222454";
-                deadEl.innerText = `⚠️ Registrácia do: ${d.getDate()}.${d.getMonth()+1}. ${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`;
+                deadEl.innerText = `⚠️ Registrácia do: ${d.getDate()}.${d.getMonth()+1}. ${String(releaseHour).padStart(2, '0')}:${String(releaseMinute).padStart(2, '0')}`;
                 if (reservedDisplay) {
                     reservedDisplay.innerText = `${String(releaseHour).padStart(2, '0')}:${String(releaseMinute).padStart(2, '0')}`;
                 }
