@@ -410,6 +410,11 @@
                 return;
             }
             
+            // Vylúč prvky ktoré sú spravované cez Firebase (majú ID-čka s prefixom home_, about_, app_)
+            if (el.id && (el.id.startsWith('home_') || el.id.startsWith('about_') || el.id.startsWith('app_'))) {
+                return;
+            }
+            
             // Vylúč prvky v headeri, footeri, admin paneli
             if (el.closest('header') || el.closest('footer') || el.closest('#admin-edit-panel') || el.closest('#admin-login-modal')) {
                 return;
@@ -456,6 +461,11 @@
             
             // Vylúč prvky s atribútom data-no-admin-edit
             if (el.getAttribute('data-no-admin-edit') === 'true' || el.closest('[data-no-admin-edit="true"]')) {
+                return;
+            }
+            
+            // Vylúč prvky ktoré sú spravované cez Firebase (majú ID-čka s prefixom home_, about_, app_)
+            if (el.id && (el.id.startsWith('home_') || el.id.startsWith('about_') || el.id.startsWith('app_'))) {
                 return;
             }
             
