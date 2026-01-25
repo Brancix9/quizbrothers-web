@@ -17,35 +17,23 @@
     async function initFirebase() {
         if (firebaseInitialized && db && auth) return;
         
-        // Skús použiť existujúci app a db objekty
+        // Ihneď skús použiť existujúci Firebase z window - ŽIADNE ČAKANIE!
         if (window.app && typeof window.app === 'object') {
             app = window.app;
         }
         if (window.db && typeof window.db === 'object') {
             db = window.db;
         }
-        
-        // Počkaj na Firebase inicializáciu z rezervacia.html - pokúš sa až 5 sekúnd
-        let waitCounter = 0;
-        while ((!window.db || !db) && waitCounter < 50) {
-            await new Promise(resolve => setTimeout(resolve, 100));
-            waitCounter++;
-            
-            // Pokúš sa znova priradiť
-            if (window.app && typeof window.app === 'object') {
-                app = window.app;
-            }
-            if (window.db && typeof window.db === 'object') {
-                db = window.db;
-            }
+        if (window.auth && typeof window.auth === 'object') {
+            auth = window.auth;
+            firebaseInitialized = true;
+            console.log("⚡ Firebase z window dostupný okamžite!");
+            return;
         }
         
-        if (waitCounter === 50) {
-            console.warn("⚠️ Firebase iniciálizácia z rezervacia.html trvala dlho, pokračujem s vlastným Firebase");
-        }
-        
-        // Ak nie je db, inicializuj Firebase
-        if (!db && !app) {
+        // Ak window Firebase nie je dostupný, inicializuj vlastný
+        // ALE BEZ ČAKANIA - ak nie je dostupný za 100ms, pokračuj bez neho
+        if (!db) {
             try {
                 const { initializeApp } = await import("https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js");
                 const { getFirestore } = await import("https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js");
@@ -62,9 +50,9 @@
                 
                 app = initializeApp(firebaseConfig);
                 db = getFirestore(app);
-                // Uload ako globálne aby rezervacia.html mohla používať
                 window.app = app;
                 window.db = db;
+                console.log("⚡ Vlastný Firebase inicializovaný");
             } catch (error) {
                 console.error("Chyba pri inicializácii Firebase:", error);
             }
@@ -75,7 +63,6 @@
             try {
                 const { getAuth } = await import("https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js");
                 auth = getAuth(app);
-                // Uload ako globálny aby ostatné skripty mohli vedieť o auth state
                 window.auth = auth;
             } catch (error) {
                 console.error("Chyba pri inicializácii Firebase Auth:", error);
@@ -380,48 +367,52 @@
         document.body.appendChild(panel);
     }
     
-    // Inicializácia text ID-čiek (volá sa RAZ pri prvom loadovaní)
+    // Inicializácia text ID-čiek (volá sa RAZ pri prvom loadovaní) - OPTIMALIZOVANÉ
     let textIdsInitialized = false;
     function initializeTextIds() {
         // Volaj len raz za behu aplikácie
         if (textIdsInitialized) return;
         
-        // WHITELIST prvkov ktoré SMÚ byť editovateľné
-        // Vrátane všetkých nadpisov a paragrafov ALE vylučujeme dynamické prvky
-        const editableSelectors = 'h1, h2, h3, p:not(#formMessage):not(#adminLoginPrompt p):not(#pinHelp):not(#teamReservedInfo)';
-        const editableElements = document.querySelectorAll(editableSelectors);
-        const elementsToIgnore = [
-            'displayCapacity', 'listReserved', 'listConfirmed', 'teamReservedInfo',
-            'pinLabel', 'pinHelp', 'pinSection', 'newTeamInput', 'submitBtn',
-            'formMessage', 'adminSection', 'admin-edit-panel', 'admin-login-modal',
-            'publicQuizDate', 'publicDeadlineInfo', 'adminLoginPrompt'
-        ];
+        console.time('⏱️ Text IDs Init');
+        
+        // WHITELIST prvkov ktoré SMÚ byť editovateľné - NO COMPLEX SELECTORS!
+        const editableSelectors = ['H1', 'H2', 'H3'];
+        const pElements = document.querySelectorAll('p');
+        const editableElements = [];
+        
+        // Zbieraj len prvky bez zbytočných closest() volaní
+        const elementsToIgnore = {
+            'displayCapacity': true, 'listReserved': true, 'listConfirmed': true, 
+            'teamReservedInfo': true, 'pinLabel': true, 'pinHelp': true, 
+            'pinSection': true, 'newTeamInput': true, 'submitBtn': true,
+            'formMessage': true, 'adminSection': true, 'admin-edit-panel': true,
+            'publicQuizDate': true, 'publicDeadlineInfo': true, 'adminLoginPrompt': true
+        };
+        
+        // Zbieraj H1, H2, H3
+        document.querySelectorAll('h1, h2, h3').forEach(el => {
+            if (!elementsToIgnore[el.id] && !el.closest('header') && !el.closest('footer')) {
+                editableElements.push(el);
+            }
+        });
+        
+        // Zbieraj P bez zbytočných filtrácii
+        pElements.forEach(el => {
+            if (!elementsToIgnore[el.id] && !el.closest('header') && !el.closest('footer') && 
+                !el.closest('#adminSection') && !el.closest('form')) {
+                editableElements.push(el);
+            }
+        });
         
         let validIndex = 0;
-        
         editableElements.forEach((el) => {
             // Preskočiť prvky ktoré sú v ignore liste
-            if (el.id && elementsToIgnore.includes(el.id)) {
+            if (el.id && elementsToIgnore[el.id]) {
                 return;
             }
             
             // Vylúč prvky s atribútom data-no-admin-edit
-            if (el.getAttribute('data-no-admin-edit') === 'true' || el.closest('[data-no-admin-edit="true"]')) {
-                return;
-            }
-            
-            // Vylúč prvky ktoré sú spravované cez Firebase (majú ID-čka s prefixom home_, about_, app_)
-            if (el.id && (el.id.startsWith('home_') || el.id.startsWith('about_') || el.id.startsWith('app_'))) {
-                return;
-            }
-            
-            // Vylúč prvky v headeri, footeri, admin paneli
-            if (el.closest('header') || el.closest('footer') || el.closest('#admin-edit-panel') || el.closest('#admin-login-modal')) {
-                return;
-            }
-            
-            // Vylúč prvky vo formulároch a admin sekcii
-            if (el.closest('form') || el.closest('#adminSection')) {
+            if (el.getAttribute('data-no-admin-edit') === 'true') {
                 return;
             }
             
@@ -434,6 +425,7 @@
         });
         
         textIdsInitialized = true;
+        console.timeEnd('⏱️ Text IDs Init');
     }
     
     // Umožnenie editácie textov
@@ -758,49 +750,51 @@
     
     // --- OPRAVA SPÚŠŤANIA S onAuthStateChanged ---
     const startAdmin = async function() {
-        await initFirebase();
+        console.time('⏱️ Admin.js Init');
         
-        // Vždy inicializuj text ID-čka (aby boli dostupné aj bez admin módu)
-        initializeTextIds();
+        // Nečakaj na initFirebase - spusti sa asynchronne v pozadí
+        initFirebase().catch(e => console.warn('Firebase init error (non-blocking):', e));
         
-        // Zawždy vytvor tlačidlo
+        // IHNEĎ inicializuj text ID-čka bez čakania
+        // (toto teraz nechá behu paralelne)
         setTimeout(() => {
-            createAdminButton();
-        }, 300);
+            initializeTextIds();
+        }, 0);
         
-        // Zaregistruj listener na zmeny auth stavu
-        if (auth) {
-            const { onAuthStateChanged } = await import("https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js");
-            
-            onAuthStateChanged(auth, async (user) => {
-                if (user) {
-                    // Používateľ je prihlásený
-                    // Nastavím globálny flag aby ostatné skripty vedeli o admin state
-                    window.adminLoggedIn = true;
-                    console.log("✅ Admin je prihlásený:", user.email);
-                    await loadSavedTexts();
-                    // Automaticky aktivuj admin mód
-                    activateAdminMode();
-                } else {
-                    // Používateľ nie je prihlásený
-                    window.adminLoggedIn = false;
-                    console.log("❌ Admin sa odhlásil");
-                    // Deaktivuj admin mód
-                    deactivate();
-                    await loadSavedTexts();
-                }
-            });
-        } else {
-            // Ak Auth nie je dostupný, pokračuj bez neho
-            await loadSavedTexts();
+        // IHNEĎ vytvor tlačidlo bez oneskorenia
+        createAdminButton();
+        
+        // Zaregistruj listener na zmeny auth stavu - ASYNCHRONNE
+        if (window.auth) {
+            try {
+                const { onAuthStateChanged } = await import("https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js");
+                onAuthStateChanged(window.auth, async (user) => {
+                    if (user) {
+                        window.adminLoggedIn = true;
+                        console.log("✅ Admin je prihlásený:", user.email);
+                        // Načítaj texty asynchronne v pozadí (NEBLOKUJĚš UI)
+                        loadSavedTexts().catch(e => console.warn('Text load error:', e));
+                    } else {
+                        window.adminLoggedIn = false;
+                        console.log("❌ Admin sa odhlásil");
+                        deactivate();
+                        loadSavedTexts().catch(e => console.warn('Text load error:', e));
+                    }
+                });
+            } catch (e) {
+                console.warn('Auth state listener setup failed:', e);
+            }
         }
+        
+        console.timeEnd('⏱️ Admin.js Init');
     };
 
+    // Spusti IHNEĎ bez čakania na DOM
     if (document.readyState === 'loading') {
         document.addEventListener('DOMContentLoaded', startAdmin);
     } else {
-        // Ak už je stránka načítaná, spusti to hneď s oneskorením
-        setTimeout(startAdmin, 100);
+        // Spusti IHNEĎ bez oneskorenia
+        startAdmin();
     }
     
 })();
