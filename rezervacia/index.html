@@ -786,17 +786,23 @@
             updateHeaderDate(); 
             checkDeadline();
             if(document.getElementById('adminQuizDate')) document.getElementById('adminQuizDate').value = globalSettings.quizDate || "";
-            if(document.getElementById('adminDeadlineTime')) {
+            // Aktualizuj vstupy len ak sú prázdne (prvý load), nie pri každej Firebase zmene
+            if(document.getElementById('adminQuizDate') && !document.getElementById('adminQuizDate').value) {
+                document.getElementById('adminQuizDate').value = globalSettings.quizDate || "";
+            }
+            if(document.getElementById('adminDeadlineTime') && !document.getElementById('adminDeadlineTime').value) {
                 const hour = String(globalSettings.deadlineHour).padStart(2, '0');
                 const minute = String(globalSettings.deadlineMinute).padStart(2, '0');
                 document.getElementById('adminDeadlineTime').value = `${hour}:${minute}`;
             }
-            if(document.getElementById('adminReleaseTime')) {
+            if(document.getElementById('adminReleaseTime') && !document.getElementById('adminReleaseTime').value) {
                 const hour = String(globalSettings.releaseHour).padStart(2, '0');
                 const minute = String(globalSettings.releaseMinute).padStart(2, '0');
                 document.getElementById('adminReleaseTime').value = `${hour}:${minute}`;
             }
-            if(document.getElementById('adminMaxCapacity')) document.getElementById('adminMaxCapacity').value = globalSettings.maxCapacity || 83;
+            if(document.getElementById('adminMaxCapacity') && !document.getElementById('adminMaxCapacity').value) {
+                document.getElementById('adminMaxCapacity').value = globalSettings.maxCapacity || 83;
+            }
             
             const reservedDisplay = document.getElementById('reservedDeadlineDisplay');
             if (reservedDisplay) {
