@@ -1377,6 +1377,11 @@
                     releaseMinute: minute 
                 });
                 alert(`✅ Čas uvoľnenia bol nastavený na ${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}!`);
+                // NOVÉ: Aktualizuj display textu vľavo
+                const reservedDisplay = document.getElementById('reservedDeadlineDisplay');
+                if (reservedDisplay) {
+                    reservedDisplay.innerText = `${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`;
+                }
                 scheduleAutoRelease();
             } catch (err) {
                 console.error("Chyba pri ukladaní:", err);
