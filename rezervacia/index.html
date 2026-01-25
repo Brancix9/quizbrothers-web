@@ -584,6 +584,31 @@
             }
         }, 100);
 
+        // Načítaj cached data hneď na začiatku
+        const cachedTeams = localStorage.getItem('teams_cache');
+        if (cachedTeams) {
+            try {
+                teamsData = JSON.parse(cachedTeams);
+                console.log("✅ Teams načítané z cache - rýchle zobrazenie");
+                updateDashboard();
+                populateTeamSelect();
+            } catch(e) {
+                console.error("Chyba pri načítaní cache tímov");
+            }
+        }
+
+        const cachedSettings = localStorage.getItem('settings_cache');
+        if (cachedSettings) {
+            try {
+                globalSettings = JSON.parse(cachedSettings);
+                console.log("✅ Settings načítané z cache");
+                updateHeaderDate();
+                checkDeadline();
+            } catch(e) {
+                console.error("Chyba pri načítaní cache nastavení");
+            }
+        }
+
         function hideLoadingOverlay() {
             const overlay = document.getElementById('loadingOverlay');
             if (overlay) {
@@ -669,7 +694,7 @@
                     checkDeadline();
                 });
             }
-        }, 1000);
+        }, 3000);
 
         window.handleTeamChange = function() {
             const select = document.getElementById('teamSelect');
