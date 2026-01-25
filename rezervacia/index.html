@@ -1378,15 +1378,24 @@
                 return;
             }
             try {
+                const formattedTime = `${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`;
+                const newText = `⏳ Rezervované (do ${formattedTime})`;
+                
+                // Aktualizuj aj čas v settings aj text v pageTexts
                 await updateDoc(doc(db, "config", "settings"), { 
                     releaseHour: hour, 
                     releaseMinute: minute 
                 });
-                alert(`✅ Čas uvoľnenia bol nastavený na ${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}!`);
-                // NOVÉ: Aktualizuj display textu vľavo
+                
+                await updateDoc(doc(db, "config", "pageTexts"), {
+                    "text-index.html-1": newText
+                });
+                
+                alert(`✅ Čas uvoľnenia bol nastavený na ${formattedTime}!`);
+                // Aktualizuj display textu vľavo
                 const reservedDisplay = document.getElementById('reservedDeadlineDisplay');
                 if (reservedDisplay) {
-                    reservedDisplay.innerText = `${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`;
+                    reservedDisplay.innerText = formattedTime;
                 }
                 scheduleAutoRelease();
             } catch (err) {
