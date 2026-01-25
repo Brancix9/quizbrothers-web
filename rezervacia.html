@@ -699,9 +699,7 @@
             if (select.value === 'new') {
                 customInputDiv.style.display = 'block'; 
                 countInput.value = 4;
-                pinLabel.innerText = "Vytvor si PIN kód:"; 
                 pinLabel.style.color = "#27ae60";
-                pinHelp.innerText = "Zapamätaj si ho pre budúce zmeny.";
                 teamReservedInfo.style.display = 'none';
                 
                 // Skontroluj či je zadaný názov existujúceho potvrdzeného tímu
@@ -709,16 +707,24 @@
                 if (customName) {
                     const existingTeam = teamsData.find(t => t.id === customName);
                     if (existingTeam && existingTeam.confirmed) {
-                        // Existuje potvrdený tím s týmto menom
+                        // Existuje potvrdený tím s týmto menom - ZADAJ PIN!
+                        pinLabel.innerText = "Zadaj PIN kód:";
+                        pinHelp.innerText = "Potrebný na zmenu alebo zrušenie účasti.";
                         teamReservedInfo.style.display = 'block';
                         teamReservedInfo.innerText = `✅ Tento tím je už potvrdený s ${existingTeam.current} os.!`;
                         teamReservedInfo.style.color = '#27ae60';
                         cancelBtn.style.display = 'block'; // Zobraz cancel btn
                         countInput.value = existingTeam.current;
                     } else {
+                        // Nový tím - VYTVOR PIN!
+                        pinLabel.innerText = "Vytvor si PIN kód:";
+                        pinHelp.innerText = "Zapamätaj si ho pre budúce zmeny.";
                         cancelBtn.style.display = 'none';
                     }
                 } else {
+                    // Žiadne meno - VYTVOR PIN!
+                    pinLabel.innerText = "Vytvor si PIN kód:";
+                    pinHelp.innerText = "Zapamätaj si ho pre budúce zmeny.";
                     cancelBtn.style.display = 'none';
                 }
             } else {
@@ -817,8 +823,11 @@
                     if (!finalIsAdmin) {
                         // Regular user - must provide correct PIN
                         if (!enteredPin) {
-                            alert("❌ Zadaj PIN!");
-                            return;
+                            const promptedPin = prompt("❓ Zadaj PIN kód:");
+                            if (!promptedPin) {
+                                return;
+                            }
+                            enteredPin = promptedPin;
                         }
                         const pinTrimmed = enteredPin.trim();
                         const teamPinTrimmed = String(team.pin || "").trim();
@@ -856,8 +865,11 @@
                     
                     // Ak je admin, PIN sa nevyžaduje
                     if (!finalIsAdmin && !enteredPin) {
-                        alert("❌ Zadaj PIN!");
-                        return;
+                        const promptedPin = prompt("❓ Zadaj PIN kód:");
+                        if (!promptedPin) {
+                            return;
+                        }
+                        enteredPin = promptedPin;
                     }
                     const existing = teamsData.find(t => t.id === newName);
                     if (existing) {
@@ -1320,8 +1332,11 @@
             }
             
             if (!enteredPin || !enteredPin.trim()) {
-                alert("❌ Zadaj PIN!");
-                return;
+                const promptedPin = prompt("❓ Zadaj PIN kód:");
+                if (!promptedPin) {
+                    return;
+                }
+                enteredPin = promptedPin;
             }
             
             const team = teamsData.find(t => t.id === teamId);
