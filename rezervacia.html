@@ -844,6 +844,8 @@
                         await updateDoc(doc(db, "teams", team.id), { current: count, confirmed: true });
                         console.log("✅ Tím úspešne updatovaný!");
                         // Firebase listener automaticky aktualizuje teamsData a renderuje UI
+                        // Fallback: aktualizuj manuálne ak Firebase listener chvíľu trvá
+                        setTimeout(() => { updateDashboard(); populateTeamSelect(); }, 100);
                     } catch (updateErr) {
                         console.warn("⚠️ updateDoc chyba (možno offline):", updateErr);
                         throw updateErr; // Preskupuj chybu vyššie na catch handler
@@ -886,6 +888,8 @@
                         // Ak je admin, preskoči PIN check
                         await updateDoc(doc(db, "teams", newName), { current: count, confirmed: true });
                         // Firebase listener automaticky aktualizuje teamsData a renderuje UI
+                        // Fallback: aktualizuj manuálne ak Firebase listener chvíľu trvá
+                        setTimeout(() => { updateDashboard(); populateTeamSelect(); }, 100);
                         document.getElementById('formMessage').innerText = `✅ Tím ${newName} upravený!`;
                         document.getElementById('formMessage').style.color = 'green';
                     } else {
@@ -895,6 +899,8 @@
                             default: count, current: count, pin: finalPin, confirmed: true, isStatic: false, tableId: ""
                         });
                         // Firebase listener automaticky aktualizuje teamsData a UI - netreba manual push!
+                        // Fallback: aktualizuj manuálne ak Firebase listener chvíľu trvá
+                        setTimeout(() => { updateDashboard(); populateTeamSelect(); }, 100);
                         document.getElementById('formMessage').innerText = `✅ Tím ${newName} zaregistrovaný!`;
                         document.getElementById('formMessage').style.color = 'green';
                     }
