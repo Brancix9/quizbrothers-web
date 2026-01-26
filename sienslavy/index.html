@@ -390,6 +390,23 @@
             transform: translateY(-2px);
             box-shadow: 0 6px 20px rgba(52, 152, 219, 0.4);
         }
+
+        .delete-season-btn {
+            background: #e74c3c;
+            color: white;
+            border: none;
+            padding: 8px 15px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.3s ease;
+        }
+
+        .delete-season-btn:hover {
+            background: #c0392b;
+            transform: scale(1.05);
+        }
+
         .season-card {
             margin-bottom: 60px;
         }
@@ -451,7 +468,10 @@
         function createSeasonHTML(year) {
             return `
                 <div class="card season-card" data-year="${year}" style="text-align: left;">
-                    <h2 style="border-bottom: 2px solid #27ae60; padding-bottom: 10px;">Sezóna ${year}</h2>
+                    <h2 style="border-bottom: 2px solid #27ae60; padding-bottom: 10px; display: flex; justify-content: space-between; align-items: center;">
+                        <span>Sezóna ${year}</span>
+                        <button class="delete-season-btn" id="deleteSeason_${year}" onclick="deleteSeason(${year})" style="display: none;">🗑️ Odstrániť sezónu</button>
+                    </h2>
                     
                     <div class="podium-container">
                         <div class="podium-place place-2">
@@ -579,6 +599,49 @@
                 } catch (error) {
                     console.error('❌ Chyba pri ukladaní sezóny:', error);
                 }
+            }
+        }
+
+        // Odstránenie sezóny
+        window.deleteSeason = async function(year) {
+            if (!confirm(`Naozaj chceš odstrániť sezónu ${year}? Táto akcia sa nedá vrátiť späť.`)) {
+                return;
+            }
+            
+            // Odstráň rok zo zoznamu
+            const index = window.currentSeasons.indexOf(year);
+            if (index > -1) {
+                window.currentSeasons.splice(index, 1);
+            }
+            
+            // Odstráň dáta
+            delete window.standingsData[year];
+            
+            // Vykresli znova
+            window.renderSeasons();
+            
+            // Ulož do Firebase
+            try {
+                const { doc, setDoc, deleteField } = await import("https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js");
+                await setDoc(doc(window.db, "web_content", "hall_of_fame"), {
+                    seasons: window.currentSeasons,
+                    [`standings_${year}`]: deleteField()
+                }, { merge: true });
+                console.log('✅ Sezóna', year, 'odstránená');
+                
+                // Ak je admin režim aktívny, obnov admin tlačidlá
+                if (document.body.classList.contains('admin-mode')) {
+                    setTimeout(() => {
+                        window.currentSeasons.forEach(y => {
+                            const adminControls = document.getElementById(`standingsAdminControls_${y}`);
+                            if (adminControls) adminControls.classList.add('show');
+                            const deleteBtn = document.getElementById(`deleteSeason_${y}`);
+                            if (deleteBtn) deleteBtn.style.display = 'inline-block';
+                        });
+                    }, 100);
+                }
+            } catch (error) {
+                console.error('❌ Chyba pri odstraňovaní sezóny:', error);
             }
         }
 
@@ -744,6 +807,11 @@
                 window.currentSeasons.forEach(year => {
                     const adminControls = document.getElementById(`standingsAdminControls_${year}`);
                     if (adminControls) adminControls.classList.add('show');
+                    
+                    // Zobraz tlačidlo na odstránenie sezóny
+                    const deleteBtn = document.getElementById(`deleteSeason_${year}`);
+                    if (deleteBtn) deleteBtn.style.display = 'inline-block';
+                    
                     if (window.standingsData[year]) {
                         window.renderStandingsTable(year, window.standingsData[year], true);
                     }
@@ -757,6 +825,11 @@
                 window.currentSeasons.forEach(year => {
                     const adminControls = document.getElementById(`standingsAdminControls_${year}`);
                     if (adminControls) adminControls.classList.remove('show');
+                    
+                    // Skry tlačidlo na odstránenie sezóny
+                    const deleteBtn = document.getElementById(`deleteSeason_${year}`);
+                    if (deleteBtn) deleteBtn.style.display = 'none';
+                    
                     if (window.standingsData[year]) {
                         window.renderStandingsTable(year, window.standingsData[year], false);
                     }
