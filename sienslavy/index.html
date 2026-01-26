@@ -18,17 +18,59 @@
         }
         .podium-place {
             background: white;
-            border-radius: 10px;
-            padding: 20px;
+            border-radius: 12px;
+            padding: 25px;
             text-align: center;
-            box-shadow: 0 4px 15px rgba(34,36,84,0.1);
             flex: 1;
             min-width: 200px;
-            border-bottom: 5px solid #ddd;
+            position: relative;
+            transition: all 0.3s ease;
+            border-top: 4px solid #ddd;
         }
-        .place-1 { order: 2; border-color: #ffd700; transform: scale(1.1); z-index: 2; }
-        .place-2 { order: 1; border-color: #c0c0c0; }
-        .place-3 { order: 3; border-color: #cd7f32; }
+        
+        .place-1 { 
+            order: 2; 
+            border-top-color: #d4af37;
+            transform: scale(1.08);
+            z-index: 2;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.12);
+        }
+        
+        .place-1 h3 {
+            color: #222454;
+            font-weight: 600;
+        }
+        
+        .place-2 { 
+            order: 1; 
+            border-top-color: #8a8a8a;
+            box-shadow: 0 6px 25px rgba(0,0,0,0.08);
+        }
+        
+        .place-2 h3 {
+            color: #222454;
+            font-weight: 600;
+        }
+        
+        .place-3 { 
+            order: 3; 
+            border-top-color: #b87333;
+            box-shadow: 0 6px 25px rgba(0,0,0,0.08);
+        }
+        
+        .place-3 h3 {
+            color: #222454;
+            font-weight: 600;
+        }
+        
+        .podium-place:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 12px 35px rgba(0,0,0,0.15);
+        }
+        
+        .place-1:hover {
+            transform: translateY(-3px) scale(1.08);
+        }
         
         .podium-place img {
             width: 100%;
@@ -41,6 +83,115 @@
         }
         .podium-place img:hover { transform: scale(1.05); }
         .medal { font-size: 2rem; display: block; }
+        
+        /* Tabuľka celkového poradia */
+        .standings-table {
+            width: 100%;
+            max-width: 700px;
+            margin: 40px auto;
+            border-collapse: collapse;
+            background: white;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.08);
+        }
+        .standings-table th {
+            background: #222454;
+            color: white;
+            padding: 15px;
+            text-align: left;
+            font-weight: 600;
+        }
+        .standings-table th:first-child {
+            width: 60px;
+            text-align: center;
+        }
+        .standings-table th:last-child {
+            width: 100px;
+            text-align: right;
+        }
+        .standings-table td {
+            padding: 12px 15px;
+            border-bottom: 1px solid #f0f0f0;
+        }
+        .standings-table td:first-child {
+            text-align: center;
+            font-weight: 600;
+            color: #666;
+        }
+        .standings-table td:last-child {
+            text-align: right;
+            font-weight: 600;
+            color: #27ae60;
+        }
+        .standings-table tr:hover {
+            background: #f8f9fa;
+        }
+        .standings-table tr:last-child td {
+            border-bottom: none;
+        }
+        .standings-table tr.top-3 {
+            background: #f9f9f9;
+        }
+        .standings-table tr.top-3 td:first-child {
+            font-size: 1.1em;
+        }
+        .standings-table tr:nth-child(2) td:first-child { color: #d4af37; }
+        .standings-table tr:nth-child(3) td:first-child { color: #8a8a8a; }
+        .standings-table tr:nth-child(4) td:first-child { color: #b87333; }
+        
+        /* Admin tlačidlá pre tabuľku */
+        .standings-admin-controls {
+            text-align: center;
+            margin-top: 15px;
+            display: none;
+        }
+        .standings-admin-controls.show {
+            display: block;
+        }
+        .standings-admin-controls button {
+            background: #27ae60;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+            margin: 0 5px;
+        }
+        .standings-admin-controls button:hover {
+            background: #229954;
+        }
+        .standings-table tbody tr.admin-mode {
+            position: relative;
+        }
+        .standings-table tbody tr.admin-mode td {
+            cursor: text;
+        }
+        .standings-table tbody tr.admin-mode .row-delete {
+            position: absolute;
+            right: -35px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: #e74c3c;
+            color: white;
+            border: none;
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            cursor: pointer;
+            font-size: 16px;
+            display: none;
+        }
+        .standings-table tbody tr.admin-mode:hover .row-delete {
+            display: block;
+        }
+        .standings-table tbody tr.admin-mode .row-delete:hover {
+            background: #c0392b;
+        }
+        .standings-table-wrapper {
+            position: relative;
+        }
         
         /* Carousel galéria pre momentky */
         .gallery-carousel {
@@ -56,7 +207,7 @@
         .gallery-track img {
             flex: 0 0 calc(33.333% - 7px);
             height: 200px;
-            object-fit: cover;
+            object-fit: contain;
             border-radius: 5px;
             cursor: pointer;
             transition: transform 0.2s;
@@ -137,6 +288,111 @@
             cursor: pointer;
         }
         .modal-close:hover { color: #ccc; }
+        
+        .modal-nav {
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            background: rgba(255,255,255,0.8);
+            border: none;
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            cursor: pointer;
+            font-size: 24px;
+            color: #222454;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1001;
+        }
+        .modal-nav:hover { background: rgba(255,255,255,1); }
+        .modal-nav.modal-prev { left: 20px; }
+        .modal-nav.modal-next { right: 20px; }
+        
+        /* Admin tlačidlá pre tabuľku */
+        .standings-admin-controls {
+            text-align: center;
+            margin-top: 15px;
+            display: none;
+        }
+        .standings-admin-controls.show {
+            display: block;
+        }
+        .standings-admin-controls button {
+            background: #27ae60;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+            margin: 0 5px;
+        }
+        .standings-admin-controls button:hover {
+            background: #229954;
+        }
+        .standings-table tbody tr.admin-mode {
+            position: relative;
+        }
+        .standings-table tbody tr.admin-mode td[contenteditable] {
+            cursor: text;
+            background: #fffde7;
+        }
+        .standings-table tbody tr.admin-mode .row-delete {
+            position: absolute;
+            right: -35px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: #e74c3c;
+            color: white;
+            border: none;
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            cursor: pointer;
+            font-size: 16px;
+            display: none;
+        }
+        .standings-table tbody tr.admin-mode:hover .row-delete {
+            display: block;
+        }
+        .standings-table tbody tr.admin-mode .row-delete:hover {
+            background: #c0392b;
+        }
+        .standings-table-wrapper {
+            position: relative;
+        }
+        
+        /* Admin tlačidlá pre pridanie sezóny */
+        .add-season-btn {
+            display: none;
+            text-align: center;
+            margin: 20px 0;
+        }
+        .add-season-btn.show {
+            display: block;
+        }
+        .add-season-btn button {
+            background: #3498db;
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 600;
+            box-shadow: 0 4px 15px rgba(52, 152, 219, 0.3);
+            transition: all 0.3s ease;
+        }
+        .add-season-btn button:hover {
+            background: #2980b9;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(52, 152, 219, 0.4);
+        }
+        .season-card {
+            margin-bottom: 60px;
+        }
 
         @media (max-width: 768px) {
             .place-1 { order: 1; transform: none; }
@@ -168,62 +424,480 @@
     </header>
 
     <div class="container">
-        <h1 style="text-align: center;">🏆 Sieň slávy</h1>
-        <p style="text-align: center; margin-bottom: 40px;">Prehľad víťazov a najlepších momentov z našich sezón.</p>
+        <h1 style="text-align: center;" id="hall_of_fame_title">🏆 Sieň slávy</h1>
+        <p style="text-align: center; margin-bottom: 40px;" id="hall_of_fame_subtitle">Prehľad víťazov a najlepších momentov z našich sezón.</p>
 
-        <div class="card" style="margin-bottom: 60px; text-align: left;">
-            <h2 style="border-bottom: 2px solid #27ae60; padding-bottom: 10px;">Sezóna 2025</h2>
+        <!-- Admin tlačidlo pre pridanie sezóny hore -->
+        <div class="add-season-btn" id="addSeasonTop">
+            <button onclick="addNewSeason('up')">➕ Pridať novšiu sezónu</button>
+        </div>
+
+        <!-- Kontajner pre dynamické sezóny -->
+        <div id="seasonsContainer">
+            <!-- Sezóny sa generujú dynamicky -->
+        </div>
+
+        <!-- Admin tlačidlo pre pridanie sezóny dole -->
+        <div class="add-season-btn" id="addSeasonBottom">
+            <button onclick="addNewSeason('down')">➕ Pridať staršiu sezónu</button>
+        </div>
+
+    </div>
+
+    <script>
+        // ========== SEASONS MANAGEMENT ==========
+        
+        // Vytvorenie HTML pre jednu sezónu
+        function createSeasonHTML(year) {
+            return `
+                <div class="card season-card" data-year="${year}" style="text-align: left;">
+                    <h2 style="border-bottom: 2px solid #27ae60; padding-bottom: 10px;">Sezóna ${year}</h2>
+                    
+                    <div class="podium-container">
+                        <div class="podium-place place-2">
+                            <span class="medal">🥈</span>
+                            <img src="${year}/2miesto.jpg" alt="2. miesto" onclick="openModal(this.src)" onerror="this.style.display='none'">
+                            <h3 contenteditable="false" class="editable-text">2. miesto</h3>
+                        </div>
+                        <div class="podium-place place-1">
+                            <span class="medal">👑</span>
+                            <img src="${year}/1miesto.jpg" alt="1. miesto" onclick="openModal(this.src)" onerror="this.style.display='none'">
+                            <h3 contenteditable="false" class="editable-text">1. miesto</h3>
+                        </div>
+                        <div class="podium-place place-3">
+                            <span class="medal">🥉</span>
+                            <img src="${year}/3miesto.jpg" alt="3. miesto" onclick="openModal(this.src)" onerror="this.style.display='none'">
+                            <h3 contenteditable="false" class="editable-text">3. miesto</h3>
+                        </div>
+                    </div>
+
+                    <h4 style="margin-top: 40px; text-align: center;">🏆 Celkové poradie sezóny ${year}</h4>
+                    <div class="standings-table-wrapper">
+                        <table class="standings-table" id="standingsTable_${year}">
+                            <thead>
+                                <tr>
+                                    <th>#</th>
+                                    <th>Názov tímu</th>
+                                    <th>Body</th>
+                                </tr>
+                            </thead>
+                            <tbody id="standingsTableBody_${year}">
+                                <tr><td colspan="3" style="text-align: center; padding: 20px; color: #999;">Žiadne dáta</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="standings-admin-controls" id="standingsAdminControls_${year}">
+                        <button onclick="addStandingsRow(${year})">➕ Pridať tím</button>
+                        <button onclick="saveStandings(${year})">💾 Uložiť zmeny</button>
+                    </div>
+
+                    <h4 style="margin-top: 30px;">📸 Momentky zo sezóny</h4>
+                    <div class="gallery-carousel">
+                        <button class="carousel-btn prev" onclick="moveCarousel(${year}, -1)">‹</button>
+                        <button class="carousel-btn next" onclick="moveCarousel(${year}, 1)">›</button>
+                        <div class="gallery-track" id="galleryTrack_${year}">
+                            ${generateGalleryImages(year)}
+                        </div>
+                    </div>
+                    <div class="gallery-counter" id="galleryCounter_${year}"></div>
+                </div>
+            `;
+        }
+
+        // Generovanie obrázkov galérie
+        function generateGalleryImages(year) {
+            let html = '';
+            for (let i = 1; i <= 17; i++) {
+                html += `<img src="${year}/foto${i}.jpg" alt="Foto ${i}" onclick="openModal(this.src)" onerror="this.style.display='none'"> `;
+            }
+            return html;
+        }
+
+        // Vykresli všetky sezóny
+        window.renderSeasons = function() {
+            const container = document.getElementById('seasonsContainer');
+            if (!container) {
+                console.error('❌ seasonsContainer neexistuje');
+                return;
+            }
+            console.log('📝 Renderujem sezóny:', window.currentSeasons);
+            window.currentSeasons.sort((a, b) => b - a); // Zostupne podľa roku
+            container.innerHTML = window.currentSeasons.map(year => createSeasonHTML(year)).join('');
             
-            <div class="podium-container">
-                <div class="podium-place place-2">
-                    <span class="medal">🥈</span>
-                    <img src="2025/2miesto.jpg" alt="2. miesto">
-                    <h3>Mušky</h3>
-                </div>
-                <div class="podium-place place-1">
-                    <span class="medal">👑</span>
-                    <img src="2025/1miesto.jpg" alt="1. miesto">
-                    <h3>Piči Zla</h3>
-                </div>
-                <div class="podium-place place-3">
-                    <span class="medal">🥉</span>
-                    <img src="2025/3miesto.jpg" alt="3. miesto">
-                    <h3>Guru Team</h3>
-                </div>
-            </div>
+            // Vykresli tabuľky pre každú sezónu
+            window.currentSeasons.forEach(year => {
+                // Vykresli tabuľku ak máme dáta
+                if (window.standingsData[year]) {
+                    console.log(`📊 Vykresľujem tabuľku pre rok ${year} s ${window.standingsData[year].length} tímami`);
+                    window.renderStandingsTable(year, window.standingsData[year], false);
+                } else {
+                    console.log(`⚠️ Žiadne dáta pre rok ${year}`);
+                }
+            });
+        }
 
-            <h4 style="margin-top: 30px;">📸 Momentky zo sezóny</h4>
-            <div class="gallery-carousel">
-                <button class="carousel-btn prev" onclick="moveCarousel(-1)">‹</button>
-                <button class="carousel-btn next" onclick="moveCarousel(1)">›</button>
-                <div class="gallery-track" id="galleryTrack">
-                    <img src="2025/foto1.jpg" alt="Foto 1"> 
-                    <img src="2025/foto2.jpg" alt="Foto 2"> 
-                    <img src="2025/foto3.jpg" alt="Foto 3"> 
-                    <img src="2025/foto4.jpg" alt="Foto 4">
-                    <img src="2025/foto5.jpg" alt="Foto 5"> 
-                    <img src="2025/foto6.jpg" alt="Foto 6"> 
-                    <img src="2025/foto7.jpg" alt="Foto 7"> 
-                    <img src="2025/foto8.jpg" alt="Foto 8">
-                    <img src="2025/foto9.jpg" alt="Foto 9"> 
-                    <img src="2025/foto10.jpg" alt="Foto 10"> 
-                    <img src="2025/foto11.jpg" alt="Foto 11"> 
-                    <img src="2025/foto12.jpg" alt="Foto 12">
-                    <img src="2025/foto13.jpg" alt="Foto 13"> 
-                    <img src="2025/foto14.jpg" alt="Foto 14"> 
-                    <img src="2025/foto15.jpg" alt="Foto 15"> 
-                    <img src="2025/foto16.jpg" alt="Foto 16">
-                    <img src="2025/foto17.jpg" alt="Foto 17">
-                </div>
-            </div>
-            <div class="gallery-counter" id="galleryCounter"></div>
-        </div>
+        // Pridanie novej sezóny
+        window.addNewSeason = async function(direction) {
+            const maxYear = Math.max(...window.currentSeasons);
+            const minYear = Math.min(...window.currentSeasons);
+            const newYear = direction === 'up' ? maxYear + 1 : minYear - 1;
+            
+            if (!window.currentSeasons.includes(newYear)) {
+                window.currentSeasons.push(newYear);
+                
+                // Inicializuj prázdne pole pre novú sezónu
+                if (!window.standingsData[newYear]) {
+                    window.standingsData[newYear] = [];
+                }
+                
+                window.renderSeasons();
+                
+                // Ulož do Firebase
+                try {
+                    const { doc, setDoc } = await import("https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js");
+                    await setDoc(doc(window.db, "web_content", "hall_of_fame"), {
+                        seasons: window.currentSeasons
+                    }, { merge: true });
+                    console.log('✅ Sezóna', newYear, 'pridaná');
+                    
+                    // Ak je admin režim aktívny, zobraz admin tlačidlá pre všetky sezóny
+                    if (document.body.classList.contains('admin-mode')) {
+                        setTimeout(() => {
+                            window.currentSeasons.forEach(year => {
+                                const adminControls = document.getElementById(`standingsAdminControls_${year}`);
+                                if (adminControls) {
+                                    adminControls.classList.add('show');
+                                    console.log(`✅ Admin tlačidlá zobrazené pre rok ${year}`);
+                                }
+                                // Vykresli tabuľku v admin režime
+                                if (window.standingsData[year]) {
+                                    window.renderStandingsTable(year, window.standingsData[year], true);
+                                }
+                            });
+                        }, 100);
+                    }
+                } catch (error) {
+                    console.error('❌ Chyba pri ukladaní sezóny:', error);
+                }
+            }
+        }
 
-        <div class="card" style="margin-bottom: 60px; text-align: left; opacity: 0.9;">
-            <h2 style="border-bottom: 2px solid #666; padding-bottom: 10px;">Sezóna 2024</h2>
-            <p>Dáta pre túto sezónu pripravujeme...</p>
-        </div>
+        // ========== CAROUSEL FUNCTIONS ==========
+        const carouselState = {};
 
+        window.moveCarousel = function(year, direction) {
+            if (!carouselState[year]) {
+                carouselState[year] = { currentIndex: 0 };
+            }
+            
+            const track = document.getElementById(`galleryTrack_${year}`);
+            if (!track) return;
+            
+            const images = Array.from(track.querySelectorAll('img')).filter(img => img.style.display !== 'none');
+            const totalImages = images.length;
+            
+            if (totalImages === 0) return;
+            
+            const imagesPerView = window.innerWidth <= 768 ? 1 : 3;
+            const maxIndex = Math.max(0, totalImages - imagesPerView);
+            
+            carouselState[year].currentIndex += direction;
+            if (carouselState[year].currentIndex < 0) carouselState[year].currentIndex = 0;
+            if (carouselState[year].currentIndex > maxIndex) carouselState[year].currentIndex = maxIndex;
+            
+            const offset = -(carouselState[year].currentIndex * (100 / imagesPerView));
+            track.style.transform = `translateX(${offset}%)`;
+            
+            const counter = document.getElementById(`galleryCounter_${year}`);
+            if (counter) {
+                const start = carouselState[year].currentIndex + 1;
+                const end = Math.min(carouselState[year].currentIndex + imagesPerView, totalImages);
+                counter.textContent = `${start}-${end} z ${totalImages}`;
+            }
+        }
+
+        // ========== MODAL & GALLERY FUNCTIONS ==========
+        let modalImages = [];
+        let currentModalIndex = 0;
+
+        window.openModal = function(src) {
+            const modal = document.getElementById('imageModal');
+            const modalImg = document.getElementById('modalImage');
+            modal.style.display = "block";
+            modalImg.src = src;
+            
+            // Nájdi index aktuálneho obrázka
+            modalImages = Array.from(document.querySelectorAll('.podium-place img, .gallery-track img'))
+                .filter(img => img.style.display !== 'none')
+                .map(img => img.src);
+            currentModalIndex = modalImages.indexOf(src);
+            document.body.style.overflow = 'hidden';
+        }
+
+        window.closeModal = function() {
+            const modal = document.getElementById('imageModal');
+            modal.style.display = "none";
+            document.body.style.overflow = 'auto';
+        }
+
+        window.navigateModal = function(direction) {
+            if (modalImages.length === 0) return;
+            currentModalIndex = (currentModalIndex + direction + modalImages.length) % modalImages.length;
+            document.getElementById('modalImage').src = modalImages[currentModalIndex];
+        }
+
+        // Klavesové skratky pre modal
+        document.addEventListener('keydown', function(event) {
+            const modal = document.getElementById('imageModal');
+            if (modal.style.display === 'block') {
+                if (event.key === 'Escape') closeModal();
+                if (event.key === 'ArrowLeft') navigateModal(-1);
+                if (event.key === 'ArrowRight') navigateModal(1);
+            }
+        });
+
+        // ========== STANDINGS TABLE ADMIN FUNCTIONALITY ==========
+        // Definuj funkcie PRED Firebase načítaním
+        let isAdminLoggedIn = false;
+
+        // Načítanie a vykreslenie tabuľky
+        window.renderStandingsTable = function(year, data, adminMode = false) {
+            const tbody = document.getElementById(`standingsTableBody_${year}`);
+            if (!tbody) {
+                console.error(`Tabuľka tbody pre rok ${year} nenájdená!`);
+                return;
+            }
+            
+            tbody.innerHTML = '';
+            
+            if (!data || data.length === 0) {
+                console.warn(`Žiadne dáta na zobrazenie pre rok ${year}`);
+                tbody.innerHTML = '<tr><td colspan="3" style="text-align: center; padding: 20px; color: #999;">Žiadne dáta</td></tr>';
+                return;
+            }
+            
+            data.forEach((team, index) => {
+                const row = document.createElement('tr');
+                if (index < 3) row.classList.add('top-3');
+                if (adminMode) row.classList.add('admin-mode');
+                
+                const position = index + 1;
+                
+                row.innerHTML = `
+                    <td>${position}</td>
+                    <td ${adminMode ? 'contenteditable="true"' : ''}>${team.name}</td>
+                    <td ${adminMode ? 'contenteditable="true"' : ''}>${team.points}</td>
+                    ${adminMode ? `<td><button class="row-delete" onclick="window.deleteStandingsRow(${year}, this)">×</button></td>` : ''}
+                `;
+                
+                tbody.appendChild(row);
+            });
+            
+            console.log(`✅ Tabuľka pre rok ${year} vykreslená:`, data.length, 'tímov');
+        }
+        // Pridanie nového riadku
+        window.addStandingsRow = function(year) {
+            if (!window.standingsData[year]) window.standingsData[year] = [];
+            window.standingsData[year].push({ name: 'Nový tím', points: '0b' });
+            window.renderStandingsTable(year, window.standingsData[year], true);
+        }
+
+        // Odstránenie riadku
+        window.deleteStandingsRow = function(year, button) {
+            const row = button.closest('tr');
+            const index = Array.from(row.parentElement.children).indexOf(row);
+            window.standingsData[year].splice(index, 1);
+            window.renderStandingsTable(year, window.standingsData[year], true);
+        }
+
+        // Uloženie zmien do Firebase
+        window.saveStandings = async function(year) {
+            const tbody = document.getElementById(`standingsTableBody_${year}`);
+            const rows = tbody.querySelectorAll('tr');
+            
+            window.standingsData[year] = Array.from(rows).map((row, index) => ({
+                name: row.cells[1].textContent.trim(),
+                points: row.cells[2].textContent.trim()
+            }));
+
+            try {
+                const { doc, setDoc } = await import("https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js");
+                await setDoc(doc(window.db, "web_content", "hall_of_fame"), {
+                    [`standings_${year}`]: window.standingsData[year]
+                }, { merge: true });
+                
+                alert(`✅ Poradie pre sezónu ${year} bolo úspešne uložené!`);
+                window.renderStandingsTable(year, window.standingsData[year], true);
+            } catch (error) {
+                console.error('Chyba pri ukladaní:', error);
+                alert('❌ Chyba pri ukladaní poradia');
+            }
+        }
+
+        // Sledovanie admin módu
+        function checkAdminMode() {
+            const isAdmin = document.body.classList.contains('admin-mode');
+            
+            if (isAdmin && !isAdminLoggedIn) {
+                isAdminLoggedIn = true;
+                // Zobraz admin tlačidlá pre všetky sezóny
+                window.currentSeasons.forEach(year => {
+                    const adminControls = document.getElementById(`standingsAdminControls_${year}`);
+                    if (adminControls) adminControls.classList.add('show');
+                    if (window.standingsData[year]) {
+                        window.renderStandingsTable(year, window.standingsData[year], true);
+                    }
+                });
+                // Zobraz tlačidlá pre pridanie sezón
+                document.getElementById('addSeasonTop')?.classList.add('show');
+                document.getElementById('addSeasonBottom')?.classList.add('show');
+            } else if (!isAdmin && isAdminLoggedIn) {
+                isAdminLoggedIn = false;
+                // Skry admin tlačidlá pre všetky sezóny
+                window.currentSeasons.forEach(year => {
+                    const adminControls = document.getElementById(`standingsAdminControls_${year}`);
+                    if (adminControls) adminControls.classList.remove('show');
+                    if (window.standingsData[year]) {
+                        window.renderStandingsTable(year, window.standingsData[year], false);
+                    }
+                });
+                // Skry tlačidlá pre pridanie sezón
+                document.getElementById('addSeasonTop')?.classList.remove('show');
+                document.getElementById('addSeasonBottom')?.classList.remove('show');
+            }
+        }
+
+        // Pravidelná kontrola admin módu
+        setInterval(checkAdminMode, 500);
+    </script>
+
+    <!-- Firebase Scripts -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getFirestore, doc, onSnapshot, setDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyCgKeENYtYJWf2_DZOw4irg6GPLq3XKhEc",
+            authDomain: "quizbrothers-rezervacia.firebaseapp.com",
+            projectId: "quizbrothers-rezervacia",
+            storageBucket: "quizbrothers-rezervacia.firebasestorage.app",
+            messagingSenderId: "193476216369",
+            appId: "1:193476216369:web:8e0d59dd8282cb53ba3710",
+            measurementId: "G-0LKTHWLKH5"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+
+        // --- PREPOJENIE PRE ADMIN.JS ---
+        window.app = app;
+        window.db = db;
+        // -------------------------------
+        
+        // Globálne premenné pre sezóny a údaje
+        window.standingsData = {};
+        window.currentSeasons = [2025];
+
+        function loadWebContent() {
+            const contentDoc = doc(db, "web_content", "hall_of_fame");
+            onSnapshot(contentDoc, (docSnap) => {
+                if (docSnap.exists()) {
+                    const data = docSnap.data();
+                    if (data.hall_of_fame_title) document.getElementById('hall_of_fame_title').textContent = data.hall_of_fame_title;
+                    if (data.hall_of_fame_subtitle) document.getElementById('hall_of_fame_subtitle').textContent = data.hall_of_fame_subtitle;
+                    
+                    // Načítaj zoznam sezón
+                    if (data.seasons && Array.isArray(data.seasons)) {
+                        window.currentSeasons = data.seasons;
+                    }
+                    
+                    // Načítaj dáta pre všetky sezóny
+                    window.currentSeasons.forEach(year => {
+                        const fieldName = `standings_${year}`;
+                        if (data[fieldName] && Array.isArray(data[fieldName]) && data[fieldName].length > 0) {
+                            console.log(`📊 Načítané dáta pre ${year}:`, data[fieldName].length, 'tímov');
+                            window.standingsData[year] = data[fieldName];
+                        } else if (year === 2025) {
+                            // Pre rok 2025 vytvor defaultné dáta ak neexistujú
+                            console.log('⚠️ Žiadne dáta v Firebase pre 2025, používam defaultné');
+                            const defaultStandings = [
+                                { name: "Piči Zla", points: "179b" },
+                                { name: "Mušky", points: "162b" },
+                                { name: "Guru Team", points: "141b" },
+                                { name: "Sprostáci", points: "124b" },
+                                { name: "Divoké Pušky", points: "123b" },
+                                { name: "Fénixov rád", points: "100b" },
+                                { name: "STIBU", points: "91b" },
+                                { name: "Žolíci", points: "59b" },
+                                { name: "Gen Z", points: "50b" },
+                                { name: "Fontána", points: "48b" },
+                                { name: "Nevídali", points: "17b" },
+                                { name: "Kométy", points: "7b" },
+                                { name: "Gruppa ABC", points: "3b" },
+                                { name: "Fantastic 5", points: "1b" }
+                            ];
+                            
+                            window.standingsData[2025] = defaultStandings;
+                            
+                            // Automaticky ulož defaultné dáta do Firebase
+                            setDoc(doc(db, "web_content", "hall_of_fame"), {
+                                standings_2025: defaultStandings,
+                                seasons: window.currentSeasons
+                            }, { merge: true }).then(() => {
+                                console.log('✅ Defaultné poradie pre 2025 uložené do Firebase');
+                            }).catch(err => {
+                                console.error('❌ Chyba pri ukladaní:', err);
+                            });
+                        }
+                    });
+                } else {
+                    console.warn('⚠️ Firebase dokument neexistuje, vytváram defaultné dáta');
+                    const defaultStandings = [
+                        { name: "Piči Zla", points: "179b" },
+                        { name: "Mušky", points: "162b" },
+                        { name: "Guru Team", points: "141b" },
+                        { name: "Sprostáci", points: "124b" },
+                        { name: "Divoké Pušky", points: "123b" },
+                        { name: "Fénixov rád", points: "100b" },
+                        { name: "STIBU", points: "91b" },
+                        { name: "Žolíci", points: "59b" },
+                        { name: "Gen Z", points: "50b" },
+                        { name: "Fontána", points: "48b" },
+                        { name: "Nevídali", points: "17b" },
+                        { name: "Kométy", points: "7b" },
+                        { name: "Gruppa ABC", points: "3b" },
+                        { name: "Fantastic 5", points: "1b" }
+                    ];
+                    
+                    window.standingsData[2025] = defaultStandings;
+                    
+                    setDoc(doc(db, "web_content", "hall_of_fame"), {
+                        standings_2025: defaultStandings,
+                        seasons: window.currentSeasons
+                    }, { merge: true });
+                }
+                
+                // Po načítaní dát z Firebase vykresli sezóny
+                setTimeout(() => {
+                    if (typeof window.renderSeasons === 'function') {
+                        console.log('🚀 Volám renderSeasons() s dátami:', window.standingsData);
+                        window.renderSeasons();
+                    } else {
+                        console.error('❌ renderSeasons() funkcia neexistuje');
+                    }
+                }, 200);
+            });
+        }
+
+        loadWebContent();
+    </script>
+
+    <!-- Modal pre zväčšenie obrázkov -->
+    <div id="imageModal" class="modal" onclick="closeModal()">
+        <span class="modal-close">&times;</span>
+        <button class="modal-nav modal-prev" onclick="event.stopPropagation(); navigateModal(-1)">‹</button>
+        <button class="modal-nav modal-next" onclick="event.stopPropagation(); navigateModal(1)">›</button>
+        <img class="modal-content" id="modalImage" onclick="event.stopPropagation()">
     </div>
 
     <footer>
@@ -231,67 +905,6 @@
         <div>&copy; 2026 QuizBrothers</div>
     </footer>
 
-    <!-- Modal pre zväčšenie obrázkov -->
-    <div id="imageModal" class="modal" onclick="closeModal()">
-        <span class="modal-close">&times;</span>
-        <img class="modal-content" id="modalImage">
-    </div>
-
-    <script>
-        function toggleMenu() { 
-            document.getElementById('nav-list').classList.toggle('show'); 
-        }
-
-        // Carousel pre galériu
-        let currentIndex = 0;
-        const track = document.getElementById('galleryTrack');
-        const images = track.querySelectorAll('img');
-        const totalImages = images.length;
-        const imagesPerView = window.innerWidth <= 768 ? 1 : 3;
-        const maxIndex = Math.max(0, totalImages - imagesPerView);
-
-        function updateCarousel() {
-            const offset = -(currentIndex * (100 / imagesPerView));
-            track.style.transform = `translateX(${offset}%)`;
-            document.getElementById('galleryCounter').textContent = 
-                `${currentIndex + 1}-${Math.min(currentIndex + imagesPerView, totalImages)} z ${totalImages}`;
-        }
-
-        function moveCarousel(direction) {
-            currentIndex += direction;
-            if (currentIndex < 0) currentIndex = 0;
-            if (currentIndex > maxIndex) currentIndex = maxIndex;
-            updateCarousel();
-        }
-
-        // Pridanie onclick na všetky obrázky
-        document.addEventListener('DOMContentLoaded', function() {
-            updateCarousel();
-            
-            const allImages = document.querySelectorAll('.podium-place img, .gallery-track img');
-            allImages.forEach(img => {
-                img.addEventListener('click', function(e) {
-                    e.stopPropagation();
-                    openModal(this.src);
-                });
-            });
-        });
-
-        function openModal(src) {
-            document.getElementById('imageModal').classList.add('show');
-            document.getElementById('modalImage').src = src;
-        }
-
-        function closeModal() {
-            document.getElementById('imageModal').classList.remove('show');
-        }
-
-        // Zavrieť modal pri stlačení ESC
-        document.addEventListener('keydown', function(e) {
-            if (e.key === 'Escape') closeModal();
-        });
-    </script>
+    <script src="../admin.js"></script>
 </body>
-
 </html>
-
