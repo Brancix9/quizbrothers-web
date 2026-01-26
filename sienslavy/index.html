@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="sk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sieň slávy - QuizBrothers</title>
+    <link rel="stylesheet" href="../style.css">
+    <link rel="icon" href="../favicon.webp" type="image/webp">
+    <style>
+        /* Špecifické štýly pre pódium, ktoré v style.css nemáš */
+        .podium-container {
+            display: flex;
+            justify-content: center;
+            align-items: flex-end;
+            gap: 15px;
+            margin: 30px 0;
+            flex-wrap: wrap;
+        }
+        .podium-place {
+            background: white;
+            border-radius: 10px;
+            padding: 20px;
+            text-align: center;
+            box-shadow: 0 4px 15px rgba(34,36,84,0.1);
+            flex: 1;
+            min-width: 200px;
+            border-bottom: 5px solid #ddd;
+        }
+        .place-1 { order: 2; border-color: #ffd700; transform: scale(1.1); z-index: 2; }
+        .place-2 { order: 1; border-color: #c0c0c0; }
+        .place-3 { order: 3; border-color: #cd7f32; }
+        
+        .podium-place img {
+            width: 100%;
+            height: 150px;
+            object-fit: cover;
+            border-radius: 5px;
+            margin-bottom: 10px;
+        }
+        .medal { font-size: 2rem; display: block; }
+        
+        .gallery-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 10px;
+            margin-top: 20px;
+        }
+        .gallery-grid img {
+            cursor: pointer;
+            transition: transform 0.2s;
+            border-radius: 5px;
+        }
+        .gallery-grid img:hover { transform: scale(1.05); }
+
+        @media (max-width: 768px) {
+            .place-1 { order: 1; transform: none; }
+            .place-2 { order: 2; }
+            .place-3 { order: 3; }
+            .podium-container { flex-direction: column; align-items: stretch; }
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <div class="nav-container">
+            <a href="../" class="logo">
+                <img src="../logo.png" alt="QuizBrothers Logo">
+                <span>Quiz<span>Brothers</span></span>
+            </a>
+            <div class="menu-toggle" onclick="toggleMenu()">☰</div>
+            <nav>
+                <ul id="nav-list">
+                    <li><a href="../">Domov</a></li>
+                    <li><a href="../rezervacia/">Rezervácia stola</a></li>
+                    <li><a href="../aplikacia/">Aplikácia</a></li>
+                    <li><a href="../sienslavy/" class="active">Sieň slávy</a></li>
+                    <li><a href="../onas/">O nás</a></li>
+                </ul>
+            </nav>
+        </div>
+    </header>
+
+    <div class="container">
+        <h1 style="text-align: center;">🏆 Sieň slávy</h1>
+        <p style="text-align: center; margin-bottom: 40px;">Prehľad víťazov a najlepších momentov z našich sezón.</p>
+
+        <div class="card" style="margin-bottom: 60px; text-align: left;">
+            <h2 style="border-bottom: 2px solid #27ae60; padding-bottom: 10px;">Sezóna 2025</h2>
+            
+            <div class="podium-container">
+                <div class="podium-place place-2">
+                    <span class="medal">🥈</span>
+                    <img src="https://raw.githubusercontent.com/tvoj-user/tvoj-repo/main/Sienslavy/2025/2miesto.jpg" alt="2. miesto">
+                    <h3>Názov Tímu B</h3>
+                </div>
+                <div class="podium-place place-1">
+                    <span class="medal">👑</span>
+                    <img src="https://raw.githubusercontent.com/tvoj-user/tvoj-repo/main/Sienslavy/2025/1miesto.jpg" alt="1. miesto">
+                    <h3>Názov Tímu A</h3>
+                </div>
+                <div class="podium-place place-3">
+                    <span class="medal">🥉</span>
+                    <img src="https://raw.githubusercontent.com/tvoj-user/tvoj-repo/main/Sienslavy/2025/3miesto.jpg" alt="3. miesto">
+                    <h3>Názov Tímu C</h3>
+                </div>
+            </div>
+
+            <h4 style="margin-top: 30px;">📸 Momentky zo sezóny</h4>
+            <div class="gallery-grid">
+                <img src="https://raw.githubusercontent.com/tvoj-user/tvoj-repo/main/Sienslavy/2025/foto1.jpg" alt="Foto 1">
+                <img src="https://raw.githubusercontent.com/tvoj-user/tvoj-repo/main/Sienslavy/2025/foto2.jpg" alt="Foto 2">
+                <img src="https://raw.githubusercontent.com/tvoj-user/tvoj-repo/main/Sienslavy/2025/foto3.jpg" alt="Foto 3">
+                <img src="https://raw.githubusercontent.com/tvoj-user/tvoj-repo/main/Sienslavy/2025/foto4.jpg" alt="Foto 4">
+            </div>
+        </div>
+
+        <div class="card" style="margin-bottom: 60px; text-align: left; opacity: 0.9;">
+            <h2 style="border-bottom: 2px solid #666; padding-bottom: 10px;">Sezóna 2024</h2>
+            <p>Dáta pre túto sezónu pripravujeme...</p>
+        </div>
+
+    </div>
+
+    <footer>
+        <img src="../logo.png" alt="QuizBrothers Logo" class="footer-logo">
+        <div>&copy; 2026 QuizBrothers</div>
+    </footer>
+
+    <script>function toggleMenu() { document.getElementById('nav-list').classList.toggle('show'); }</script>
+</body>
+</html>
