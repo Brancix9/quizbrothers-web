@@ -514,7 +514,7 @@
                 <div class="card season-card" data-year="${year}" style="text-align: left;">
                     <h2 style="border-bottom: 2px solid #27ae60; padding-bottom: 10px; display: flex; justify-content: space-between; align-items: center;">
                         <span>Sezóna ${year}</span>
-                        <button class="delete-season-btn" id="deleteSeason_${year}" onclick="deleteSeason(${year})" style="display: none;">🗑️ Odstrániť sezónu</button>
+                        <button class="delete-season-btn" id="deleteSeason_${year}" onclick="deleteSeason('${year}')" style="display: none;">🗑️ Odstrániť sezónu</button>
                     </h2>
                     
                     <div class="podium-container">
@@ -558,8 +558,8 @@
                             </table>
                         </div>
                         <div class="standings-admin-controls" id="standingsAdminControls_${year}">
-                            <button onclick="addStandingsRow(${year})">➕ Pridať tím</button>
-                            <button onclick="saveStandings(${year})">💾 Uložiť zmeny</button>
+                            <button onclick="addStandingsRow('${year}')">➕ Pridať tím</button>
+                            <button onclick="saveStandings('${year}')">💾 Uložiť zmeny</button>
                         </div>
                     </div>
 
@@ -569,8 +569,8 @@
                     </h4>
                     <div class="collapsible-content collapsed" id="gallery_${year}">
                         <div class="gallery-carousel">
-                            <button class="carousel-btn prev" onclick="moveCarousel(${year}, -1)">‹</button>
-                            <button class="carousel-btn next" onclick="moveCarousel(${year}, 1)">›</button>
+                            <button class="carousel-btn prev" onclick="moveCarousel('${year}', -1)">‹</button>
+                            <button class="carousel-btn next" onclick="moveCarousel('${year}', 1)">›</button>
                             <div class="gallery-track" id="galleryTrack_${year}">
                                 ${generateGalleryImages(year)}
                             </div>
@@ -598,17 +598,63 @@
                 return;
             }
             console.log('📝 Renderujem sezóny:', window.currentSeasons);
-            window.currentSeasons.sort((a, b) => b - a); // Zostupne podľa roku
+            
+            // Zoraď sezóny - najprv číselné, potom textové
+            window.currentSeasons.sort((a, b) => {
+                const aNum = typeof a === 'number' ? a : parseInt(a.split('-')[0]);
+                const bNum = typeof b === 'number' ? b : parseInt(b.split('-')[0]);
+                return bNum - aNum; // Zostupne
+            });
+            
             container.innerHTML = window.currentSeasons.map(year => createSeasonHTML(year)).join('');
             
             // Vykresli tabuľky pre každú sezónu
             window.currentSeasons.forEach(year => {
+                // Špeciálne spracovanie pre COVID sezónu 2020-2021
+                if (year === "2020-2021") {
+                    const standingsDiv = document.getElementById(`standings_${year}`);
+                    console.log('🦠 Nastavujem COVID dizajn pre 2020-2021', standingsDiv);
+                    if (standingsDiv) {
+                        // Najprv rozbal sekciu
+                        standingsDiv.classList.remove('collapsed');
+                        const header = standingsDiv.previousElementSibling;
+                        if (header && header.classList.contains('collapsible-header')) {
+                            header.classList.remove('collapsed');
+                        }
+                        
+                        // Nastav COVID dizajn
+                        standingsDiv.innerHTML = `
+                            <div style="text-align: center; padding: 40px 20px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 10px; color: white;">
+                                <h3 style="font-size: 28px; margin-bottom: 15px;">🦠 COVID-19 Pandémia</h3>
+                                <p style="font-size: 18px; line-height: 1.6; max-width: 600px; margin: 0 auto;">
+                                    Kvízová sezóna 2020/2021 bola prerušená kvôli pandémii koronavírusu.<br>
+                                    Z bezpečnostných dôvodov sme museli všetky podujatia zrušiť.
+                                </p>
+                                <p style="margin-top: 20px; font-size: 16px; opacity: 0.9;">
+                                    ⏸️ Sezóna prerušená • Žiadne výsledky
+                                </p>
+                            </div>
+                        `;
+                    } else {
+                        console.error('❌ Element standings_2020-2021 sa nenašiel');
+                    }
+                    
+                    // Odstráň mená víťazov pre COVID sezónu
+                    const team1 = document.getElementById(`team1_${year}`);
+                    const team2 = document.getElementById(`team2_${year}`);
+                    const team3 = document.getElementById(`team3_${year}`);
+                    if (team1) team1.textContent = '—';
+                    if (team2) team2.textContent = '—';
+                    if (team3) team3.textContent = '—';
+                    return;
+                }
+                
                 // Vykresli tabuľku ak máme dáta
                 if (window.standingsData[year]) {
                     console.log(`📊 Vykresľujem tabuľku pre rok ${year} s ${window.standingsData[year].length} tímami`);
                     window.renderStandingsTable(year, window.standingsData[year], false);
                     
-                    // Ak je rok 2025 alebo máme dáta, naplň víťazov do pódia
+                    // Ak máme dáta, naplň víťazov do pódia
                     if (window.standingsData[year].length >= 3) {
                         const team1 = document.getElementById(`team1_${year}`);
                         const team2 = document.getElementById(`team2_${year}`);
@@ -827,7 +873,7 @@
                     <td>${position}</td>
                     <td ${adminMode ? 'contenteditable="true"' : ''}>${team.name}</td>
                     <td ${adminMode ? 'contenteditable="true"' : ''}>${team.points}</td>
-                    ${adminMode ? `<td><button class="row-delete" onclick="window.deleteStandingsRow(${year}, this)">×</button></td>` : ''}
+                    ${adminMode ? `<td><button class="row-delete" onclick="window.deleteStandingsRow('${year}', this)">×</button></td>` : ''}
                 `;
                 
                 tbody.appendChild(row);
@@ -862,8 +908,9 @@
 
             try {
                 const { doc, setDoc } = await import("https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js");
+                const fieldName = `standings_${year}`.replace(/\//g, '-');
                 await setDoc(doc(window.db, "web_content", "hall_of_fame"), {
-                    [`standings_${year}`]: window.standingsData[year]
+                    [fieldName]: window.standingsData[year]
                 }, { merge: true });
                 
                 alert(`✅ Poradie pre sezónu ${year} bolo úspešne uložené!`);
@@ -946,7 +993,7 @@
         
         // Globálne premenné pre sezóny a údaje
         window.standingsData = {};
-        window.currentSeasons = [2025, 2024, 2023];
+        window.currentSeasons = [2025, 2024, 2023, 2022, "2020-2021", "2019-2020", "2018-2019"];
 
         function loadWebContent() {
             const contentDoc = doc(db, "web_content", "hall_of_fame");
@@ -956,14 +1003,30 @@
                     if (data.hall_of_fame_title) document.getElementById('hall_of_fame_title').textContent = data.hall_of_fame_title;
                     if (data.hall_of_fame_subtitle) document.getElementById('hall_of_fame_subtitle').textContent = data.hall_of_fame_subtitle;
                     
-                    // Načítaj zoznam sezón
+                    // Ak Firebase má sezóny, zlúč ich s lokálnymi (priorita lokálne definované)
                     if (data.seasons && Array.isArray(data.seasons)) {
-                        window.currentSeasons = data.seasons;
+                        // Pridaj Firebase sezóny, ktoré nie sú v lokálnom zozname
+                        data.seasons.forEach(season => {
+                            if (!window.currentSeasons.includes(season)) {
+                                window.currentSeasons.push(season);
+                            }
+                        });
+                        
+                        // Aktualizuj Firebase ak máme nové sezóny
+                        const hasNewSeasons = window.currentSeasons.some(s => !data.seasons.includes(s));
+                        if (hasNewSeasons) {
+                            console.log('🔄 Aktualizujem zoznam sezón vo Firebase');
+                            setDoc(contentDoc, { seasons: window.currentSeasons }, { merge: true });
+                        }
+                    } else {
+                        // Ak Firebase nemá žiadne sezóny, ulož lokálne
+                        console.log('🔄 Prvé uloženie sezón do Firebase');
+                        setDoc(contentDoc, { seasons: window.currentSeasons }, { merge: true });
                     }
                     
                     // Načítaj dáta pre všetky sezóny
                     window.currentSeasons.forEach(year => {
-                        const fieldName = `standings_${year}`;
+                        const fieldName = `standings_${year}`.replace(/\//g, '-');
                         if (data[fieldName] && Array.isArray(data[fieldName]) && data[fieldName].length > 0) {
                             console.log(`📊 Načítané dáta pre ${year}:`, data[fieldName].length, 'tímov');
                             window.standingsData[year] = data[fieldName];
@@ -1064,6 +1127,50 @@
                             }).catch(err => {
                                 console.error('❌ Chyba pri ukladaní:', err);
                             });
+                        } else if (year === 2022) {
+                            // Pre rok 2022 vytvor defaultné dáta ak neexistujú
+                            console.log('⚠️ Žiadne dáta v Firebase pre 2022, používam defaultné');
+                            const defaultStandings2022 = [
+                                { name: "No Name", points: "75b" },
+                                { name: "Sprostáci", points: "67,5b" },
+                                { name: "Fontána", points: "67b" },
+                                { name: "Divoké pušky", points: "49b" },
+                                { name: "Mušky", points: "43b" },
+                                { name: "No Tááák", points: "35b" },
+                                { name: "Šugibanda", points: "28b" },
+                                { name: "Žolíci", points: "11b" },
+                                { name: "Alpha", points: "4b" }
+                            ];
+                            
+                            window.standingsData[2022] = defaultStandings2022;
+                            
+                            // Automaticky ulož defaultné dáta do Firebase
+                            // Pridaj 2022 do seasons ak tam nie je
+                            const updatedSeasons2022 = window.currentSeasons.includes(2022) 
+                                ? window.currentSeasons 
+                                : [...window.currentSeasons, 2022];
+                            
+                            setDoc(doc(db, "web_content", "hall_of_fame"), {
+                                standings_2022: defaultStandings2022,
+                                seasons: updatedSeasons2022
+                            }, { merge: true }).then(() => {
+                                console.log('✅ Defaultné poradie pre 2022 uložené do Firebase');
+                                window.currentSeasons = updatedSeasons2022;
+                            }).catch(err => {
+                                console.error('❌ Chyba pri ukladaní:', err);
+                            });
+                        } else if (year === "2020-2021") {
+                            // COVID sezóna - žiadne dáta, špeciálny dizajn
+                            console.log('⚠️ COVID-19 sezóna 2020-2021 - žiadne výsledky');
+                            window.standingsData[year] = [];
+                        } else if (year === "2019-2020") {
+                            // Potrebujem údaje od používateľa
+                            console.log('⚠️ Žiadne dáta v Firebase pre 2019-2020, čakám na údaje');
+                            window.standingsData[year] = [];
+                        } else if (year === "2018-2019") {
+                            // Potrebujem údaje od používateľa
+                            console.log('⚠️ Žiadne dáta v Firebase pre 2018-2019, čakám na údaje');
+                            window.standingsData[year] = [];
                         }
                     });
                 } else {

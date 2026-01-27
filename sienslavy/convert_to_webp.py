@@ -3,7 +3,7 @@ import os
 import glob
 
 # Priečinok kde sú fotky
-folder = "2023"
+folder = "2022"
 
 # Nájdi všetky jpg súbory
 jpg_files = glob.glob(f"{folder}/*.jpg") + glob.glob(f"{folder}/*.JPG") + glob.glob(f"{folder}/*.jpeg") + glob.glob(f"{folder}/*.JPEG")
