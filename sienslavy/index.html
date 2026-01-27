@@ -74,7 +74,7 @@
         
         .podium-place img {
             width: 100%;
-            height: 150px;
+            height: 250px;
             object-fit: contain;
             border-radius: 5px;
             margin-bottom: 10px;
@@ -82,7 +82,15 @@
             transition: transform 0.2s;
         }
         .podium-place img:hover { transform: scale(1.05); }
-        .medal { font-size: 2rem; display: block; }
+        .medal { 
+            font-size: 2.5rem; 
+            display: block; 
+            position: absolute;
+            top: -15px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 10;
+        }
         
         /* Tabuľka celkového poradia */
         .standings-table {
@@ -411,6 +419,42 @@
             margin-bottom: 60px;
         }
 
+        .collapsible-header {
+            cursor: pointer;
+            user-select: none;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-top: 30px;
+            padding: 10px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+        }
+
+        .collapsible-header:hover {
+            background: #e9ecef;
+        }
+
+        .collapsible-header .toggle-icon {
+            font-size: 20px;
+            transition: transform 0.3s ease;
+        }
+
+        .collapsible-header.collapsed .toggle-icon {
+            transform: rotate(-90deg);
+        }
+
+        .collapsible-content {
+            max-height: 2000px;
+            overflow: hidden;
+            transition: max-height 0.4s ease;
+        }
+
+        .collapsible-content.collapsed {
+            max-height: 0;
+        }
+
         @media (max-width: 768px) {
             .place-1 { order: 1; transform: none; }
             .place-2 { order: 2; }
@@ -476,50 +520,63 @@
                     <div class="podium-container">
                         <div class="podium-place place-2">
                             <span class="medal">🥈</span>
-                            <img src="${year}/2miesto.jpg" alt="2. miesto" onclick="openModal(this.src)" onerror="this.style.display='none'">
+                            <img src="${year}/2miesto.webp" alt="2. miesto" onclick="openModal(this.src)" onerror="this.style.display='none'">
                             <h3 contenteditable="false" class="editable-text">2. miesto</h3>
+                            <p style="font-weight: bold; margin-top: 5px; font-size: 18px;" contenteditable="false" class="editable-text" id="team2_${year}"></p>
                         </div>
                         <div class="podium-place place-1">
                             <span class="medal">👑</span>
-                            <img src="${year}/1miesto.jpg" alt="1. miesto" onclick="openModal(this.src)" onerror="this.style.display='none'">
+                            <img src="${year}/1miesto.webp" alt="1. miesto" onclick="openModal(this.src)" onerror="this.style.display='none'">
                             <h3 contenteditable="false" class="editable-text">1. miesto</h3>
+                            <p style="font-weight: bold; margin-top: 5px; font-size: 18px;" contenteditable="false" class="editable-text" id="team1_${year}"></p>
                         </div>
                         <div class="podium-place place-3">
                             <span class="medal">🥉</span>
-                            <img src="${year}/3miesto.jpg" alt="3. miesto" onclick="openModal(this.src)" onerror="this.style.display='none'">
+                            <img src="${year}/3miesto.webp" alt="3. miesto" onclick="openModal(this.src)" onerror="this.style.display='none'">
                             <h3 contenteditable="false" class="editable-text">3. miesto</h3>
+                            <p style="font-weight: bold; margin-top: 5px; font-size: 18px;" contenteditable="false" class="editable-text" id="team3_${year}"></p>
                         </div>
                     </div>
 
-                    <h4 style="margin-top: 40px; text-align: center;">🏆 Celkové poradie sezóny ${year}</h4>
-                    <div class="standings-table-wrapper">
-                        <table class="standings-table" id="standingsTable_${year}">
-                            <thead>
-                                <tr>
-                                    <th>#</th>
-                                    <th>Názov tímu</th>
-                                    <th>Body</th>
-                                </tr>
-                            </thead>
-                            <tbody id="standingsTableBody_${year}">
-                                <tr><td colspan="3" style="text-align: center; padding: 20px; color: #999;">Žiadne dáta</td></tr>
-                            </tbody>
-                        </table>
-                    </div>
-                    <div class="standings-admin-controls" id="standingsAdminControls_${year}">
-                        <button onclick="addStandingsRow(${year})">➕ Pridať tím</button>
-                        <button onclick="saveStandings(${year})">💾 Uložiť zmeny</button>
-                    </div>
-
-                    <h4 style="margin-top: 30px;">📸 Momentky zo sezóny</h4>
-                    <div class="gallery-carousel">
-                        <button class="carousel-btn prev" onclick="moveCarousel(${year}, -1)">‹</button>
-                        <button class="carousel-btn next" onclick="moveCarousel(${year}, 1)">›</button>
-                        <div class="gallery-track" id="galleryTrack_${year}">
-                            ${generateGalleryImages(year)}
+                    <h4 class="collapsible-header collapsed" onclick="toggleCollapse('standings_${year}')">
+                        <span class="toggle-icon">▼</span>
+                        🏆 Celkové poradie sezóny ${year}
+                    </h4>
+                    <div class="collapsible-content collapsed" id="standings_${year}">
+                        <div class="standings-table-wrapper">
+                            <table class="standings-table" id="standingsTable_${year}">
+                                <thead>
+                                    <tr>
+                                        <th>#</th>
+                                        <th>Názov tímu</th>
+                                        <th>Body</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="standingsTableBody_${year}">
+                                    <tr><td colspan="3" style="text-align: center; padding: 20px; color: #999;">Žiadne dáta</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                        <div class="standings-admin-controls" id="standingsAdminControls_${year}">
+                            <button onclick="addStandingsRow(${year})">➕ Pridať tím</button>
+                            <button onclick="saveStandings(${year})">💾 Uložiť zmeny</button>
                         </div>
                     </div>
-                    <div class="gallery-counter" id="galleryCounter_${year}"></div>
+
+                    <h4 class="collapsible-header collapsed" onclick="toggleCollapse('gallery_${year}')">
+                        <span class="toggle-icon">▼</span>
+                        📸 Momentky zo sezóny
+                    </h4>
+                    <div class="collapsible-content collapsed" id="gallery_${year}">
+                        <div class="gallery-carousel">
+                            <button class="carousel-btn prev" onclick="moveCarousel(${year}, -1)">‹</button>
+                            <button class="carousel-btn next" onclick="moveCarousel(${year}, 1)">›</button>
+                            <div class="gallery-track" id="galleryTrack_${year}">
+                                ${generateGalleryImages(year)}
+                            </div>
+                        </div>
+                        <div class="gallery-counter" id="galleryCounter_${year}"></div>
+                    </div>
                 </div>
             `;
         }
@@ -528,7 +585,7 @@
         function generateGalleryImages(year) {
             let html = '';
             for (let i = 1; i <= 17; i++) {
-                html += `<img src="${year}/foto${i}.jpg" alt="Foto ${i}" onclick="openModal(this.src)" onerror="this.style.display='none'"> `;
+                html += `<img src="${year}/foto${i}.webp" alt="Foto ${i}" onclick="openModal(this.src)" onerror="this.style.display='none'"> `;
             }
             return html;
         }
@@ -550,6 +607,17 @@
                 if (window.standingsData[year]) {
                     console.log(`📊 Vykresľujem tabuľku pre rok ${year} s ${window.standingsData[year].length} tímami`);
                     window.renderStandingsTable(year, window.standingsData[year], false);
+                    
+                    // Ak je rok 2025 alebo máme dáta, naplň víťazov do pódia
+                    if (window.standingsData[year].length >= 3) {
+                        const team1 = document.getElementById(`team1_${year}`);
+                        const team2 = document.getElementById(`team2_${year}`);
+                        const team3 = document.getElementById(`team3_${year}`);
+                        
+                        if (team1) team1.textContent = window.standingsData[year][0]?.name || '';
+                        if (team2) team2.textContent = window.standingsData[year][1]?.name || '';
+                        if (team3) team3.textContent = window.standingsData[year][2]?.name || '';
+                    }
                 } else {
                     console.log(`⚠️ Žiadne dáta pre rok ${year}`);
                 }
@@ -645,6 +713,15 @@
             }
         }
 
+        // ========== COLLAPSIBLE SECTIONS ==========
+        window.toggleCollapse = function(sectionId) {
+            const content = document.getElementById(sectionId);
+            const header = content.previousElementSibling;
+            
+            content.classList.toggle('collapsed');
+            header.classList.toggle('collapsed');
+        }
+
         // ========== CAROUSEL FUNCTIONS ==========
         const carouselState = {};
 
@@ -686,7 +763,7 @@
         window.openModal = function(src) {
             const modal = document.getElementById('imageModal');
             const modalImg = document.getElementById('modalImage');
-            modal.style.display = "block";
+            modal.style.display = "flex";
             modalImg.src = src;
             
             // Nájdi index aktuálneho obrázka
@@ -712,7 +789,7 @@
         // Klavesové skratky pre modal
         document.addEventListener('keydown', function(event) {
             const modal = document.getElementById('imageModal');
-            if (modal.style.display === 'block') {
+            if (modal.style.display === 'flex') {
                 if (event.key === 'Escape') closeModal();
                 if (event.key === 'ArrowLeft') navigateModal(-1);
                 if (event.key === 'ArrowRight') navigateModal(1);
@@ -869,7 +946,7 @@
         
         // Globálne premenné pre sezóny a údaje
         window.standingsData = {};
-        window.currentSeasons = [2025];
+        window.currentSeasons = [2025, 2024, 2023];
 
         function loadWebContent() {
             const contentDoc = doc(db, "web_content", "hall_of_fame");
@@ -918,6 +995,72 @@
                                 seasons: window.currentSeasons
                             }, { merge: true }).then(() => {
                                 console.log('✅ Defaultné poradie pre 2025 uložené do Firebase');
+                            }).catch(err => {
+                                console.error('❌ Chyba pri ukladaní:', err);
+                            });
+                        } else if (year === 2024) {
+                            // Pre rok 2024 vytvor defaultné dáta ak neexistujú
+                            console.log('⚠️ Žiadne dáta v Firebase pre 2024, používam defaultné');
+                            const defaultStandings2024 = [
+                                { name: "Mušky", points: "154b" },
+                                { name: "Guru Team", points: "140b" },
+                                { name: "Sprostáci", points: "115b" },
+                                { name: "Divoké Pušky", points: "105b" },
+                                { name: "STIBU", points: "94b" },
+                                { name: "Fontána", points: "77b" },
+                                { name: "Žolíci", points: "64b" },
+                                { name: "Ví-ťa-zi", points: "24b" },
+                                { name: "Tuli Tuli", points: "18b" },
+                                { name: "Šugibanda", points: "17b" },
+                                { name: "Čipmankovia", points: "15b" },
+                                { name: "Quiztieri", points: "7b" },
+                                { name: "Piči Zla", points: "7b" },
+                                { name: "Old School", points: "3b" },
+                                { name: "KGB", points: "1b" }
+                            ];
+                            
+                            window.standingsData[2024] = defaultStandings2024;
+                            
+                            // Automaticky ulož defaultné dáta do Firebase
+                            setDoc(doc(db, "web_content", "hall_of_fame"), {
+                                standings_2024: defaultStandings2024,
+                                seasons: window.currentSeasons
+                            }, { merge: true }).then(() => {
+                                console.log('✅ Defaultné poradie pre 2024 uložené do Firebase');
+                            }).catch(err => {
+                                console.error('❌ Chyba pri ukladaní:', err);
+                            });
+                        } else if (year === 2023) {
+                            // Pre rok 2023 vytvor defaultné dáta ak neexistujú
+                            console.log('⚠️ Žiadne dáta v Firebase pre 2023, používam defaultné');
+                            const defaultStandings2023 = [
+                                { name: "Mušky", points: "109b" },
+                                { name: "Guru Team", points: "100b" },
+                                { name: "Sprostáci", points: "87b" },
+                                { name: "Divoké Pušky", points: "79b" },
+                                { name: "Žolíci", points: "65b" },
+                                { name: "Fontána", points: "57b" },
+                                { name: "Šugibanda", points: "25b" },
+                                { name: "Tuli Tuli", points: "18b" },
+                                { name: "Mladá Matica", points: "8b" },
+                                { name: "Stalaktity", points: "8b" },
+                                { name: "Lúzri", points: "2b" }
+                            ];
+                            
+                            window.standingsData[2023] = defaultStandings2023;
+                            
+                            // Automaticky ulož defaultné dáta do Firebase
+                            // Pridaj 2023 do seasons ak tam nie je
+                            const updatedSeasons = window.currentSeasons.includes(2023) 
+                                ? window.currentSeasons 
+                                : [...window.currentSeasons, 2023];
+                            
+                            setDoc(doc(db, "web_content", "hall_of_fame"), {
+                                standings_2023: defaultStandings2023,
+                                seasons: updatedSeasons
+                            }, { merge: true }).then(() => {
+                                console.log('✅ Defaultné poradie pre 2023 uložené do Firebase');
+                                window.currentSeasons = updatedSeasons;
                             }).catch(err => {
                                 console.error('❌ Chyba pri ukladaní:', err);
                             });
