@@ -1027,7 +1027,50 @@
                     // Načítaj dáta pre všetky sezóny
                     window.currentSeasons.forEach(year => {
                         const fieldName = `standings_${year}`.replace(/\//g, '-');
-                        if (data[fieldName] && Array.isArray(data[fieldName]) && data[fieldName].length > 0) {
+                        
+                        // Pre staršie roky VŽDY použij finálne výsledky (prepíš Firebase)
+                        if (year === "2019-2020") {
+                            const finalStandings2019_2020 = [
+                                { name: "Sprostáci", points: "145b" },
+                                { name: "Starci na chmeli", points: "143b" },
+                                { name: "Originály", points: "124b" },
+                                { name: "Divoké pušky", points: "117b" },
+                                { name: "Zobor", points: "114b" },
+                                { name: "Fontána", points: "97b" },
+                                { name: "Gemersko", points: "91b" },
+                                { name: "Sekery", points: "14b" },
+                                { name: "Blek Panter", points: "12b" },
+                                { name: "Slanci", points: "6b" },
+                                { name: "Kamene", points: "3b" }
+                            ];
+                            window.standingsData[year] = finalStandings2019_2020;
+                            setDoc(doc(db, "web_content", "hall_of_fame"), {
+                                [fieldName]: finalStandings2019_2020
+                            }, { merge: true });
+                            console.log('✅ Finálne poradie pre 2019-2020 nastavené');
+                        } else if (year === "2018-2019") {
+                            const finalStandings2018_2019 = [
+                                { name: "Sprostáci", points: "150b" },
+                                { name: "Divoké Pušky", points: "130b" },
+                                { name: "FC Barcelona", points: "129b" },
+                                { name: "Fontána", points: "122b" },
+                                { name: "Gemersko", points: "114b" },
+                                { name: "Vakididi", points: "47b" },
+                                { name: "Bláznivé strely", points: "28b" },
+                                { name: "Experti", points: "21b" },
+                                { name: "Rockeri", points: "20b" },
+                                { name: "Kamene", points: "18b" },
+                                { name: "Fernetky", points: "10b" },
+                                { name: "Španielske Mušky", points: "8b" },
+                                { name: "MB", points: "7b" },
+                                { name: "DUO", points: "7b" }
+                            ];
+                            window.standingsData[year] = finalStandings2018_2019;
+                            setDoc(doc(db, "web_content", "hall_of_fame"), {
+                                [fieldName]: finalStandings2018_2019
+                            }, { merge: true });
+                            console.log('✅ Finálne poradie pre 2018-2019 nastavené');
+                        } else if (data[fieldName] && Array.isArray(data[fieldName]) && data[fieldName].length > 0) {
                             console.log(`📊 Načítané dáta pre ${year}:`, data[fieldName].length, 'tímov');
                             window.standingsData[year] = data[fieldName];
                         } else if (year === 2025) {
@@ -1163,67 +1206,6 @@
                             // COVID sezóna - žiadne dáta, špeciálny dizajn
                             console.log('⚠️ COVID-19 sezóna 2020-2021 - žiadne výsledky');
                             window.standingsData[year] = [];
-                        } else if (year === "2019-2020") {
-                            // Pre rok 2019-2020 PREPÍŠ staré dáta novými (finálne výsledky)
-                            console.log('🔄 Aktualizujem finálne výsledky pre 2019-2020');
-                            const finalStandings2019_2020 = [
-                                { name: "Sprostáci", points: "150b" },
-                                { name: "Divoké Pušky", points: "130b" },
-                                { name: "FC Barcelona", points: "129b" },
-                                { name: "Fontána", points: "122b" },
-                                { name: "Gemersko", points: "114b" },
-                                { name: "Vakididi", points: "47b" },
-                                { name: "Bláznivé strely", points: "28b" },
-                                { name: "Experti", points: "21b" },
-                                { name: "Rockeri", points: "20b" },
-                                { name: "Kamene", points: "18b" },
-                                { name: "Fernetky", points: "10b" },
-                                { name: "Španielske Mušky", points: "8b" },
-                                { name: "MB", points: "7b" },
-                                { name: "DUO", points: "7b" }
-                            ];
-                            
-                            window.standingsData[year] = finalStandings2019_2020;
-                            
-                            // VŽDY prepíš Firebase dáta novými finálnymi výsledkami
-                            const fieldName2019 = 'standings_2019-2020';
-                            setDoc(doc(db, "web_content", "hall_of_fame"), {
-                                [fieldName2019]: finalStandings2019_2020,
-                                seasons: window.currentSeasons
-                            }, { merge: true }).then(() => {
-                                console.log('✅ Finálne poradie pre 2019-2020 uložené do Firebase');
-                            }).catch(err => {
-                                console.error('❌ Chyba pri ukladaní:', err);
-                            });
-                        } else if (year === "2018-2019") {
-                            // Pre rok 2018-2019 PREPÍŠ staré dáta novými (finálne výsledky)
-                            console.log('🔄 Aktualizujem finálne výsledky pre 2018-2019');
-                            const finalStandings2018_2019 = [
-                                { name: "Sprostáci", points: "145b" },
-                                { name: "Starci na chmeli", points: "143b" },
-                                { name: "Originály", points: "124b" },
-                                { name: "Divoké pušky", points: "117b" },
-                                { name: "Zobor", points: "114b" },
-                                { name: "Fontána", points: "97b" },
-                                { name: "Gemersko", points: "91b" },
-                                { name: "Sekery", points: "14b" },
-                                { name: "Blek Panter", points: "12b" },
-                                { name: "Slanci", points: "6b" },
-                                { name: "Kamene", points: "3b" }
-                            ];
-                            
-                            window.standingsData[year] = finalStandings2018_2019;
-                            
-                            // VŽDY prepíš Firebase dáta novými finálnymi výsledkami
-                            const fieldName2018 = 'standings_2018-2019';
-                            setDoc(doc(db, "web_content", "hall_of_fame"), {
-                                [fieldName2018]: finalStandings2018_2019,
-                                seasons: window.currentSeasons
-                            }, { merge: true }).then(() => {
-                                console.log('✅ Finálne poradie pre 2018-2019 uložené do Firebase');
-                            }).catch(err => {
-                                console.error('❌ Chyba pri ukladaní:', err);
-                            });
                         }
                     });
                 } else {
