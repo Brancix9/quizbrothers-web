@@ -1164,9 +1164,9 @@
                             console.log('⚠️ COVID-19 sezóna 2020-2021 - žiadne výsledky');
                             window.standingsData[year] = [];
                         } else if (year === "2019-2020") {
-                            // Pre rok 2019-2020 vytvor defaultné dáta ak neexistujú
-                            console.log('⚠️ Žiadne dáta v Firebase pre 2019-2020, používam defaultné');
-                            const defaultStandings2019_2020 = [
+                            // Pre rok 2019-2020 PREPÍŠ staré dáta novými (finálne výsledky)
+                            console.log('🔄 Aktualizujem finálne výsledky pre 2019-2020');
+                            const finalStandings2019_2020 = [
                                 { name: "Sprostáci", points: "150b" },
                                 { name: "Divoké Pušky", points: "130b" },
                                 { name: "FC Barcelona", points: "129b" },
@@ -1183,22 +1183,22 @@
                                 { name: "DUO", points: "7b" }
                             ];
                             
-                            window.standingsData[year] = defaultStandings2019_2020;
+                            window.standingsData[year] = finalStandings2019_2020;
                             
-                            // Automaticky ulož defaultné dáta do Firebase
-                            const fieldName = 'standings_2019-2020';
+                            // VŽDY prepíš Firebase dáta novými finálnymi výsledkami
+                            const fieldName2019 = 'standings_2019-2020';
                             setDoc(doc(db, "web_content", "hall_of_fame"), {
-                                [fieldName]: defaultStandings2019_2020,
+                                [fieldName2019]: finalStandings2019_2020,
                                 seasons: window.currentSeasons
                             }, { merge: true }).then(() => {
-                                console.log('✅ Defaultné poradie pre 2019-2020 uložené do Firebase');
+                                console.log('✅ Finálne poradie pre 2019-2020 uložené do Firebase');
                             }).catch(err => {
                                 console.error('❌ Chyba pri ukladaní:', err);
                             });
                         } else if (year === "2018-2019") {
-                            // Pre rok 2018-2019 vytvor defaultné dáta ak neexistujú
-                            console.log('⚠️ Žiadne dáta v Firebase pre 2018-2019, používam defaultné');
-                            const defaultStandings2018_2019 = [
+                            // Pre rok 2018-2019 PREPÍŠ staré dáta novými (finálne výsledky)
+                            console.log('🔄 Aktualizujem finálne výsledky pre 2018-2019');
+                            const finalStandings2018_2019 = [
                                 { name: "Sprostáci", points: "145b" },
                                 { name: "Starci na chmeli", points: "143b" },
                                 { name: "Originály", points: "124b" },
@@ -1212,15 +1212,15 @@
                                 { name: "Kamene", points: "3b" }
                             ];
                             
-                            window.standingsData[year] = defaultStandings2018_2019;
+                            window.standingsData[year] = finalStandings2018_2019;
                             
-                            // Automaticky ulož defaultné dáta do Firebase
-                            const fieldName = 'standings_2018-2019';
+                            // VŽDY prepíš Firebase dáta novými finálnymi výsledkami
+                            const fieldName2018 = 'standings_2018-2019';
                             setDoc(doc(db, "web_content", "hall_of_fame"), {
-                                [fieldName]: defaultStandings2018_2019,
+                                [fieldName2018]: finalStandings2018_2019,
                                 seasons: window.currentSeasons
                             }, { merge: true }).then(() => {
-                                console.log('✅ Defaultné poradie pre 2018-2019 uložené do Firebase');
+                                console.log('✅ Finálne poradie pre 2018-2019 uložené do Firebase');
                             }).catch(err => {
                                 console.error('❌ Chyba pri ukladaní:', err);
                             });
