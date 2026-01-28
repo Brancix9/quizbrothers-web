@@ -318,8 +318,8 @@
             <h3 style="color:#222454;">⏳ Rezervované (do <span id="reservedDeadlineDisplay">15:00</span>)</h3>
             <ul id="listReserved" class="team-list"></ul>
             
-            <div id="adminLoginPrompt" style="display: none; text-align: center; margin-top: 20px; padding: 15px; background: #f0f8ff; border-radius: 10px;">
-                <p style="color: #222454; font-weight: bold; margin-bottom: 10px;">Ste administrátor?</p>
+            <div id="adminLoginPrompt" style="display: none; text-align: center; margin-top: 20px; padding: 10px 15px; background: #f0f8ff; border-radius: 10px;">
+                <p style="color: #222454; font-weight: bold; margin: 0 0 8px 0; font-size: 14px;">Ste administrátor?</p>
                 <button onclick="window.qbAdmin.showLoginModal()" style="background: #222454; color: white; border: none; padding: 12px 20px; cursor: pointer; font-weight: bold; border-radius: 5px;">🔐 Prihlásiť sa ako Admin</button>
             </div>
         </div>
@@ -331,7 +331,7 @@
                 <small>Celková kapacita: 83</small>
             </div>
 
-            <form id="quizForm" onsubmit="window.handleFormSubmit(event); return false;">
+            <form id="quizForm">
                 <label>Vyber svoj tím:</label>
                 <select id="teamSelect" name="teamSelect" onchange="handleTeamChange()">
                     <option value="new">Nový tím / Vybrať tím</option>
@@ -352,7 +352,7 @@
                     <small id="pinHelp" style="color:#666; display:block; margin-top:5px;">Tento PIN budeš potrebovať pre zmeny.</small>
                 </div>
                 
-                <button type="submit" id="submitBtn" class="btn-submit">Potvrdiť účasť</button>
+                <button type="button" id="submitBtn" class="btn-submit">Potvrdiť účasť</button>
                 <button type="button" id="declineBtn" class="btn-decline" style="display: none;" onclick="window.declineTeamParticipation()">Neprídeme</button>
                 <button type="button" id="cancelBtn" class="btn-submit" style="background: #c0392b; display: none; margin-top: 10px;" onclick="window.cancelTeamParticipation()">🚫 Zrušiť účasť</button>
             </form>
@@ -362,6 +362,16 @@
         <div class="sidebar right-panel">
             <h3 style="color:#27ae60;">✅ Potvrdené tímy</h3>
             <ul id="listConfirmed" class="team-list"></ul>
+            
+            <div style="text-align: center; margin-top: 20px; padding: 15px; background: #f0f8ff; border-radius: 10px;">
+                <p style="color: #666; font-size: 13px; margin-bottom: 8px;">Potrebujete pomôcť?</p>
+                <a href="https://facebook.com/quizbrothers" target="_blank" style="display: inline-flex; align-items: center; gap: 8px; text-decoration: none; color: #1877F2; font-weight: bold; font-size: 14px; padding: 8px 12px; background: white; border-radius: 6px; transition: 0.2s; border: 1px solid #1877F2;">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="#1877F2">
+                        <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
+                    </svg>
+                    <span>Napíšte nám na Facebooku</span>
+                </a>
+            </div>
         </div>
     </div>
 
@@ -876,6 +886,17 @@
         });
 
         // 🚀 OPTIMIZÁCIA: Inicializácia event listenerov bez zbytočného delay
+        const submitBtn = document.getElementById('submitBtn');
+        if (submitBtn) {
+            submitBtn.addEventListener('click', async function(e) {
+                console.log('🔵 === SUBMIT BUTTON CLICK EVENT ===');
+                console.log('Event type:', e.type);
+                console.log('Event target:', e.target);
+                e.preventDefault();
+                await window.handleFormSubmit(e);
+            });
+        }
+        
         const playerCountInput = document.getElementById('playerCount');
         if (playerCountInput) {
             playerCountInput.addEventListener('change', function() {
@@ -883,6 +904,41 @@
             });
             playerCountInput.addEventListener('input', function() {
                 checkDeadline();
+            });
+            // Enter v poľe Počet hráčov klikne na tlačidlo
+            playerCountInput.addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    console.log('🟢 === ENTER IN PLAYER COUNT ===');
+                    e.preventDefault();
+                    console.log('Clicking submit button...');
+                    document.getElementById('submitBtn').click();
+                }
+            });
+        }
+        
+        // Enter v poľe Názov nového tímu klikne na tlačidlo
+        const customTeamInput = document.getElementById('customTeamName');
+        if (customTeamInput) {
+            customTeamInput.addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    console.log('🟢 === ENTER IN CUSTOM TEAM NAME ===');
+                    e.preventDefault();
+                    console.log('Clicking submit button...');
+                    document.getElementById('submitBtn').click();
+                }
+            });
+        }
+        
+        // Enter v poľe PIN kód klikne na tlačidlo
+        const teamPinInput = document.getElementById('teamPin');
+        if (teamPinInput) {
+            teamPinInput.addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    console.log('🟢 === ENTER IN PIN INPUT ===');
+                    e.preventDefault();
+                    console.log('Clicking submit button...');
+                    document.getElementById('submitBtn').click();
+                }
             });
         }
 
@@ -966,6 +1022,16 @@
         }
 
         window.handleFormSubmit = async function(e) {
+            console.log('🔴 === HANDLE FORM SUBMIT START ===');
+            console.log('Event:', e);
+            
+            // 🎯 BLUR všetky inputy aby updateDashboard nebol blokovaný
+            const activeEl = document.activeElement;
+            if (activeEl && (activeEl.tagName === 'INPUT' || activeEl.tagName === 'TEXTAREA' || activeEl.tagName === 'SELECT')) {
+                console.log('Blurring active element:', activeEl);
+                activeEl.blur();
+            }
+            
             if (e && e.preventDefault) {
                 e.preventDefault();
             }
@@ -1029,7 +1095,20 @@
                     try {
                         await updateDoc(doc(db, "teams", team.id), { current: count, confirmed: true });
                         console.log("✅ Tím úspešne updatovaný!");
-                        setTimeout(() => { updateDashboard(); populateTeamSelect(); }, 100);
+                        
+                        // 📍 EXPLICITNE aktualizuj lokálne dáta IHNEĎ
+                        team.current = count;
+                        team.confirmed = true;
+                        localStorage.setItem('teams_cache', JSON.stringify(teamsData));
+                        
+                        console.log('🟡 Calling updateDashboard()...');
+                        // 📍 IHNEĎ aktualizuj UI
+                        updateDashboard();
+                        console.log('🟡 Calling populateTeamSelect()...');
+                        populateTeamSelect();
+                        console.log('🟡 Calling renderAdminPinTable()...');
+                        renderAdminPinTable();
+                        console.log('🟡 UI update complete!');
                     } catch (updateErr) {
                         console.warn("⚠️ updateDoc chyba (možno offline):", updateErr);
                         throw updateErr;
@@ -1070,7 +1149,16 @@
                         const wasAlreadyConfirmed = existing.confirmed === true;
                         
                         await updateDoc(doc(db, "teams", newName), { current: count, confirmed: true });
-                        setTimeout(() => { updateDashboard(); populateTeamSelect(); }, 100);
+                        
+                        // 📍 EXPLICITNE aktualizuj lokálne dáta IHNEĎ
+                        existing.current = count;
+                        existing.confirmed = true;
+                        localStorage.setItem('teams_cache', JSON.stringify(teamsData));
+                        
+                        // 📍 IHNEĎ aktualizuj UI
+                        updateDashboard();
+                        populateTeamSelect();
+                        renderAdminPinTable();
                         
                         // Rozlíš prvé potvrdenie vs. aktualizáciu
                         const message = wasAlreadyConfirmed 
@@ -1083,13 +1171,37 @@
                         await setDoc(doc(db, "teams", newName), {
                             default: count, current: count, pin: newTeamPin, confirmed: true, isStatic: false, tableId: "", declined: false
                         });
-                        setTimeout(() => { updateDashboard(); populateTeamSelect(); }, 100);
+                        
+                        // 📍 EXPLICITNE pridám nový tím do lokálnych dát IHNEĎ
+                        teamsData.push({
+                            id: newName,
+                            default: count,
+                            current: count,
+                            pin: newTeamPin,
+                            confirmed: true,
+                            isStatic: false,
+                            tableId: "",
+                            declined: false
+                        });
+                        localStorage.setItem('teams_cache', JSON.stringify(teamsData));
+                        
+                        // 📍 IHNEĎ aktualizuj UI
+                        updateDashboard();
+                        populateTeamSelect();
+                        renderAdminPinTable();
+                        
                         document.getElementById('formMessage').innerText = `✅ Tím ${newName} zaregistrovaný!`;
                         document.getElementById('formMessage').style.color = 'green';
                     }
                 }
-                document.getElementById('quizForm').reset();
-                window.handleTeamChange();
+                
+                // ⏱️ Delay reset a handleTeamChange aby Firebase listener stihol aktualizovať UI
+                setTimeout(() => {
+                    document.getElementById('quizForm').reset();
+                    if (window.handleTeamChange) {
+                        window.handleTeamChange();
+                    }
+                }, 300);
             } catch (err) {
                 console.error("Chyba pri odosielaní:", err);
                 alert("❌ Chyba: " + err.message);
@@ -1497,11 +1609,16 @@
         }
 
         window.renderAdminPinTable = function() {
+            console.log('🔶 renderAdminPinTable CALLED');
             const activeElement = document.activeElement;
+            console.log('Active element:', activeElement);
+            console.log('Active element tag:', activeElement ? activeElement.tagName : 'null');
             if (activeElement && (activeElement.tagName === 'INPUT' || activeElement.tagName === 'TEXTAREA') && 
                 activeElement.closest('#adminConfirmedTableBody, #adminPinTableBody')) {
+                console.log('🔶 BLOCKED - active element is in admin table');
                 return;
             }
+            console.log('🔶 Proceeding with render...');
             
             const confirmedTbody = document.getElementById('adminConfirmedTableBody');
             confirmedTbody.innerHTML = "";
@@ -1696,16 +1813,24 @@
                         confirmed: false, 
                         current: team.default 
                     });
-                    alert(`✅ Účasť tímu "${teamId}" bola zrušená!\n\nTím je teraz medzi rezervovanými.`);
+                    // Úspech - bez alert, confirm bolo dostačujúce
                 } else {
                     await deleteDoc(doc(db, "teams", teamId));
-                    alert(`✅ Účasť tímu "${teamId}" bola zrušená!\n\nTím bol odstránený zo systému.`);
+                    // Úspech - bez alert, confirm bolo dostačujúce
                 }
                 
                 document.getElementById('teamSelect').value = 'new';
                 document.getElementById('teamPin').value = "";
                 document.getElementById('customTeamName').value = "";
                 document.getElementById('cancelBtn').style.display = 'none';
+                
+                // Zobraz success správu v existujúcom formMessage elemente
+                const formMsg = document.getElementById('formMessage');
+                if (formMsg) {
+                    formMsg.innerText = `✅ Účasť tímu "${teamId}" bola zrušená!`;
+                    formMsg.style.color = 'green';
+                }
+                
                 window.handleTeamChange();
                 
             } catch (err) {
