@@ -11,12 +11,12 @@
         body { margin: 0; padding: 0; }
         
         /* Wrapper pre obsah (okrem headeru) */
-        .content-wrapper { padding: 20px; }
+        .content-wrapper { padding: 5px 20px; }
         
         /* LAYOUT */
-        .main-container { display: flex; justify-content: center; align-items: flex-start; gap: 20px; max-width: 1200px; margin: 0 auto 50px auto; }
-        .sidebar { flex: 1; background: white; padding: 20px; border-radius: 15px; box-shadow: 0 4px 15px rgba(34,36,84,0.1); min-height: 300px; }
-        .form-container { flex: 1.5; background: white; padding: 30px; border-radius: 15px; box-shadow: 0 4px 20px rgba(34,36,84,0.15); text-align: center; border-top: 5px solid #222454; }
+        .main-container { display: flex; justify-content: center; align-items: flex-start; gap: 20px; max-width: 1200px; margin: 0 auto 30px auto; }
+        .sidebar { flex: 1; background: white; padding: 15px; border-radius: 15px; box-shadow: 0 4px 15px rgba(34,36,84,0.1); min-height: 300px; }
+        .form-container { flex: 1.5; background: white; padding: 20px; border-radius: 15px; box-shadow: 0 4px 20px rgba(34,36,84,0.15); text-align: center; border-top: 5px solid #222454; }
         
         .left-panel { border-top: 5px solid #222454; }
         .right-panel { border-top: 5px solid #27ae60; }
@@ -25,9 +25,9 @@
         .badge-count { background: #eee; padding: 2px 8px; border-radius: 10px; font-size: 12px; color: #555; }
         .badge-confirmed { background: #d5f5e3; color: #27ae60; }
 
-        h1 { color: #222454; margin-bottom: 5px; }
-        .quiz-date-info { font-size: 1.2em; font-weight: bold; color: #222454; margin-bottom: 5px; }
-        .deadline-info { color: #e74c3c; font-weight: bold; font-size: 14px; margin-bottom: 20px; }
+        h1 { color: #222454; margin-bottom: 2px; font-size: 1.8rem; }
+        .quiz-date-info { font-size: 1.05em; font-weight: bold; color: #222454; margin-bottom: 2px; }
+        .deadline-info { color: #e74c3c; font-weight: bold; font-size: 13px; margin-bottom: 12px; }
         
         .capacity-box { background: #f0f0f5; padding: 15px; border-radius: 10px; margin-bottom: 25px; border: 1px solid rgba(34,36,84,0.2); }
         .capacity-number { font-size: 2em; font-weight: bold; display: block; transition: color 0.3s; }
@@ -35,6 +35,9 @@
         
         label { display: block; text-align: left; margin: 15px 0 5px; font-weight: bold; color: #222454; }
         #pinSection { display: block !important; margin-top: 15px; padding: 15px; background: #f9f9f9; border-radius: 8px; border-left: 4px solid #27ae60; }
+        #pinSection label { margin: 0 0 1px 0; }
+        #pinSection input { margin-bottom: 1px; }
+        #pinSection small { margin-top: 0; }
         select, input { width: 100%; padding: 12px; border: 2px solid rgba(34,36,84,0.3); border-radius: 8px; font-size: 16px; box-sizing: border-box; }
         select:focus, input:focus { outline: none; border-color: #222454; }
         
@@ -262,7 +265,6 @@
                     <li><a href="../">Domov</a></li>
                     <li><a href="../rezervacia/" class="active">Rezervácia stola</a></li>
                     <li><a href="../aplikacia/">Aplikácia</a></li>
-                    <li><a href="/sienslavy/">Sieň slávy</a></li>
                     <li><a href="../onas/">O nás</a></li>
                 </ul>
             </nav>
@@ -272,7 +274,7 @@
     <div id="loadingOverlay">Načítavam systém...</div>
 
     <div class="content-wrapper">
-    <h1 style="text-align:center; margin-top:10px;">Registrácia QuizBrothers</h1>
+    <h1 style="text-align:center; margin-top:2px;">Registrácia QuizBrothers</h1>
     
     <div style="text-align:center;">
         <div id="publicQuizDate" class="quiz-date-info">Načítavam...</div>
@@ -283,6 +285,11 @@
         <div class="sidebar left-panel">
             <h3 style="color:#222454;">⏳ Rezervované (do <span id="reservedDeadlineDisplay">15:00</span>)</h3>
             <ul id="listReserved" class="team-list"></ul>
+            
+            <div id="adminLoginPrompt" style="display: none; text-align: center; margin-top: 20px; padding: 15px; background: #f0f8ff; border-radius: 10px;">
+                <p style="color: #222454; font-weight: bold; margin-bottom: 10px;">Ste administrátor?</p>
+                <button onclick="window.qbAdmin.showLoginModal()" style="background: #222454; color: white; border: none; padding: 12px 20px; cursor: pointer; font-weight: bold; border-radius: 5px;">🔐 Prihlásiť sa ako Admin</button>
+            </div>
         </div>
 
         <div class="form-container">
@@ -318,11 +325,6 @@
                 <button type="button" id="cancelBtn" class="btn-submit" style="background: #c0392b; display: none; margin-top: 10px;" onclick="window.cancelTeamParticipation()">🚫 Zrušiť účasť</button>
             </form>
             <p id="formMessage" style="color: green; font-weight: bold; margin-top: 15px;"></p>
-            
-            <div id="adminLoginPrompt" style="display: none; text-align: center; margin-top: 30px; padding: 20px; background: #f0f8ff; border-radius: 10px;">
-                <p style="color: #222454; font-weight: bold; margin-bottom: 15px;">Ste administrátor?</p>
-                <button onclick="window.qbAdmin.showLoginModal()" style="background: #222454; color: white; border: none; padding: 12px 20px; cursor: pointer; font-weight: bold; border-radius: 5px;">🔐 Prihlásiť sa ako Admin</button>
-            </div>
         </div>
 
         <div class="sidebar right-panel">
@@ -988,6 +990,9 @@
                         return;
                     }
                     
+                    // Zapamätaj si, či tím už bol potvrdený pred updatom
+                    const wasAlreadyConfirmed = team.confirmed === true;
+                    
                     console.log("📝 Skúšam updatovať tím:", team.id, { current: count, confirmed: true });
                     try {
                         await updateDoc(doc(db, "teams", team.id), { current: count, confirmed: true });
@@ -997,7 +1002,12 @@
                         console.warn("⚠️ updateDoc chyba (možno offline):", updateErr);
                         throw updateErr;
                     }
-                    document.getElementById('formMessage').innerText = `✅ Tím ${team.id} potvrdený!`;
+                    
+                    // Rozlíš prvé potvrdenie vs. aktualizáciu
+                    const message = wasAlreadyConfirmed 
+                        ? `✅ Tím ${team.id} aktualizovaný!` 
+                        : `✅ Tím ${team.id} potvrdený!`;
+                    document.getElementById('formMessage').innerText = message;
                     document.getElementById('formMessage').style.color = 'green';
                 } else {
                     const newName = document.getElementById('customTeamName').value.trim();
@@ -1023,9 +1033,18 @@
                             alert("❌ Tím už existuje. Zlý PIN.");
                             return;
                         }
+                        
+                        // Zapamätaj si, či tím už bol potvrdený pred updatom
+                        const wasAlreadyConfirmed = existing.confirmed === true;
+                        
                         await updateDoc(doc(db, "teams", newName), { current: count, confirmed: true });
                         setTimeout(() => { updateDashboard(); populateTeamSelect(); }, 100);
-                        document.getElementById('formMessage').innerText = `✅ Tím ${newName} upravený!`;
+                        
+                        // Rozlíš prvé potvrdenie vs. aktualizáciu
+                        const message = wasAlreadyConfirmed 
+                            ? `✅ Tím ${newName} aktualizovaný!` 
+                            : `✅ Tím ${newName} potvrdený!`;
+                        document.getElementById('formMessage').innerText = message;
                         document.getElementById('formMessage').style.color = 'green';
                     } else {
                         // 🔐 NOVÝ TÍM MUSÍ MÁŤ PIN - JE JUŽ OVERENÝ
@@ -2023,4 +2042,3 @@
     </div>
 </body>
 </html>
-
