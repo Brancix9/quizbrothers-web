@@ -89,12 +89,22 @@
             </div>
             
             <div class="quiz-topic-card">
-                <h2 id="home_quiz_topic_title">Aká bude téma viacbodovej otázky najbližšieho kvízu ?*Hlasovanie ešte neprebehlo*</h2>
-                <p class="topic-text" id="home_quiz_topic_text">Pred každým kolom môžete hlasovaním na našom Facebooku zvoliť čoho sa bude týkať jedna z našich viacbodových otázok.</p>
-                <a href="https://facebook.com/quizbrothers" target="_blank" class="facebook-link" id="home_quiz_topic_link">
-                    📘 Hlasuj na Facebooku
-                </a>
-            </div>
+    <h2 style="margin-bottom: 5px; font-size: 1.4rem;">
+        Aká bude téma viacbodovej otázky najbližšieho kvízu?
+    </h2>
+
+    <h3 id="home_quiz_topic_answer" style="color: #e67e22; font-weight: bold; font-size: 1.8rem; margin-top: 5px; margin-bottom: 15px; text-transform: uppercase;">
+        *Hlasovanie ešte neprebehlo*
+    </h3>
+
+    <p class="topic-text" id="home_quiz_topic_text">
+        Pred každým kolom môžete hlasovaním na našom Facebooku zvoliť, čoho sa bude týkať jedna z našich viacbodových otázok.
+    </p>
+    
+    <a href="https://facebook.com/quizbrothers" target="_blank" class="facebook-link" id="home_quiz_topic_link">
+        📘 Hlasuj na Facebooku
+    </a>
+</div>
             
             <div class="card fact-card">
                 <h3 id="home_fact2_title">🧀 Vedeli ste že..?</h3>
@@ -146,6 +156,7 @@
                     if (data.home_quiz_topic_link) document.getElementById('home_quiz_topic_link').textContent = data.home_quiz_topic_link;
                     if (data.home_fact2_title) document.getElementById('home_fact2_title').textContent = data.home_fact2_title;
                     if (data.home_fact2_text) document.getElementById('home_fact2_text').textContent = data.home_fact2_text;
+                    if (data.home_quiz_topic_answer) document.getElementById('home_quiz_topic_answer').textContent = data.home_quiz_topic_answer;
                 }
             });
         }
@@ -210,6 +221,7 @@
 </body>
 
 </html>
+
 
 
 
