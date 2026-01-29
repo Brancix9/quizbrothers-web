@@ -273,11 +273,6 @@ footer {
         max-width: 280px;
     }
     
-    .hero-buttons .btn {
-        margin-left: 0;
-        margin-right: 0;
-    }
-    
     /* Karty */
     .card-grid { 
         grid-template-columns: 1fr;
