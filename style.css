@@ -269,12 +269,13 @@ footer {
         font-size: 0.9rem;
         margin: 12px auto;
         display: block;
-        width: calc(100% - 6px);
+        width: 90%;
         max-width: 280px;
     }
     
-    .hero-buttons .btn-secondary {
-        margin-left: 0 !important;
+    .hero-buttons .btn {
+        margin-left: 0;
+        margin-right: 0;
     }
     
     /* Karty */
