@@ -89,9 +89,6 @@ nav ul li a:hover, nav ul li a.active { color: #27ae60; }
     font-size: 1rem;
     white-space: nowrap;
 }
-.hero-buttons .btn-secondary {
-    margin-left: 10px;
-}
 .btn-primary { background: #27ae60; color: white; }
 .btn-primary:hover { background: #229954; transform: scale(1.05); }
 .btn-secondary { background: transparent; border: 2px solid white; color: white; }
@@ -176,6 +173,14 @@ footer {
 }
 
 /* --- RESPONZIVITA --- */
+
+/* Desktop pravidl? pre tla?idl? */
+@media (min-width: 769px) {
+    .hero-buttons .btn-secondary {
+        margin-left: 10px;
+    }
+}
+
 @media (max-width: 768px) {
     /* Navig?cia */
     header {
