@@ -112,6 +112,16 @@
         .table-assign-modal .btn-close { width: 100%; background: #ccc; color: #333; border: none; padding: 10px; border-radius: 8px; font-weight: bold; cursor: pointer; margin-top: 15px; }
         .table-assign-modal .btn-clear { width: 100%; background: #e74c3c; color: white; border: none; padding: 10px; border-radius: 8px; font-weight: bold; cursor: pointer; margin-top: 10px; }
         .table-number { position: absolute; top: 2px; left: 2px; background: #222454; color: white; width: 18px; height: 18px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: bold; z-index: 11; }
+        
+        /* Fullscreen Map */
+        .map-fullscreen-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); z-index: 9996; overflow: auto; }
+        .map-fullscreen-container { position: relative; min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 20px; box-sizing: border-box; }
+        .map-fullscreen-header { position: fixed; top: 0; left: 0; right: 0; background: #222454; color: white; padding: 15px 20px; display: flex; justify-content: space-between; align-items: center; z-index: 9997; }
+        .map-fullscreen-header h3 { margin: 0; font-size: 18px; }
+        .btn-close-fullscreen { background: #e74c3c; color: white; border: none; padding: 8px 15px; border-radius: 5px; font-weight: bold; cursor: pointer; font-size: 14px; }
+        .room-map-fullscreen { position: relative; width: 1000px; height: 600px; background: #e0e0e0; border: 4px solid #444; border-radius: 4px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); transform-origin: center center; margin-top: 60px; }
+        .btn-expand-map { background: #222454; color: white; border: none; padding: 8px 15px; border-radius: 5px; font-weight: bold; cursor: pointer; font-size: 13px; margin-left: 10px; }
+        .btn-expand-map:hover { background: #2d2f6a; }
 
         @media (max-width: 900px) {
             .content-wrapper { padding: 10px; }
@@ -282,6 +292,19 @@
                 min-height: 300px;
                 overflow-x: hidden;
                 box-sizing: border-box;
+            }
+            
+            .room-map-fullscreen {
+                width: 1000px;
+                height: 600px;
+                transform: scale(0.35);
+                margin-top: 30px;
+            }
+            
+            .btn-expand-map {
+                display: block;
+                width: 100%;
+                margin: 10px 0;
             }
             
             .btn-save-pin, .btn-delete-team {
@@ -465,7 +488,8 @@
             </div>
         </div>
 
-        <div style="max-width: 95%; width: 95%; margin: 20px auto; text-align: right;">
+        <div style="max-width: 95%; width: 95%; margin: 20px auto; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+            <button onclick="openMapFullscreen()" class="btn-expand-map">🔍 Rozkliknúť mapu</button>
             <button onclick="clearAllTableAssignments()" class="btn-stop" style="padding: 10px 20px; font-size: 13px;">🗑️ Vyčistiť všetky stoly</button>
         </div>
 
@@ -2095,6 +2119,7 @@
             tableAssignments[tableNum] = teamId;
             saveTableAssignments();
             updateMapVisuals();
+            updateFullscreenMapVisuals();
         }
         
         window.clearTableAssignment = function() {
@@ -2104,6 +2129,7 @@
                 delete tableAssignments[tableNum];
                 saveTableAssignments();
                 updateMapVisuals();
+                updateFullscreenMapVisuals();
                 window.closeTableAssignModal();
             }
         };
@@ -2113,9 +2139,67 @@
                 tableAssignments = {};
                 saveTableAssignments();
                 updateMapVisuals();
+                updateFullscreenMapVisuals();
                 alert('✅ Všetky stoly boli vyčistené.');
             }
         };
+        
+        window.openMapFullscreen = function() {
+            const overlay = document.getElementById('mapFullscreenOverlay');
+            overlay.style.display = 'block';
+            updateFullscreenMapVisuals();
+        };
+        
+        window.closeMapFullscreen = function() {
+            const overlay = document.getElementById('mapFullscreenOverlay');
+            overlay.style.display = 'none';
+        };
+        
+        function updateFullscreenMapVisuals() {
+            // Update fullscreen map tables
+            for (let i = 1; i <= 14; i++) {
+                const tableEl = document.querySelector(`#mapFullscreen [data-table-num="${i}"]`);
+                if (!tableEl) continue;
+                
+                const teamId = tableAssignments[i];
+                const tableNumber = tableEl.querySelector('.table-number');
+                
+                if (teamId) {
+                    const team = teamsData.find(t => t.id === teamId);
+                    if (team) {
+                        tableEl.innerHTML = '';
+                        if (tableNumber) tableEl.appendChild(tableNumber);
+                        tableEl.appendChild(document.createTextNode(team.id));
+                        
+                        const newCapInfo = document.createElement('div');
+                        newCapInfo.className = 'cap-info';
+                        newCapInfo.innerText = `${team.current} os.`;
+                        tableEl.appendChild(newCapInfo);
+                        
+                        tableEl.classList.remove('status-free', 'status-reserved', 'status-confirmed');
+                        if (team.confirmed) {
+                            tableEl.classList.add('status-confirmed');
+                        } else if (team.isStatic) {
+                            tableEl.classList.add('status-reserved');
+                        } else {
+                            tableEl.classList.add('status-free');
+                        }
+                    }
+                } else {
+                    tableEl.innerHTML = '';
+                    if (tableNumber) tableEl.appendChild(tableNumber);
+                    tableEl.appendChild(document.createTextNode('Voľný'));
+                    
+                    const newCapInfo = document.createElement('div');
+                    newCapInfo.className = 'cap-info';
+                    newCapInfo.innerText = '0 os.';
+                    tableEl.appendChild(newCapInfo);
+                    
+                    tableEl.classList.remove('status-reserved', 'status-confirmed');
+                    tableEl.classList.add('status-free');
+                }
+            }
+        }
         
         function updateMapVisuals() {
             // Update all table displays based on assignments
@@ -2395,6 +2479,32 @@
         <div id="modalTeamList" style="max-height: 400px; overflow-y: auto;"></div>
         <button class="btn-clear" onclick="clearTableAssignment()">🗑️ Zrušiť priradenie</button>
         <button class="btn-close" onclick="closeTableAssignModal()">Zavrieť</button>
+    </div>
+
+    <!-- Fullscreen Map Modal -->
+    <div id="mapFullscreenOverlay" class="map-fullscreen-overlay">
+        <div class="map-fullscreen-container">
+            <div class="map-fullscreen-header">
+                <h3>🗺️ Mapa stolov</h3>
+                <button class="btn-close-fullscreen" onclick="closeMapFullscreen()">✕ Zavrieť</button>
+            </div>
+            <div id="mapFullscreen" class="room-map-fullscreen">
+                <div id="ft1" class="table rect status-reserved" style="top:60px; left:80px;" onclick="adminEdit(this)" data-table-num="1"><span class="table-number">1</span>PUŠKY<div class="cap-info">? os.</div></div>
+                <div id="ft2" class="table rect status-reserved" style="top:60px; left:210px;" onclick="adminEdit(this)" data-table-num="2"><span class="table-number">2</span>GURU TEAM<div class="cap-info">? os.</div></div>
+                <div id="ft3" class="table rect status-reserved" style="top:60px; left:340px;" onclick="adminEdit(this)" data-table-num="3"><span class="table-number">3</span>PIČI ZLA<div class="cap-info">? os.</div></div>
+                <div id="ft4" class="table rect status-reserved" style="top:60px; left:470px;" onclick="adminEdit(this)" data-table-num="4"><span class="table-number">4</span>MUŠKY<div class="cap-info">? os.</div></div>
+                <div id="ft5" class="table circle status-reserved" style="top:250px; left:120px;" onclick="adminEdit(this)" data-table-num="5"><span class="table-number">5</span>STIBU<div class="cap-info">? os.</div></div>
+                <div id="ft6" class="table circle status-reserved" style="top:250px; left:240px;" onclick="adminEdit(this)" data-table-num="6"><span class="table-number">6</span>SPROSTÁCI<div class="cap-info">? os.</div></div>
+                <div id="ft7" class="table circle status-reserved" style="top:250px; left:360px;" onclick="adminEdit(this)" data-table-num="7"><span class="table-number">7</span>FÉNIXOV RÁD<div class="cap-info">? os.</div></div>
+                <div id="ft8" class="table circle-small status-reserved" style="top:260px; left:480px;" onclick="adminEdit(this)" data-table-num="8"><span class="table-number">8</span>GEN Z<div class="cap-info">? os.</div></div>
+                <div id="ft9" class="table circle-small status-reserved" style="top:230px; left:570px;" onclick="adminEdit(this)" data-table-num="9"><span class="table-number">9</span>NEVÍDALI<div class="cap-info">? os.</div></div>
+                <div id="ft10" class="table circle-small status-reserved" style="top:100px; left:700px;" onclick="adminEdit(this)" data-table-num="10"><span class="table-number">10</span>ŽOLÍCI<div class="cap-info">? os.</div></div>
+                <div id="ft11" class="table circle-small status-reserved" style="top:80px; left:830px;" onclick="adminEdit(this)" data-table-num="11"><span class="table-number">11</span>FONTÁNA<div class="cap-info">? os.</div></div>
+                <div id="ft12" class="table circle status-free" style="top:330px; left:760px;" onclick="adminEdit(this)" data-table-num="12"><span class="table-number">12</span>Voľný<div class="cap-info">0 os.</div></div>
+                <div id="ft13" class="table rect status-free" style="top:450px; left:680px;" onclick="adminEdit(this)" data-table-num="13"><span class="table-number">13</span>Voľný<div class="cap-info">0 os.</div></div>
+                <div id="ft14" class="table rect status-free" style="top:500px; left:850px;" onclick="adminEdit(this)" data-table-num="14"><span class="table-number">14</span>Voľný<div class="cap-info">0 os.</div></div>
+            </div>
+        </div>
     </div>
 </body>
 </html>
