@@ -99,6 +99,20 @@
         .btn-add { background: #222454; color: white; border: none; padding: 10px 20px; border-radius: 4px; cursor: pointer; font-weight: bold; height: 42px; transition: 0.2s; }
         .btn-add:hover { background: #2d2f6a; }
 
+        /* Table Assignment Modal */
+        .table-assign-modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 9997; }
+        .table-assign-modal { display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: white; padding: 25px; border-radius: 15px; z-index: 9998; box-shadow: 0 10px 50px rgba(0,0,0,0.5); width: 90%; max-width: 500px; max-height: 80vh; overflow-y: auto; }
+        .table-assign-modal h3 { margin-top: 0; margin-bottom: 15px; color: #222454; font-size: 20px; text-align: center; }
+        .table-assign-modal .team-option { padding: 12px; margin: 8px 0; border: 2px solid #ddd; border-radius: 8px; cursor: pointer; transition: all 0.2s; display: flex; justify-content: space-between; align-items: center; }
+        .table-assign-modal .team-option:hover { border-color: #222454; background: #f5f5f7; }
+        .table-assign-modal .team-option.confirmed { border-color: #27ae60; background: #d5f5e3; }
+        .table-assign-modal .team-option.reserved { border-color: #e67e22; background: #fff3e0; }
+        .table-assign-modal .team-name { font-weight: bold; font-size: 14px; }
+        .table-assign-modal .team-count { font-size: 12px; color: #666; }
+        .table-assign-modal .btn-close { width: 100%; background: #ccc; color: #333; border: none; padding: 10px; border-radius: 8px; font-weight: bold; cursor: pointer; margin-top: 15px; }
+        .table-assign-modal .btn-clear { width: 100%; background: #e74c3c; color: white; border: none; padding: 10px; border-radius: 8px; font-weight: bold; cursor: pointer; margin-top: 10px; }
+        .table-number { position: absolute; top: 2px; left: 2px; background: #222454; color: white; width: 18px; height: 18px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: bold; z-index: 11; }
+
         @media (max-width: 900px) {
             .content-wrapper { padding: 10px; }
             
@@ -451,21 +465,25 @@
             </div>
         </div>
 
+        <div style="max-width: 95%; width: 95%; margin: 20px auto; text-align: right;">
+            <button onclick="clearAllTableAssignments()" class="btn-stop" style="padding: 10px 20px; font-size: 13px;">🗑️ Vyčistiť všetky stoly</button>
+        </div>
+
         <div class="room-map">
-            <div id="t1" class="table rect status-reserved" style="top:60px; left:80px;" onclick="adminEdit(this)">PUŠKY<div class="cap-info">? os.</div></div>
-            <div id="t2" class="table rect status-reserved" style="top:60px; left:210px;" onclick="adminEdit(this)">GURU TEAM<div class="cap-info">? os.</div></div>
-            <div id="t3" class="table rect status-reserved" style="top:60px; left:340px;" onclick="adminEdit(this)">PIČI ZLA<div class="cap-info">? os.</div></div>
-            <div id="t4" class="table rect status-reserved" style="top:60px; left:470px;" onclick="adminEdit(this)">MUŠKY<div class="cap-info">? os.</div></div>
-            <div id="t5" class="table circle status-reserved" style="top:250px; left:120px;" onclick="adminEdit(this)">STIBU<div class="cap-info">? os.</div></div>
-            <div id="t6" class="table circle status-reserved" style="top:250px; left:240px;" onclick="adminEdit(this)">SPROSTÁCI<div class="cap-info">? os.</div></div>
-            <div id="t7" class="table circle status-reserved" style="top:250px; left:360px;" onclick="adminEdit(this)">FÉNIXOV RÁD<div class="cap-info">? os.</div></div>
-            <div id="t8" class="table circle-small status-reserved" style="top:260px; left:480px;" onclick="adminEdit(this)">GEN Z<div class="cap-info">? os.</div></div>
-            <div id="t9" class="table circle-small status-reserved" style="top:230px; left:570px;" onclick="adminEdit(this)">NEVÍDALI<div class="cap-info">? os.</div></div>
-            <div id="t10" class="table circle-small status-reserved" style="top:100px; left:700px;" onclick="adminEdit(this)">ŽOLÍCI<div class="cap-info">? os.</div></div>
-            <div id="t11" class="table circle-small status-reserved" style="top:80px; left:830px;" onclick="adminEdit(this)">FONTÁNA<div class="cap-info">? os.</div></div>
-            <div id="t12" class="table circle status-free" style="top:330px; left:760px;" onclick="adminEdit(this)">Voľný<div class="cap-info">0 os.</div></div>
-            <div id="t13" class="table rect status-free" style="top:450px; left:680px;" onclick="adminEdit(this)">Voľný<div class="cap-info">0 os.</div></div>
-            <div id="t14" class="table rect status-free" style="top:500px; left:850px;" onclick="adminEdit(this)">Voľný<div class="cap-info">0 os.</div></div>
+            <div id="t1" class="table rect status-reserved" style="top:60px; left:80px;" onclick="adminEdit(this)" data-table-num="1"><span class="table-number">1</span>PUŠKY<div class="cap-info">? os.</div></div>
+            <div id="t2" class="table rect status-reserved" style="top:60px; left:210px;" onclick="adminEdit(this)" data-table-num="2"><span class="table-number">2</span>GURU TEAM<div class="cap-info">? os.</div></div>
+            <div id="t3" class="table rect status-reserved" style="top:60px; left:340px;" onclick="adminEdit(this)" data-table-num="3"><span class="table-number">3</span>PIČI ZLA<div class="cap-info">? os.</div></div>
+            <div id="t4" class="table rect status-reserved" style="top:60px; left:470px;" onclick="adminEdit(this)" data-table-num="4"><span class="table-number">4</span>MUŠKY<div class="cap-info">? os.</div></div>
+            <div id="t5" class="table circle status-reserved" style="top:250px; left:120px;" onclick="adminEdit(this)" data-table-num="5"><span class="table-number">5</span>STIBU<div class="cap-info">? os.</div></div>
+            <div id="t6" class="table circle status-reserved" style="top:250px; left:240px;" onclick="adminEdit(this)" data-table-num="6"><span class="table-number">6</span>SPROSTÁCI<div class="cap-info">? os.</div></div>
+            <div id="t7" class="table circle status-reserved" style="top:250px; left:360px;" onclick="adminEdit(this)" data-table-num="7"><span class="table-number">7</span>FÉNIXOV RÁD<div class="cap-info">? os.</div></div>
+            <div id="t8" class="table circle-small status-reserved" style="top:260px; left:480px;" onclick="adminEdit(this)" data-table-num="8"><span class="table-number">8</span>GEN Z<div class="cap-info">? os.</div></div>
+            <div id="t9" class="table circle-small status-reserved" style="top:230px; left:570px;" onclick="adminEdit(this)" data-table-num="9"><span class="table-number">9</span>NEVÍDALI<div class="cap-info">? os.</div></div>
+            <div id="t10" class="table circle-small status-reserved" style="top:100px; left:700px;" onclick="adminEdit(this)" data-table-num="10"><span class="table-number">10</span>ŽOLÍCI<div class="cap-info">? os.</div></div>
+            <div id="t11" class="table circle-small status-reserved" style="top:80px; left:830px;" onclick="adminEdit(this)" data-table-num="11"><span class="table-number">11</span>FONTÁNA<div class="cap-info">? os.</div></div>
+            <div id="t12" class="table circle status-free" style="top:330px; left:760px;" onclick="adminEdit(this)" data-table-num="12"><span class="table-number">12</span>Voľný<div class="cap-info">0 os.</div></div>
+            <div id="t13" class="table rect status-free" style="top:450px; left:680px;" onclick="adminEdit(this)" data-table-num="13"><span class="table-number">13</span>Voľný<div class="cap-info">0 os.</div></div>
+            <div id="t14" class="table rect status-free" style="top:500px; left:850px;" onclick="adminEdit(this)" data-table-num="14"><span class="table-number">14</span>Voľný<div class="cap-info">0 os.</div></div>
         </div>
 
         <!-- Web Content Editor -->
@@ -800,7 +818,7 @@
             
             if (!isEditingInTable) {
                 renderAdminPinTable(); 
-                updateMapVisuals();
+                loadTableAssignments().then(() => updateMapVisuals());
             }
             
             firebaseTeamsLoaded = true;
@@ -1978,8 +1996,175 @@
             });
             await batch.commit(); alert("Reset hotový.");
         }
-        window.adminEdit = function(el) { alert("Mapu upravuješ cez zoznam tímov nižšie."); }
+        
+        // Table assignments storage
+        let tableAssignments = {}; // { tableNum: teamId }
+        
+        // Load table assignments from Firebase
+        async function loadTableAssignments() {
+            try {
+                const assignDoc = await getDoc(doc(db, "config", "table_assignments"));
+                if (assignDoc.exists()) {
+                    tableAssignments = assignDoc.data().assignments || {};
+                    updateMapVisuals();
+                }
+            } catch (err) {
+                console.error("Chyba pri načítaní priradení stolov:", err);
+            }
+        }
+        
+        // Save table assignments to Firebase
+        async function saveTableAssignments() {
+            try {
+                await setDoc(doc(db, "config", "table_assignments"), {
+                    assignments: tableAssignments
+                });
+                console.log("✅ Priradenia stolov uložené");
+            } catch (err) {
+                console.error("❌ Chyba pri ukladaní priradení:", err);
+                alert("Chyba pri ukladaní: " + err.message);
+            }
+        }
+        
+        // Open modal to assign team to table
+        window.adminEdit = function(el) {
+            if (!window.adminLoggedIn && !(window.auth && window.auth.currentUser)) {
+                alert("Mapu upravuješ cez zoznam tímov nižšie.");
+                return;
+            }
+            
+            const tableNum = el.getAttribute('data-table-num');
+            if (!tableNum) return;
+            
+            const modal = document.getElementById('tableAssignModal');
+            const overlay = document.getElementById('tableAssignOverlay');
+            const title = document.getElementById('modalTableTitle');
+            const teamList = document.getElementById('modalTeamList');
+            
+            title.innerText = `Stôl ${tableNum}`;
+            modal.setAttribute('data-current-table', tableNum);
+            
+            // Build team list
+            teamList.innerHTML = '';
+            
+            // Sort teams: confirmed first, then reserved, then by name
+            const sortedTeams = [...teamsData].sort((a, b) => {
+                if (a.confirmed && !b.confirmed) return -1;
+                if (!a.confirmed && b.confirmed) return 1;
+                return a.id.localeCompare(b.id);
+            });
+            
+            sortedTeams.forEach(team => {
+                const option = document.createElement('div');
+                option.className = 'team-option';
+                if (team.confirmed) option.classList.add('confirmed');
+                else if (team.isStatic) option.classList.add('reserved');
+                
+                const namePart = document.createElement('span');
+                namePart.className = 'team-name';
+                namePart.innerText = team.id;
+                
+                const countPart = document.createElement('span');
+                countPart.className = 'team-count';
+                const status = team.confirmed ? '✅' : (team.isStatic ? '⏳' : '');
+                countPart.innerText = `${status} ${team.current} os.`;
+                
+                option.appendChild(namePart);
+                option.appendChild(countPart);
+                
+                option.onclick = function() {
+                    assignTeamToTable(tableNum, team.id);
+                    closeTableAssignModal();
+                };
+                
+                teamList.appendChild(option);
+            });
+            
+            modal.style.display = 'block';
+            overlay.style.display = 'block';
+        };
+        
+        window.closeTableAssignModal = function() {
+            const modal = document.getElementById('tableAssignModal');
+            const overlay = document.getElementById('tableAssignOverlay');
+            modal.style.display = 'none';
+            overlay.style.display = 'none';
+        };
+        
+        function assignTeamToTable(tableNum, teamId) {
+            tableAssignments[tableNum] = teamId;
+            saveTableAssignments();
+            updateMapVisuals();
+        }
+        
+        window.clearTableAssignment = function() {
+            const modal = document.getElementById('tableAssignModal');
+            const tableNum = modal.getAttribute('data-current-table');
+            if (tableNum && tableAssignments[tableNum]) {
+                delete tableAssignments[tableNum];
+                saveTableAssignments();
+                updateMapVisuals();
+                window.closeTableAssignModal();
+            }
+        };
+        
+        window.clearAllTableAssignments = function() {
+            if (confirm('⚠️ Naozaj chcete vyčistiť všetky stoly? Všetky priradenia budú odstránené.')) {
+                tableAssignments = {};
+                saveTableAssignments();
+                updateMapVisuals();
+                alert('✅ Všetky stoly boli vyčistené.');
+            }
+        };
+        
         function updateMapVisuals() {
+            // Update all table displays based on assignments
+            for (let i = 1; i <= 14; i++) {
+                const tableEl = document.querySelector(`[data-table-num="${i}"]`);
+                if (!tableEl) continue;
+                
+                const teamId = tableAssignments[i];
+                const tableNumber = tableEl.querySelector('.table-number');
+                
+                if (teamId) {
+                    const team = teamsData.find(t => t.id === teamId);
+                    if (team) {
+                        // Update table text to show assigned team
+                        tableEl.innerHTML = '';
+                        if (tableNumber) tableEl.appendChild(tableNumber);
+                        tableEl.appendChild(document.createTextNode(team.id));
+                        
+                        const newCapInfo = document.createElement('div');
+                        newCapInfo.className = 'cap-info';
+                        newCapInfo.innerText = `${team.current} os.`;
+                        tableEl.appendChild(newCapInfo);
+                        
+                        // Update status class
+                        tableEl.classList.remove('status-free', 'status-reserved', 'status-confirmed');
+                        if (team.confirmed) {
+                            tableEl.classList.add('status-confirmed');
+                        } else if (team.isStatic) {
+                            tableEl.classList.add('status-reserved');
+                        } else {
+                            tableEl.classList.add('status-free');
+                        }
+                    }
+                } else {
+                    // No team assigned - reset to "Voľný"
+                    tableEl.innerHTML = '';
+                    if (tableNumber) tableEl.appendChild(tableNumber);
+                    tableEl.appendChild(document.createTextNode('Voľný'));
+                    
+                    const newCapInfo = document.createElement('div');
+                    newCapInfo.className = 'cap-info';
+                    newCapInfo.innerText = '0 os.';
+                    tableEl.appendChild(newCapInfo);
+                    
+                    // Set as free
+                    tableEl.classList.remove('status-reserved', 'status-confirmed');
+                    tableEl.classList.add('status-free');
+                }
+            }
         }
 
         function loadWebContentToEditor(page) {
@@ -2112,6 +2297,7 @@
                 loadWebContentToEditor('about');
                 loadWebContentToEditor('app');
                 renderAdminPinTable();
+                loadTableAssignments();
             } else {
                 adminSection.style.display = 'none';
                 pinSection.style.display = 'block';
@@ -2129,6 +2315,8 @@
                 loadWebContentToEditor('home');
                 loadWebContentToEditor('about');
                 loadWebContentToEditor('app');
+                await loadTableAssignments();
+                updateMapVisuals();
                 window.scrollTo(0, document.body.scrollHeight);
             } else {
                 alert("Zlý PIN");
@@ -2197,6 +2385,16 @@
             <button onclick="window.confirmPin()" style="flex:1; background:#222454; color:white; border:none; padding:10px; border-radius:8px; font-weight:bold; cursor:pointer; font-size:14px;">✓ OK</button>
             <button onclick="window.cancelPin()" style="flex:1; background:#ccc; color:#333; border:none; padding:10px; border-radius:8px; font-weight:bold; cursor:pointer; font-size:14px;">✗ Zrušiť</button>
         </div>
+    </div>
+
+    <!-- Table Assignment Modal -->
+    <div id="tableAssignOverlay" class="table-assign-modal-overlay" onclick="closeTableAssignModal()"></div>
+    <div id="tableAssignModal" class="table-assign-modal">
+        <h3 id="modalTableTitle">Stôl</h3>
+        <p style="text-align:center; color:#666; margin-bottom:15px; font-size:13px;">Vyberte tím pre priradenie k stolu:</p>
+        <div id="modalTeamList" style="max-height: 400px; overflow-y: auto;"></div>
+        <button class="btn-clear" onclick="clearTableAssignment()">🗑️ Zrušiť priradenie</button>
+        <button class="btn-close" onclick="closeTableAssignModal()">Zavrieť</button>
     </div>
 </body>
 </html>
