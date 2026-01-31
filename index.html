@@ -146,6 +146,11 @@
         function loadWebContent() {
             const contentDoc = doc(db, "web_content", "home");
             onSnapshot(contentDoc, (docSnap) => {
+                // Nenahrávaj obsah ak je aktívny admin mód
+                if (document.body.classList.contains('admin-mode')) {
+                    return;
+                }
+                
                 if (docSnap.exists()) {
                     const data = docSnap.data();
                     if (data.home_hero_title) document.getElementById('home_hero_title').textContent = data.home_hero_title;
