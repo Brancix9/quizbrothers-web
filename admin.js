@@ -272,14 +272,44 @@
         if (db) {
             try {
                 const { doc, getDoc } = await import("https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js");
-                const docRef = doc(db, "config", "pageTexts");
-                const docSnap = await getDoc(docRef);
                 
-                if (docSnap.exists()) {
-                    savedTexts = docSnap.data() || {};
-                    applySavedTexts();
-                    return;
+                // Načítaj dáta zo všetkých relevantných kolekcií
+                const pageTextsRef = doc(db, "config", "pageTexts");
+                const homeRef = doc(db, "web_content", "home");
+                const aboutRef = doc(db, "web_content", "about");
+                const appRef = doc(db, "web_content", "app");
+                
+                const [pageTextsSnap, homeSnap, aboutSnap, appSnap] = await Promise.all([
+                    getDoc(pageTextsRef),
+                    getDoc(homeRef),
+                    getDoc(aboutRef),
+                    getDoc(appRef)
+                ]);
+                
+                // Začni s dátami z config/pageTexts
+                savedTexts = pageTextsSnap.exists() ? (pageTextsSnap.data() || {}) : {};
+                
+                // Zjednoť dáta z web_content kolekcií do správnych stránok
+                const pageName = getPageName();
+                if (!savedTexts[pageName]) savedTexts[pageName] = {};
+                
+                // Pridaj home_ texty
+                if (homeSnap.exists()) {
+                    Object.assign(savedTexts[pageName], homeSnap.data());
                 }
+                
+                // Pridaj about_ texty
+                if (aboutSnap.exists()) {
+                    Object.assign(savedTexts[pageName], aboutSnap.data());
+                }
+                
+                // Pridaj app_ texty
+                if (appSnap.exists()) {
+                    Object.assign(savedTexts[pageName], appSnap.data());
+                }
+                
+                applySavedTexts();
+                return;
             } catch (error) {
                 console.error("Chyba pri načítaní z Firebase:", error);
             }
@@ -296,15 +326,21 @@
     // Aplikovanie uložených textov
     function applySavedTexts() {
         const pageName = getPageName();
+        
+        // Aplikuj texty pre aktuálnu stránku
         if (savedTexts[pageName]) {
             Object.keys(savedTexts[pageName]).forEach(id => {
-                const element = document.querySelector(`[data-text-id="${id}"]`);
+                const element = document.querySelector(`[data-text-id="${id}"]`) || document.getElementById(id);
                 if (element) {
                     // GUARD: Ak má element focus (edituje ho user), neignoruj ho
                     if (element === document.activeElement) {
                         return;
                     }
                     element.textContent = savedTexts[pageName][id];
+                    // Aktualizuj aj data-original-text pri načítaní
+                    if (element.hasAttribute('data-original-text')) {
+                        element.setAttribute('data-original-text', savedTexts[pageName][id]);
+                    }
                 }
             });
         }
