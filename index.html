@@ -155,20 +155,32 @@
                 if (docSnap.exists()) {
                     const data = docSnap.data();
                     console.log('📥 Načítavanie z Firebase web_content/home:', data);
-                    if (data.home_hero_title) document.getElementById('home_hero_title').textContent = data.home_hero_title;
-                    if (data.home_hero_description) document.getElementById('home_hero_description').textContent = data.home_hero_description;
-                    if (data.home_btn_reserve) document.getElementById('home_btn_reserve').textContent = data.home_btn_reserve;
-                    if (data.home_btn_download) document.getElementById('home_btn_download').textContent = data.home_btn_download;
-                    if (data.home_fact1_title) document.getElementById('home_fact1_title').textContent = data.home_fact1_title;
-                    if (data.home_fact1_text) document.getElementById('home_fact1_text').textContent = data.home_fact1_text;
-                    if (data.home_quiz_topic_title) document.getElementById('home_quiz_topic_title').textContent = data.home_quiz_topic_title;
-                    if (data.home_quiz_topic_text) document.getElementById('home_quiz_topic_text').textContent = data.home_quiz_topic_text;
-                    if (data.home_quiz_topic_link) document.getElementById('home_quiz_topic_link').textContent = data.home_quiz_topic_link;
-                    if (data.home_fact2_title) document.getElementById('home_fact2_title').textContent = data.home_fact2_title;
-                    if (data.home_fact2_text) document.getElementById('home_fact2_text').textContent = data.home_fact2_text;
+                    
+                    // Helper funkcia na bezpečné nastavenie textu
+                    const setTextIfExists = (elementId, text) => {
+                        const el = document.getElementById(elementId);
+                        if (el && text) {
+                            el.textContent = text;
+                        } else if (!el) {
+                            console.warn(`⚠️ Element s ID "${elementId}" neexistuje`);
+                        }
+                    };
+                    
+                    setTextIfExists('home_hero_title', data.home_hero_title);
+                    setTextIfExists('home_hero_description', data.home_hero_description);
+                    setTextIfExists('home_btn_reserve', data.home_btn_reserve);
+                    setTextIfExists('home_btn_download', data.home_btn_download);
+                    setTextIfExists('home_fact1_title', data.home_fact1_title);
+                    setTextIfExists('home_fact1_text', data.home_fact1_text);
+                    setTextIfExists('home_quiz_topic_title', data.home_quiz_topic_title);
+                    setTextIfExists('home_quiz_topic_text', data.home_quiz_topic_text);
+                    setTextIfExists('home_quiz_topic_link', data.home_quiz_topic_link);
+                    setTextIfExists('home_fact2_title', data.home_fact2_title);
+                    setTextIfExists('home_fact2_text', data.home_fact2_text);
+                    
                     if (data.home_quiz_topic_answer) {
                         console.log('✏️ Nastavujem home_quiz_topic_answer na:', data.home_quiz_topic_answer);
-                        document.getElementById('home_quiz_topic_answer').textContent = data.home_quiz_topic_answer;
+                        setTextIfExists('home_quiz_topic_answer', data.home_quiz_topic_answer);
                     }
                 } else {
                     console.warn('⚠️ Dokument web_content/home neexistuje!');
