@@ -893,7 +893,7 @@
                         window.adminLoggedIn = false;
                         console.log("❌ Admin sa odhlásil");
                         deactivate();
-                        loadSavedTexts().catch(e => console.warn('Text load error:', e));
+                        // NEVOLAJ loadSavedTexts() - nechaj onSnapshot z index.html aby načítal správne dáta
                     }
                 });
             } catch (e) {

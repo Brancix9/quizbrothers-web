@@ -148,11 +148,13 @@
             onSnapshot(contentDoc, (docSnap) => {
                 // Nenahrávaj obsah ak je aktívny admin mód
                 if (document.body.classList.contains('admin-mode')) {
+                    console.log('🔒 Admin mód aktívny - preskakujem onSnapshot');
                     return;
                 }
                 
                 if (docSnap.exists()) {
                     const data = docSnap.data();
+                    console.log('📥 Načítavanie z Firebase web_content/home:', data);
                     if (data.home_hero_title) document.getElementById('home_hero_title').textContent = data.home_hero_title;
                     if (data.home_hero_description) document.getElementById('home_hero_description').textContent = data.home_hero_description;
                     if (data.home_btn_reserve) document.getElementById('home_btn_reserve').textContent = data.home_btn_reserve;
@@ -164,7 +166,12 @@
                     if (data.home_quiz_topic_link) document.getElementById('home_quiz_topic_link').textContent = data.home_quiz_topic_link;
                     if (data.home_fact2_title) document.getElementById('home_fact2_title').textContent = data.home_fact2_title;
                     if (data.home_fact2_text) document.getElementById('home_fact2_text').textContent = data.home_fact2_text;
-                    if (data.home_quiz_topic_answer) document.getElementById('home_quiz_topic_answer').textContent = data.home_quiz_topic_answer;
+                    if (data.home_quiz_topic_answer) {
+                        console.log('✏️ Nastavujem home_quiz_topic_answer na:', data.home_quiz_topic_answer);
+                        document.getElementById('home_quiz_topic_answer').textContent = data.home_quiz_topic_answer;
+                    }
+                } else {
+                    console.warn('⚠️ Dokument web_content/home neexistuje!');
                 }
             });
         }
