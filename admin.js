@@ -495,8 +495,13 @@
                 // Uloženie pôvodného textu ak ešte nie je uložený
                 const pageName = getPageName();
                 if (!savedTexts[pageName]) savedTexts[pageName] = {};
+                const originalText = el.textContent.trim();
                 if (!savedTexts[pageName][textId]) {
-                    savedTexts[pageName][textId] = el.textContent.trim();
+                    savedTexts[pageName][textId] = originalText;
+                }
+                // Ulož originálny text do data atribútu pre porovnávanie
+                if (!el.getAttribute('data-original-text')) {
+                    el.setAttribute('data-original-text', originalText);
                 }
                 
                 // Event listenery - pridaj len raz
@@ -526,12 +531,15 @@
                         // Automatické uloženie pri strate fokusu
                         const currentText = this.textContent.trim();
                         const tId = this.getAttribute('data-text-id');
+                        const originalText = this.getAttribute('data-original-text') || '';
                         const pName = getPageName();
                         if (!savedTexts[pName]) savedTexts[pName] = {};
-                        if (currentText !== savedTexts[pName][tId]) {
+                        if (currentText !== originalText) {
                             savedTexts[pName][tId] = currentText;
                             // Použiť novú funkciu ktorá ukladá do správnej kolekcie
                             await saveTextToFirebase(tId, currentText);
+                            // Aktualizuj originálnu hodnotu po uložení
+                            this.setAttribute('data-original-text', currentText);
                         }
                     });
                     
@@ -624,10 +632,16 @@
             if (textId) {
                 const currentText = el.textContent.trim();
                 if (!savedTexts[pageName]) savedTexts[pageName] = {};
-                // Uložiť len ak sa text zmenil
-                if (savedTexts[pageName][textId] !== currentText) {
+                
+                // Získaj originálnu hodnotu z data atribútu (ak existuje)
+                const originalText = el.getAttribute('data-original-text') || savedTexts[pageName][textId] || '';
+                
+                // Uložiť ak sa text zmenil oproti originálnej hodnote
+                if (originalText !== currentText) {
                     savedTexts[pageName][textId] = currentText;
                     await saveTextToFirebase(textId, currentText);
+                    // Aktualizuj originálnu hodnotu
+                    el.setAttribute('data-original-text', currentText);
                     savedCount++;
                 }
             }
