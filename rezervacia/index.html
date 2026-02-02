@@ -1136,12 +1136,13 @@
                     
                     console.log("📝 Skúšam updatovať tím:", team.id, { current: count, confirmed: true });
                     try {
-                        await updateDoc(doc(db, "teams", team.id), { current: count, confirmed: true });
+                        await updateDoc(doc(db, "teams", team.id), { current: count, confirmed: true, declined: false });
                         console.log("✅ Tím úspešne updatovaný!");
                         
                         // 📍 EXPLICITNE aktualizuj lokálne dáta IHNEĎ
                         team.current = count;
                         team.confirmed = true;
+                        team.declined = false;
                         localStorage.setItem('teams_cache', JSON.stringify(teamsData));
                         
                         console.log('🟡 Calling updateDashboard()...');
@@ -1191,11 +1192,12 @@
                         // Zapamätaj si, či tím už bol potvrdený pred updatom
                         const wasAlreadyConfirmed = existing.confirmed === true;
                         
-                        await updateDoc(doc(db, "teams", newName), { current: count, confirmed: true });
+                        await updateDoc(doc(db, "teams", newName), { current: count, confirmed: true, declined: false });
                         
                         // 📍 EXPLICITNE aktualizuj lokálne dáta IHNEĎ
                         existing.current = count;
                         existing.confirmed = true;
+                        existing.declined = false;
                         localStorage.setItem('teams_cache', JSON.stringify(teamsData));
                         
                         // 📍 IHNEĎ aktualizuj UI
@@ -1687,8 +1689,9 @@
             tbody.innerHTML = "";
             teamsData.forEach((t) => {
                 const tr = document.createElement('tr');
+                const declinedBadge = t.declined ? '<span style="color:#e74c3c; font-weight:bold;">❌ NEPRÍDEME</span>' : '';
                 tr.innerHTML = `
-                    <td>${t.id} ${!t.isStatic ? '(Nový)' : ''} ${t.confirmed ? '<span style="color:#27ae60;">✓</span>' : ''}</td>
+                    <td>${t.id} ${!t.isStatic ? '(Nový)' : ''} ${t.confirmed ? '<span style="color:#27ae60;">✓</span>' : ''} ${declinedBadge}</td>
                     <td><input type="number" class="admin-input w-small" id="cap_${t.id}" value="${t.default}"></td>
                     <td><input type="text" class="admin-input w-med" id="pin_${t.id}" inputmode="numeric" pattern="[0-9]*" value="${t.pin}"></td>
                     <td><button class="btn-save-pin" onclick="window.saveAdminTeam('${t.id}')" style="margin-right:10px;">Uložiť</button>
@@ -1731,7 +1734,8 @@
                 try {
                     await updateDoc(doc(db, "teams", id), { 
                         confirmed: false, 
-                        current: team.default 
+                        current: team.default,
+                        declined: false 
                     });
                     populateTeamSelect();
                     alert(`✅ Tím "${id}" bol vrátený medzi rezervované!`);
@@ -1854,7 +1858,8 @@
                 if (team.isStatic) {
                     await updateDoc(doc(db, "teams", teamId), { 
                         confirmed: false, 
-                        current: team.default 
+                        current: team.default,
+                        declined: false 
                     });
                     // Úspech - bez alert, confirm bolo dostačujúce
                 } else {
