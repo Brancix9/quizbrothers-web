@@ -363,6 +363,7 @@
         document.body.classList.add('admin-mode');
         createAdminPanel();
         makeTextsEditable();
+        prefillQuizDateInput();
     }
     
     // Vytvorenie admin panelu
@@ -383,6 +384,12 @@
             </div>
             <div class="admin-panel-content">
                 <p style="color: #27ae60; margin-bottom: 15px;">💡 Klikni na akýkoľvek text na stránke a začni ho editovať!</p>
+
+                <div style="margin-bottom: 15px; padding: 10px; border-radius: 6px; background: #f0f8ff; border: 1px solid #cfe0ff;">
+                    <label for="quiz_date_input" style="display:block; font-weight:bold; font-size: 13px; margin-bottom:4px;">Dátum a čas najbližšieho kvízu (pre web + SEO)</label>
+                    <input type="datetime-local" id="quiz_date_input" name="quiz_date_input" step="60" style="width:100%; padding:6px 8px; border-radius:4px; border:1px solid #ccc; font-size:13px; box-sizing:border-box;">
+                    <small style="display:block; margin-top:4px; color:#555; font-size:11px;">Tento údaj sa uloží ako <code>quiz_date_iso</code> do Firebase a použije sa na webe aj v Schema.org Event.</small>
+                </div>
                 
                 <details style="margin-top: 0; margin-bottom: 20px; padding: 8px; border: 1px solid #d4a574; border-radius: 5px; background: #f5ede3;">
                     <summary style="cursor: pointer; color: #8b7355; font-weight: bold; font-size: 12px;">⚙️ Pokročilé operácie (rozbaľ)</summary>
@@ -634,6 +641,100 @@
             return false;
         }
     }
+
+    // Konverzia hodnoty z <input type="datetime-local"> na ISO 8601 s časovým pásmom
+    function toISOWithTimezone(localDateTimeValue) {
+        if (!localDateTimeValue) return null;
+
+        const parts = localDateTimeValue.split('T');
+        if (parts.length !== 2) return null;
+
+        const [datePart, timePart] = parts;
+        const [year, month, day] = datePart.split('-').map(Number);
+        const [hour, minute] = timePart.split(':').map(Number);
+
+        if (!year || !month || !day || isNaN(hour) || isNaN(minute)) return null;
+
+        // Date v lokálnom čase
+        const dt = new Date(year, month - 1, day, hour, minute || 0, 0);
+
+        const offsetMinutes = dt.getTimezoneOffset(); // v minútach, záporné pre + časové pásma
+        const sign = offsetMinutes <= 0 ? '+' : '-';
+        const abs = Math.abs(offsetMinutes);
+        const offsetHours = String(Math.floor(abs / 60)).padStart(2, '0');
+        const offsetMins = String(abs % 60).padStart(2, '0');
+
+        const yyyy = dt.getFullYear();
+        const MM = String(dt.getMonth() + 1).padStart(2, '0');
+        const dd = String(dt.getDate()).padStart(2, '0');
+        const hh = String(dt.getHours()).padStart(2, '0');
+        const mm = String(dt.getMinutes()).padStart(2, '0');
+        const ss = String(dt.getSeconds()).padStart(2, '0');
+
+        return `${yyyy}-${MM}-${dd}T${hh}:${mm}:${ss}${sign}${offsetHours}:${offsetMins}`;
+    }
+
+    // Konverzia ISO 8601 s časovým pásmom na hodnotu pre <input type="datetime-local">
+    function isoToLocalDatetimeInputValue(isoString) {
+        if (!isoString) return '';
+        const dt = new Date(isoString);
+        if (isNaN(dt.getTime())) return '';
+
+        const yyyy = dt.getFullYear();
+        const MM = String(dt.getMonth() + 1).padStart(2, '0');
+        const dd = String(dt.getDate()).padStart(2, '0');
+        const hh = String(dt.getHours()).padStart(2, '0');
+        const mm = String(dt.getMinutes()).padStart(2, '0');
+
+        // Formát pre datetime-local: YYYY-MM-DDTHH:MM (bez sekúnd a bez offsetu)
+        return `${yyyy}-${MM}-${dd}T${hh}:${mm}`;
+    }
+
+    // Uloženie quiz_date_iso do dokumentu web_content/home
+    async function saveQuizDateIsoToFirebase(isoString) {
+        await initFirebase();
+
+        if (!db || !isoString) {
+            return false;
+        }
+
+        try {
+            const { doc, setDoc } = await import("https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js");
+            const docRef = doc(db, 'web_content', 'home');
+            await setDoc(docRef, { quiz_date_iso: isoString }, { merge: true });
+            console.log('✅ Uložené quiz_date_iso do web_content/home:', isoString);
+            return true;
+        } catch (error) {
+            console.error('Chyba pri ukladaní quiz_date_iso do Firebase:', error);
+            return false;
+        }
+    }
+
+    // Predvyplnenie datetime-local inputu z quiz_date_iso z Firebase
+    async function prefillQuizDateInput() {
+        const input = document.getElementById('quiz_date_input');
+        if (!input) return;
+
+        await initFirebase();
+        if (!db) return;
+
+        try {
+            const { doc, getDoc } = await import("https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js");
+            const docRef = doc(db, 'web_content', 'home');
+            const snap = await getDoc(docRef);
+            if (snap.exists()) {
+                const data = snap.data() || {};
+                if (data.quiz_date_iso) {
+                    const localValue = isoToLocalDatetimeInputValue(data.quiz_date_iso);
+                    if (localValue) {
+                        input.value = localValue;
+                    }
+                }
+            }
+        } catch (e) {
+            console.warn('Nepodarilo sa načítať quiz_date_iso pre admin panel:', e);
+        }
+    }
     
     // Uloženie do Firebase alebo localStorage (zachované pre kompatibilitu)
     async function saveToStorage() {
@@ -657,12 +758,13 @@
         localStorage.setItem(STORAGE_KEY, JSON.stringify(savedTexts));
     }
     
-    // Uloženie všetkých zmien
+    // Uloženie všetkých zmien (texty + dátum kvízu)
     async function saveAll() {
         const pageName = getPageName();
         const editableElements = document.querySelectorAll('[data-text-id]');
         let savedCount = 0;
         
+        // 1) Uloženie všetkých editovateľných textov
         for (const el of editableElements) {
             const textId = el.getAttribute('data-text-id');
             if (textId) {
@@ -678,6 +780,18 @@
                     await saveTextToFirebase(textId, currentText);
                     // Aktualizuj originálnu hodnotu
                     el.setAttribute('data-original-text', currentText);
+                    savedCount++;
+                }
+            }
+        }
+
+        // 2) Uloženie dátumu a času kvízu do quiz_date_iso (ak existuje input v admin HTML)
+        const quizDateInput = document.getElementById('quiz_date_input');
+        if (quizDateInput && quizDateInput.value) {
+            const isoValue = toISOWithTimezone(quizDateInput.value);
+            if (isoValue) {
+                const ok = await saveQuizDateIsoToFirebase(isoValue);
+                if (ok) {
                     savedCount++;
                 }
             }

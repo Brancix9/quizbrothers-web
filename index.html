@@ -155,6 +155,40 @@
                 if (docSnap.exists()) {
                     const data = docSnap.data();
                     console.log('📥 Načítavanie z Firebase web_content/home:', data);
+
+                    // Dynamický JSON-LD Event pre Schema.org (SEO)
+                    try {
+                        const headEl = document.head || document.getElementsByTagName('head')[0];
+                        if (headEl) {
+                            // Odstráň starý Event JSON-LD (ak existuje z predošlého onSnapshot)
+                            const oldEventScript = headEl.querySelector('script[data-schema="event-jsonld"]');
+                            if (oldEventScript) {
+                                headEl.removeChild(oldEventScript);
+                            }
+
+                            // Vytvor nový Event JSON-LD len ak máme quiz_date_iso
+                            if (data.quiz_date_iso) {
+                                const eventJsonLd = {
+                                    "@context": "https://schema.org",
+                                    "@type": "Event",
+                                    "name": "QuizBrothers Rožňava",
+                                    "startDate": data.quiz_date_iso,
+                                    "location": {
+                                        "@type": "Place",
+                                        "name": "Lukia's Lounge & More, Rožňava"
+                                    }
+                                };
+
+                                const scriptEl = document.createElement('script');
+                                scriptEl.type = 'application/ld+json';
+                                scriptEl.setAttribute('data-schema', 'event-jsonld');
+                                scriptEl.textContent = JSON.stringify(eventJsonLd);
+                                headEl.appendChild(scriptEl);
+                            }
+                        }
+                    } catch (e) {
+                        console.warn('Nepodarilo sa aktualizovať JSON-LD Event:', e);
+                    }
                     
                     // Helper funkcia na bezpečné nastavenie textu
                     const setTextIfExists = (elementId, text) => {
