@@ -262,12 +262,26 @@
     text-align: center;
 }
 
+.daily-hub-card .daily-greeting {
+    margin: 0 0 4px;
+}
+
+.daily-hub-card .daily-note {
+    margin: 0 0 4px;
+    padding: 8px 12px;
+}
+
 .daily-hub-actions {
     display: flex;
     flex-direction: column;
     align-items: center;
     gap: 12px;
     margin-top: 20px;
+}
+
+.daily-hub-card .daily-hub-actions {
+    margin-top: 6px;
+    gap: 6px;
 }
 
 .daily-hub-actions .btn {
@@ -282,6 +296,12 @@
     font-size: 0.95rem;
     line-height: 1.25;
     white-space: normal;
+}
+
+/* style.css na mobile dáva .btn margin – v hub karte to zbytočne roztiahne medzery */
+.daily-hub-card .daily-hub-actions .btn {
+    margin-top: 0;
+    margin-bottom: 0;
 }
 
 /* Po zodpovedaní dňa – výrazne „zasivené“, neaktívne tlačidlo */
