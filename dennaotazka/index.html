@@ -12,7 +12,7 @@
     <link rel="stylesheet" href="../style.css">
     <link rel="stylesheet" href="daily.css">
     <link rel="icon" href="../favicon.webp" type="image/webp">
-    <!-- Voliteľné: ak máš drawable inde, nastav pred daily.js: window.QB_AVATAR_BASE = '/drawable/'; (lomka na konci) -->
+    <!-- Voliteľné pred daily.js: window.QB_AVATAR_BASE = '/drawable/'; | Prihlásenie: default signInWithRedirect (spoľahlivejšie v Chrome). Popup len pri window.QB_GOOGLE_USE_POPUP = true -->
 </head>
 <body class="daily-page">
 
@@ -137,7 +137,7 @@
                         <button type="button" class="daily-lb-tab" data-lb="myteam">Môj tím</button>
                     </div>
                 </div>
-                <div id="daily-lb-swipe" class="daily-lb-swipe">
+                <div id="daily-lb-swipe" class="daily-lb-swipe" role="region" aria-label="Rebríček – potiahnutím vľavo alebo vpravo zmeníte typ (deň, týždeň, …)">
                     <div id="lb-champions" class="daily-champions"></div>
                     <div id="lb-content" class="daily-lb-content">Načítavam…</div>
                 </div>

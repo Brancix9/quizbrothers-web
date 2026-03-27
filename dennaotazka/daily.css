@@ -516,9 +516,13 @@
     font-weight: 800;
 }
 
-/* Horizontálne potiahnutie = ďalší/predchádzajúci rebríček (ako HorizontalPager v appke) */
+/*
+ * Potiahnutie vľavo/vpravo kdekoľvek v oblasti víťaza + tabuľky (nie len v horných záložkách)
+ * prepína Víťaz dňa / týždeň / … – ako HorizontalPager v appke.
+ */
 .daily-lb-swipe {
     touch-action: pan-y;
+    min-height: 80px;
 }
 
 .daily-lb-content {

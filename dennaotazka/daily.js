@@ -54,24 +54,17 @@ function bindAvatarImg(img, index) {
   if (!img) return;
   const n = Math.max(0, Math.min(AVATAR_MAX_INDEX, index));
   const base = getAvatarBase();
-  const webp = `${base}avatar_${n}.webp`;
   const png = `${base}avatar_${n}.png`;
   img.alt = `Avatar ${n}`;
-  let step = 0;
   img.onerror = () => {
-    step += 1;
-    if (step === 1) {
-      img.src = png;
-    } else {
-      img.onerror = null;
-      img.src =
-        'data:image/svg+xml,' +
-        encodeURIComponent(
-          `<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64"><rect fill="#e8e9ef" width="64" height="64"/><text x="32" y="38" text-anchor="middle" font-size="14" font-weight="700" fill="#222454">${n}</text></svg>`
-        );
-    };
+    img.onerror = null;
+    img.src =
+      'data:image/svg+xml,' +
+      encodeURIComponent(
+        `<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64"><rect fill="#e8e9ef" width="64" height="64"/><text x="32" y="38" text-anchor="middle" font-size="14" font-weight="700" fill="#222454">${n}</text></svg>`
+      );
   };
-  img.src = webp;
+  img.src = png;
 }
 
 function buildAvatarPicker() {
@@ -379,17 +372,13 @@ function bindBadgeCongratsImg(img, badgeType) {
           : badgeType === 'streak'
             ? 'badge_best_strike'
             : 'badge_day';
-  const oWebp = `${base}odznaky/${odznakName}.webp`;
   const oPng = `${base}odznaky/${odznakName}.png`;
-  const fWebp = `${base}${fallbackStem}.webp`;
   const fPng = `${base}${fallbackStem}.png`;
   img.alt = 'Odznak';
   let step = 0;
   img.onerror = () => {
     step += 1;
-    if (step === 1) img.src = oPng;
-    else if (step === 2) img.src = fWebp;
-    else if (step === 3) img.src = fPng;
+    if (step === 1) img.src = fPng;
     else {
       img.onerror = null;
       img.src =
@@ -399,7 +388,7 @@ function bindBadgeCongratsImg(img, badgeType) {
         );
     }
   };
-  img.src = oWebp;
+  img.src = oPng;
 }
 
 function hideBadgeCongratsOverlay() {
@@ -944,25 +933,26 @@ function initLeaderboardSwipe() {
   if (!wrap || wrap.dataset.lbSwipeInit) return;
   wrap.dataset.lbSwipeInit = '1';
 
-  const minDX = 56;
-  const xyRatio = 1.12;
+  /** Min. posun pre prepnutie záložky (po celej oblasti pod hornými tlačidlami – aj priamo na riadkoch tabuľky). */
+  const minDX = 48;
+  /** Pri uzamknutí horizontálu: scroll zoznamu sa zastaví, aby „nežral“ potiahnutie. */
+  const ratioLock = 1.22;
+  const lockSlopPx = 10;
+  const ratioEndLoose = 1.1;
+  const ratioEndLocked = 1.02;
 
-  let gesture = null;
+  let g = null;
 
   function leaderboardsVisible() {
     const p = $('panel-leaderboards');
     return p && !p.classList.contains('hidden');
   }
 
-  function endSwipe(endX, endY) {
-    if (!gesture) return;
-    const { x0, y0 } = gesture;
-    gesture = null;
-    const dx = endX - x0;
-    const dy = endY - y0;
-    if (Math.abs(dx) < minDX) return;
-    if (Math.abs(dx) < Math.abs(dy) * xyRatio) return;
+  function trySwitchTab(dx, dy, wasHorizontalLocked) {
     if (!leaderboardsVisible()) return;
+    const ratio = wasHorizontalLocked ? ratioEndLocked : ratioEndLoose;
+    if (Math.abs(dx) < minDX) return;
+    if (Math.abs(dx) < Math.abs(dy) * ratio) return;
 
     const idx = LB_TAB_ORDER.indexOf(state.lbTab);
     if (idx < 0) return;
@@ -977,40 +967,83 @@ function initLeaderboardSwipe() {
   wrap.addEventListener(
     'touchstart',
     (e) => {
-      if (e.touches.length !== 1) return;
-      gesture = { x0: e.touches[0].clientX, y0: e.touches[0].clientY, fromTouch: true };
+      if (!leaderboardsVisible() || e.touches.length !== 1) return;
+      g = {
+        x0: e.touches[0].clientX,
+        y0: e.touches[0].clientY,
+        horizontal: false,
+        touch: true
+      };
     },
-    { passive: true }
+    { capture: true, passive: true }
+  );
+
+  wrap.addEventListener(
+    'touchmove',
+    (e) => {
+      if (!g || !g.touch || e.touches.length !== 1) return;
+      const t = e.touches[0];
+      const dx = t.clientX - g.x0;
+      const dy = t.clientY - g.y0;
+      if (!g.horizontal) {
+        if (Math.abs(dx) > lockSlopPx && Math.abs(dx) > Math.abs(dy) * ratioLock) {
+          g.horizontal = true;
+        }
+      }
+      if (g.horizontal) {
+        e.preventDefault();
+      }
+    },
+    { capture: true, passive: false }
   );
 
   wrap.addEventListener(
     'touchend',
     (e) => {
-      if (!gesture || !gesture.fromTouch) return;
+      if (!g || !g.touch) return;
       const t = e.changedTouches[0];
-      endSwipe(t.clientX, t.clientY);
+      const dx = t.clientX - g.x0;
+      const dy = t.clientY - g.y0;
+      const locked = g.horizontal;
+      g = null;
+      trySwitchTab(dx, dy, locked);
     },
-    { passive: true }
+    { capture: true, passive: true }
   );
 
-  wrap.addEventListener('touchcancel', () => {
-    gesture = null;
-  });
+  wrap.addEventListener(
+    'touchcancel',
+    () => {
+      g = null;
+    },
+    { capture: true }
+  );
 
-  wrap.addEventListener('pointerdown', (e) => {
-    if (e.pointerType === 'touch') return;
-    if (e.button !== 0) return;
-    gesture = { x0: e.clientX, y0: e.clientY, fromTouch: false, pid: e.pointerId };
-  });
+  let ptr = null;
+  wrap.addEventListener(
+    'pointerdown',
+    (e) => {
+      if (e.pointerType === 'touch') return;
+      if (e.button !== 0 || !leaderboardsVisible()) return;
+      ptr = { x0: e.clientX, y0: e.clientY, id: e.pointerId };
+    },
+    { capture: true }
+  );
 
-  wrap.addEventListener('pointerup', (e) => {
-    if (!gesture || gesture.fromTouch) return;
-    if (e.pointerId !== gesture.pid) return;
-    endSwipe(e.clientX, e.clientY);
-  });
+  wrap.addEventListener(
+    'pointerup',
+    (e) => {
+      if (!ptr || e.pointerId !== ptr.id) return;
+      const dx = e.clientX - ptr.x0;
+      const dy = e.clientY - ptr.y0;
+      ptr = null;
+      trySwitchTab(dx, dy, false);
+    },
+    { capture: true }
+  );
 
   wrap.addEventListener('pointercancel', () => {
-    gesture = null;
+    ptr = null;
   });
 }
 
@@ -1044,14 +1077,24 @@ async function refreshUIForUser() {
 
 async function signInGoogle() {
   setStatus('');
-  try {
-    await auth.signInWithPopup(googleProvider);
-  } catch (e) {
-    const code = e?.code || '';
-    if (code === 'auth/popup-blocked' || code === 'auth/operation-not-supported-in-this-environment') {
-      await auth.signInWithRedirect(googleProvider);
-      return;
+  if (window.QB_GOOGLE_USE_POPUP === true) {
+    try {
+      await auth.signInWithPopup(googleProvider);
+    } catch (e) {
+      const code = e?.code || '';
+      if (code === 'auth/popup-blocked' || code === 'auth/operation-not-supported-in-this-environment') {
+        setStatus('Presmerujeme na Google…');
+        await auth.signInWithRedirect(googleProvider);
+        return;
+      }
+      setStatus(e.message || 'Prihlásenie zlyhalo.');
     }
+    return;
+  }
+  setStatus('Presmerujeme na Google…');
+  try {
+    await auth.signInWithRedirect(googleProvider);
+  } catch (e) {
     setStatus(e.message || 'Prihlásenie zlyhalo.');
   }
 }
