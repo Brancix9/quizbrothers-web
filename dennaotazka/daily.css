@@ -39,12 +39,44 @@
 .daily-ios-pwa-inner {
     display: flex;
     flex-direction: column;
-    gap: 10px;
+    gap: 12px;
     align-items: stretch;
 }
 
+.daily-ios-pwa-top {
+    display: flex;
+    gap: 14px;
+    align-items: flex-start;
+}
+
+.daily-ios-pwa-icon-wrap {
+    flex: 0 0 auto;
+    width: 64px;
+    height: 64px;
+    border-radius: 14px;
+    background: rgba(255, 255, 255, 0.12);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    box-sizing: border-box;
+}
+
+.daily-ios-pwa-app-icon {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    object-position: center;
+    display: block;
+}
+
+.daily-ios-pwa-copy {
+    flex: 1;
+    min-width: 0;
+}
+
 .daily-ios-pwa-title {
-    margin: 0;
+    margin: 0 0 8px;
     font-size: 1.05rem;
     font-weight: 700;
     color: #fff;
@@ -62,17 +94,21 @@
     font-weight: 600;
 }
 
+/* Bez daily-btn-outline – ten dáva tmavomodrý text na svetlých kartách */
 .daily-ios-pwa-dismiss {
     align-self: flex-start;
-    margin-top: 2px;
-    border-color: rgba(255, 255, 255, 0.55) !important;
+    margin-top: 0;
     color: #fff !important;
     background: transparent !important;
+    border: 2px solid rgba(255, 255, 255, 0.85) !important;
+    font-weight: 600;
 }
 
 .daily-ios-pwa-dismiss:hover,
 .daily-ios-pwa-dismiss:focus-visible {
-    background: rgba(255, 255, 255, 0.12) !important;
+    background: rgba(255, 255, 255, 0.15) !important;
+    color: #fff !important;
+    border-color: #fff !important;
 }
 
 .daily-card {
