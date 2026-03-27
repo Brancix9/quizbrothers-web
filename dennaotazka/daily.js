@@ -32,6 +32,11 @@ if (!firebase.apps.length) {
 const auth = firebase.auth();
 auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL).catch(() => {});
 const db = firebase.firestore();
+try {
+  db.settings({ experimentalForceLongPolling: true });
+} catch (e) {
+  /* už boli odoslané požiadavky */
+}
 const FieldValue = firebase.firestore.FieldValue;
 const googleProvider = new firebase.auth.GoogleAuthProvider();
 googleProvider.setCustomParameters({ prompt: 'select_account' });
@@ -1081,26 +1086,45 @@ async function refreshUIForUser() {
   }
 }
 
+function formatAuthError(e) {
+  const code = e?.code || '';
+  if (code === 'auth/network-request-failed') {
+    return (
+      'Sieťové prihlásenie zlyhalo (často blokovač reklám, VPN alebo režim súkromia). Skús ich vypnúť alebo iný prehliadač. ' +
+      'Ak problém trvá: Google Cloud Console → Credentials → API kľúč pre tento web musí mať v API restrictions zapnuté aspoň „Identity Toolkit API“ a v Application restrictions buď „None“, alebo správnu webovú doménu (vrátane www).'
+    );
+  }
+  return e?.message || 'Prihlásenie zlyhalo.';
+}
+
+/**
+ * Predvolene popup (spoľahlivejší návrat ako redirect na niektorých sieťach).
+ * Len redirect: pred daily.js nastav window.QB_GOOGLE_USE_REDIRECT = true
+ */
 async function signInGoogle() {
   setStatus('');
-  if (window.QB_GOOGLE_USE_POPUP === true) {
+  if (window.QB_GOOGLE_USE_REDIRECT === true) {
     try {
-      await auth.signInWithPopup(googleProvider);
+      await auth.signInWithRedirect(googleProvider);
     } catch (e) {
-      const code = e?.code || '';
-      if (code === 'auth/popup-blocked' || code === 'auth/operation-not-supported-in-this-environment') {
-        setStatus('');
-        await auth.signInWithRedirect(googleProvider);
-        return;
-      }
-      setStatus(e.message || 'Prihlásenie zlyhalo.');
+      setStatus(formatAuthError(e));
     }
     return;
   }
+
   try {
-    await auth.signInWithRedirect(googleProvider);
+    await auth.signInWithPopup(googleProvider);
   } catch (e) {
-    setStatus(e.message || 'Prihlásenie zlyhalo.');
+    const code = e?.code || '';
+    if (code === 'auth/popup-blocked' || code === 'auth/operation-not-supported-in-this-environment') {
+      try {
+        await auth.signInWithRedirect(googleProvider);
+      } catch (e2) {
+        setStatus(formatAuthError(e2));
+      }
+      return;
+    }
+    setStatus(formatAuthError(e));
   }
 }
 
@@ -1242,7 +1266,7 @@ async function boot() {
     }
   } catch (e) {
     const code = e?.code || '';
-    let msg = e.message || 'Chyba po presmerovaní z Google.';
+    let msg = formatAuthError(e);
     if (code === 'auth/unauthorized-domain') {
       msg =
         'Doména stránky nie je v Firebase → Authentication → Settings → Authorized domains. Pridaj presne túto adresu (vrátane www alebo bez www).';
