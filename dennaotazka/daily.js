@@ -4,14 +4,16 @@
  */
 /* global firebase */
 
+/** Rovnaký Firebase projekt ako Android appka (google-services.json → quizbrothers-cbc89). Rezervácia na webe ostáva na projekte quizbrothers-rezervacia. */
 const firebaseConfig = {
-  apiKey: 'AIzaSyCgKeENYtYJWf2_DZOw4irg6GPLq3XKhEc',
-  authDomain: 'quizbrothers-rezervacia.firebaseapp.com',
-  projectId: 'quizbrothers-rezervacia',
-  storageBucket: 'quizbrothers-rezervacia.firebasestorage.app',
-  messagingSenderId: '193476216369',
-  appId: '1:193476216369:web:8e0d59dd8282cb53ba3710',
-  measurementId: 'G-0LKTHWLKH5'
+  apiKey: 'AIzaSyAwSLlzVdjhHB1FQxmizBrkmBk5-Y_z318',
+  authDomain: 'quizbrothers-cbc89.firebaseapp.com',
+  databaseURL: 'https://quizbrothers-cbc89-default-rtdb.europe-west1.firebasedatabase.app',
+  projectId: 'quizbrothers-cbc89',
+  storageBucket: 'quizbrothers-cbc89.firebasestorage.app',
+  messagingSenderId: '969134044728',
+  appId: '1:969134044728:web:d8f1281b09c42024ecd8cd',
+  measurementId: 'G-8M8C5XR0DD'
 };
 
 if (typeof firebase === 'undefined') {
