@@ -1122,16 +1122,39 @@ function formatAuthError(e) {
       'Ak problém trvá: Google Cloud Console → Credentials → API kľúč pre tento web musí mať v API restrictions zapnuté aspoň „Identity Toolkit API“ a v Application restrictions buď „None“, alebo správnu webovú doménu (vrátane www).'
     );
   }
+  if (
+    code === 'auth/popup-closed-by-user' ||
+    code === 'auth/cancelled-popup-request' ||
+    code === 'auth/user-cancelled'
+  ) {
+    return '';
+  }
   return e?.message || 'Prihlásenie zlyhalo.';
 }
 
 /**
- * Predvolene popup (na mobile často najrýchlejšie). Ak je popup zablokovaný, fallback na redirect.
- * Len redirect vždy: pred daily.js nastav window.QB_GOOGLE_USE_REDIRECT = true
+ * Na iPhone/iPad (Safari, PWA) je popup často nestabilný; redirect je spoľahlivejší.
+ * Vynútiť redirect: window.QB_GOOGLE_USE_REDIRECT = true. Vynútiť popup na Apple: QB_GOOGLE_USE_POPUP = true.
+ */
+function useGoogleAuthRedirect() {
+  if (window.QB_GOOGLE_USE_REDIRECT === true) return true;
+  if (window.QB_GOOGLE_USE_POPUP === true) return false;
+  try {
+    const ua = navigator.userAgent || '';
+    if (/iPhone|iPad|iPod/i.test(ua)) return true;
+    if (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1) return true;
+  } catch (e) {
+    /* ignore */
+  }
+  return false;
+}
+
+/**
+ * Predvolene popup (desktop/Android). Na iOS/iPadOS predvolene redirect. Fallback na redirect pri blokovanom popupe.
  */
 async function signInGoogle() {
   setStatus('');
-  if (window.QB_GOOGLE_USE_REDIRECT === true) {
+  if (useGoogleAuthRedirect()) {
     try {
       await auth.signInWithRedirect(googleProvider);
     } catch (e) {
