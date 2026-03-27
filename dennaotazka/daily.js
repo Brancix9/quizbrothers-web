@@ -29,20 +29,6 @@ if (!firebase.apps.length) {
   firebase.initializeApp(firebaseConfig);
 }
 
-/** Nainštalovaná PWA / iOS „Add to Home“ – iný úložný kontext ako karta v Chrome; forced long polling tam často rozbije spojenie. */
-function isLikelyInstalledPwa() {
-  try {
-    if (typeof window === 'undefined') return false;
-    if (window.navigator && window.navigator.standalone === true) return true;
-    if (!window.matchMedia) return false;
-    if (window.matchMedia('(display-mode: standalone)').matches) return true;
-    if (window.matchMedia('(display-mode: fullscreen)').matches) return true;
-    return false;
-  } catch (e) {
-    return false;
-  }
-}
-
 const auth = firebase.auth();
 auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL).catch(() => {});
 const db = firebase.firestore();
@@ -51,12 +37,9 @@ try {
   if (mode !== 'off' && mode !== 'none') {
     if (mode === 'force') {
       db.settings({ experimentalForceLongPolling: true, merge: true });
-    } else if (mode === 'auto') {
-      db.settings({ experimentalAutoDetectLongPolling: true, merge: true });
-    } else if (isLikelyInstalledPwa()) {
-      db.settings({ experimentalAutoDetectLongPolling: true, merge: true });
     } else {
-      db.settings({ experimentalForceLongPolling: true, merge: true });
+      /* Predvolene auto: forced long polling na prvom spojení často čaká desiatky sekúnd (vyzerá ako „zaseknuté“ prihlásenie). */
+      db.settings({ experimentalAutoDetectLongPolling: true, merge: true });
     }
   }
 } catch (e) {
@@ -1135,13 +1118,18 @@ async function refreshUIForUser() {
     showPanel('auth');
     return;
   }
-  setStatus('');
+  if (state.activePanel === 'auth') {
+    setStatus('Načítavam účet…');
+  } else {
+    setStatus('');
+  }
   try {
-    await loadUserProfileDoc(u.uid);
-    state.answeredToday = await checkAnsweredToday(u.uid);
+    const [, answered] = await Promise.all([loadUserProfileDoc(u.uid), checkAnsweredToday(u.uid)]);
+    state.answeredToday = answered;
 
     if (!profileComplete()) {
       await showProfilePanel({ fromHub: false });
+      setStatus('');
       return;
     }
 
@@ -1150,7 +1138,10 @@ async function refreshUIForUser() {
     const mail = u.email || '';
     $('hub-greeting').textContent = `Ahoj, ${state.profile.nickname}!${mail ? ` (${mail})` : ''}`;
     updateHubStartButton();
-    await loadBadgesForCongratsAndMaybeShow();
+    setStatus('');
+    loadBadgesForCongratsAndMaybeShow().catch((e) => {
+      console.warn('[Daily] badges po hube', e);
+    });
   } catch (err) {
     console.error('[Daily] refreshUIForUser', err);
     setStatus('Chyba pri načítaní účtu: ' + userVisibleFirestoreError(err, 'skús znova obnoviť stránku.'));
