@@ -37,6 +37,8 @@ googleProvider.setCustomParameters({ prompt: 'select_account' });
 
 const TZ = 'Europe/Bratislava';
 const LEADERBOARD_MAX = 50;
+/** Poradie záložiek rebríčkov – musí sedieť s data-lb v HTML (swipe vľavo = ďalšia) */
+const LB_TAB_ORDER = ['day', 'week', 'month', 'streak', 'badges', 'myteam'];
 const DEFAULT_TIMER_SEC = 15;
 /** Rovnaký rozsah ako v Android appke (avatar_0 … avatar_230 v drawable). */
 const AVATAR_MAX_INDEX = 230;
@@ -530,6 +532,26 @@ async function checkAnsweredToday(uid) {
   return snap.exists;
 }
 
+function updateHubStartButton() {
+  const btn = $('btn-start');
+  if (!btn) return;
+  if (state.answeredToday) {
+    btn.disabled = true;
+    btn.textContent = 'Dnes už si odpovedal.';
+  } else {
+    btn.disabled = false;
+    btn.textContent = 'Odpovedať na dennú otázku';
+  }
+}
+
+/** Po návrate na hub vždy znova načítať stav odpovede (inak ostane staré tlačidlo po odoslaní otázky). */
+async function syncHubAnswerState() {
+  const uid = state.user?.uid;
+  if (!uid) return;
+  state.answeredToday = await checkAnsweredToday(uid);
+  updateHubStartButton();
+}
+
 async function ensureQuestionOrder(uid, ym) {
   const docId = `${uid}_${ym}`;
   const ref = db.collection('daily_question_orders').doc(docId);
@@ -646,6 +668,7 @@ function submitAnswer() {
     .set(data)
     .then(() => {
       state.answeredToday = true;
+      updateHubStartButton();
     })
     .catch((e) => {
       setStatus('Odpoveď sa nepodarilo uložiť: ' + (e.message || 'chyba'));
@@ -897,15 +920,103 @@ function scrollActiveLbTabIntoView() {
   });
 }
 
-async function openLeaderboards() {
-  state.lbTab = 'day';
-  document.querySelectorAll('.daily-lb-tab').forEach((b) => {
-    b.classList.toggle('active', b.getAttribute('data-lb') === 'day');
+let lbTabSwitchLock = false;
+
+async function switchLeaderboardTab(lbKey) {
+  if (!lbKey || !LB_TAB_ORDER.includes(lbKey)) return;
+  if (lbTabSwitchLock) return;
+  lbTabSwitchLock = true;
+  try {
+    state.lbTab = lbKey;
+    document.querySelectorAll('.daily-lb-tab').forEach((b) => {
+      b.classList.toggle('active', b.getAttribute('data-lb') === lbKey);
+    });
+    await renderLeaderboardTab();
+    scrollActiveLbTabIntoView();
+    await loadBadgesForCongratsAndMaybeShow();
+  } finally {
+    lbTabSwitchLock = false;
+  }
+}
+
+function initLeaderboardSwipe() {
+  const wrap = $('daily-lb-swipe');
+  if (!wrap || wrap.dataset.lbSwipeInit) return;
+  wrap.dataset.lbSwipeInit = '1';
+
+  const minDX = 56;
+  const xyRatio = 1.12;
+
+  let gesture = null;
+
+  function leaderboardsVisible() {
+    const p = $('panel-leaderboards');
+    return p && !p.classList.contains('hidden');
+  }
+
+  function endSwipe(endX, endY) {
+    if (!gesture) return;
+    const { x0, y0 } = gesture;
+    gesture = null;
+    const dx = endX - x0;
+    const dy = endY - y0;
+    if (Math.abs(dx) < minDX) return;
+    if (Math.abs(dx) < Math.abs(dy) * xyRatio) return;
+    if (!leaderboardsVisible()) return;
+
+    const idx = LB_TAB_ORDER.indexOf(state.lbTab);
+    if (idx < 0) return;
+
+    if (dx < 0) {
+      if (idx < LB_TAB_ORDER.length - 1) void switchLeaderboardTab(LB_TAB_ORDER[idx + 1]);
+    } else if (idx > 0) {
+      void switchLeaderboardTab(LB_TAB_ORDER[idx - 1]);
+    }
+  }
+
+  wrap.addEventListener(
+    'touchstart',
+    (e) => {
+      if (e.touches.length !== 1) return;
+      gesture = { x0: e.touches[0].clientX, y0: e.touches[0].clientY, fromTouch: true };
+    },
+    { passive: true }
+  );
+
+  wrap.addEventListener(
+    'touchend',
+    (e) => {
+      if (!gesture || !gesture.fromTouch) return;
+      const t = e.changedTouches[0];
+      endSwipe(t.clientX, t.clientY);
+    },
+    { passive: true }
+  );
+
+  wrap.addEventListener('touchcancel', () => {
+    gesture = null;
   });
+
+  wrap.addEventListener('pointerdown', (e) => {
+    if (e.pointerType === 'touch') return;
+    if (e.button !== 0) return;
+    gesture = { x0: e.clientX, y0: e.clientY, fromTouch: false, pid: e.pointerId };
+  });
+
+  wrap.addEventListener('pointerup', (e) => {
+    if (!gesture || gesture.fromTouch) return;
+    if (e.pointerId !== gesture.pid) return;
+    endSwipe(e.clientX, e.clientY);
+  });
+
+  wrap.addEventListener('pointercancel', () => {
+    gesture = null;
+  });
+}
+
+async function openLeaderboards() {
   showPanel('leaderboards');
-  await renderLeaderboardTab();
-  scrollActiveLbTabIntoView();
-  await loadBadgesForCongratsAndMaybeShow();
+  await switchLeaderboardTab('day');
 }
 
 async function refreshUIForUser() {
@@ -927,14 +1038,7 @@ async function refreshUIForUser() {
   renderHubProfileDetails();
   const mail = u.email || '';
   $('hub-greeting').textContent = `Ahoj, ${state.profile.nickname}!${mail ? ` (${mail})` : ''}`;
-  const btnStart = $('btn-start');
-  if (state.answeredToday) {
-    btnStart.disabled = true;
-    btnStart.textContent = 'Dnes už si odpovedal.';
-  } else {
-    btnStart.disabled = false;
-    btnStart.textContent = 'Odpovedať na dennú otázku';
-  }
+  updateHubStartButton();
   await loadBadgesForCongratsAndMaybeShow();
 }
 
@@ -995,6 +1099,7 @@ function wireEvents() {
 
   $('btn-profile-back').onclick = async () => {
     showPanel('hub');
+    await syncHubAnswerState();
     await loadBadgesForCongratsAndMaybeShow();
   };
 
@@ -1011,6 +1116,7 @@ function wireEvents() {
   $('btn-q-back').onclick = async () => {
     clearTimer();
     showPanel('hub');
+    await syncHubAnswerState();
     await loadBadgesForCongratsAndMaybeShow();
   };
 
@@ -1022,21 +1128,22 @@ function wireEvents() {
   $('btn-result-lb').onclick = () => openLeaderboards();
   $('btn-result-hub').onclick = async () => {
     showPanel('hub');
+    await syncHubAnswerState();
     await loadBadgesForCongratsAndMaybeShow();
   };
 
-  $('btn-lb-back').onclick = () => showPanel('hub');
+  $('btn-lb-back').onclick = async () => {
+    showPanel('hub');
+    await syncHubAnswerState();
+  };
 
   document.querySelectorAll('.daily-lb-tab').forEach((btn) => {
     btn.onclick = async () => {
-      state.lbTab = btn.getAttribute('data-lb');
-      document.querySelectorAll('.daily-lb-tab').forEach((b) => b.classList.remove('active'));
-      btn.classList.add('active');
-      await renderLeaderboardTab();
-      scrollActiveLbTabIntoView();
-      await loadBadgesForCongratsAndMaybeShow();
+      await switchLeaderboardTab(btn.getAttribute('data-lb'));
     };
   });
+
+  initLeaderboardSwipe();
 
   const badgeOverlay = $('badge-congrats-overlay');
   const closeBadge = () => {

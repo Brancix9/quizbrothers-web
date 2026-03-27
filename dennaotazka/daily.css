@@ -516,6 +516,11 @@
     font-weight: 800;
 }
 
+/* Horizontálne potiahnutie = ďalší/predchádzajúci rebríček (ako HorizontalPager v appke) */
+.daily-lb-swipe {
+    touch-action: pan-y;
+}
+
 .daily-lb-content {
     font-size: 1rem;
     max-height: 420px;
