@@ -916,6 +916,14 @@ function scrollActiveLbTabIntoView() {
 }
 
 let lbTabSwitchLock = false;
+/** Stav potiahnutia rebríčka (iOS PWA občas neodošle touchend – reset pri návrate na stránku). */
+let lbSwipeG = null;
+let lbSwipePtr = null;
+
+function resetLeaderboardTouchState() {
+  lbSwipeG = null;
+  lbSwipePtr = null;
+}
 
 async function switchLeaderboardTab(lbKey) {
   if (!lbKey || !LB_TAB_ORDER.includes(lbKey)) return;
@@ -928,10 +936,11 @@ async function switchLeaderboardTab(lbKey) {
     });
     await renderLeaderboardTab();
     scrollActiveLbTabIntoView();
-    await loadBadgesForCongratsAndMaybeShow();
   } finally {
     lbTabSwitchLock = false;
   }
+  /* Mimo zámku – na iOS nemá blokovať ďalšie kliky/swipe pri pomalom Firestore */
+  void loadBadgesForCongratsAndMaybeShow();
 }
 
 function initLeaderboardSwipe() {
@@ -946,8 +955,6 @@ function initLeaderboardSwipe() {
   const lockSlopPx = 10;
   const ratioEndLoose = 1.1;
   const ratioEndLocked = 1.02;
-
-  let g = null;
 
   function leaderboardsVisible() {
     const p = $('panel-leaderboards');
@@ -974,7 +981,7 @@ function initLeaderboardSwipe() {
     'touchstart',
     (e) => {
       if (!leaderboardsVisible() || e.touches.length !== 1) return;
-      g = {
+      lbSwipeG = {
         x0: e.touches[0].clientX,
         y0: e.touches[0].clientY,
         horizontal: false,
@@ -987,6 +994,7 @@ function initLeaderboardSwipe() {
   wrap.addEventListener(
     'touchmove',
     (e) => {
+      const g = lbSwipeG;
       if (!g || !g.touch || e.touches.length !== 1) return;
       const t = e.touches[0];
       const dx = t.clientX - g.x0;
@@ -1006,12 +1014,13 @@ function initLeaderboardSwipe() {
   wrap.addEventListener(
     'touchend',
     (e) => {
+      const g = lbSwipeG;
       if (!g || !g.touch) return;
       const t = e.changedTouches[0];
       const dx = t.clientX - g.x0;
       const dy = t.clientY - g.y0;
       const locked = g.horizontal;
-      g = null;
+      lbSwipeG = null;
       trySwitchTab(dx, dy, locked);
     },
     { capture: true, passive: true }
@@ -1020,18 +1029,17 @@ function initLeaderboardSwipe() {
   wrap.addEventListener(
     'touchcancel',
     () => {
-      g = null;
+      lbSwipeG = null;
     },
     { capture: true }
   );
 
-  let ptr = null;
   wrap.addEventListener(
     'pointerdown',
     (e) => {
       if (e.pointerType === 'touch') return;
       if (e.button !== 0 || !leaderboardsVisible()) return;
-      ptr = { x0: e.clientX, y0: e.clientY, id: e.pointerId };
+      lbSwipePtr = { x0: e.clientX, y0: e.clientY, id: e.pointerId };
     },
     { capture: true }
   );
@@ -1039,17 +1047,30 @@ function initLeaderboardSwipe() {
   wrap.addEventListener(
     'pointerup',
     (e) => {
+      const ptr = lbSwipePtr;
       if (!ptr || e.pointerId !== ptr.id) return;
       const dx = e.clientX - ptr.x0;
       const dy = e.clientY - ptr.y0;
-      ptr = null;
+      lbSwipePtr = null;
       trySwitchTab(dx, dy, false);
     },
     { capture: true }
   );
 
   wrap.addEventListener('pointercancel', () => {
-    ptr = null;
+    lbSwipePtr = null;
+  });
+
+  /* iOS PWA: občas chýba touchend / zostane „visieť“ gesture alebo zámok po pozastavení aplikácie */
+  const thawLeaderboards = () => {
+    resetLeaderboardTouchState();
+    if (document.visibilityState === 'visible') {
+      lbTabSwitchLock = false;
+    }
+  };
+  document.addEventListener('visibilitychange', thawLeaderboards);
+  window.addEventListener('pageshow', (ev) => {
+    if (ev.persisted) thawLeaderboards();
   });
 }
 

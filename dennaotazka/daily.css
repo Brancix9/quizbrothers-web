@@ -591,6 +591,8 @@
     display: inline-flex;
     align-items: center;
     justify-content: center;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: rgba(34, 36, 84, 0.12);
 }
 
 .daily-lb-tab:hover {
@@ -611,6 +613,8 @@
 .daily-lb-swipe {
     touch-action: pan-y;
     min-height: 80px;
+    overscroll-behavior-x: contain;
+    overscroll-behavior-y: auto;
 }
 
 .daily-lb-content {
