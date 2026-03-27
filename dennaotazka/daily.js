@@ -679,7 +679,7 @@ function showResultUI() {
 
 async function startQuestionFlow() {
   if (state.answeredToday) {
-    setStatus('Dnes už máš odpoveď zapísanú.');
+    setStatus('Dnes už si odpovedal.');
     return;
   }
   setStatus('');
@@ -920,7 +920,7 @@ async function refreshUIForUser() {
   const note = $('hub-answered-note');
   if (state.answeredToday) {
     note.classList.remove('hidden');
-    note.textContent = 'Dnes už máš odpoveď zapísanú. Môžeš si pozrieť rebríčky.';
+    note.textContent = 'Dnes už si odpovedal. Môžeš si pozrieť rebríčky.';
     $('btn-start').disabled = true;
   } else {
     note.classList.add('hidden');
