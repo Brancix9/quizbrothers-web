@@ -5,13 +5,14 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta property="og:type" content="website">
     <meta property="og:title" content="Denná otázka - QuizBrothers">
-    <meta property="og:description" content="Denná otázka QuizBrothers – prihlásenie cez Google, profil a rebríčky ako v aplikácii.">
+    <meta property="og:description" content="Denná otázka QuizBrothers – rebríčky ako v aplikácii.">
     <meta property="og:image" content="https://www.quizbrothers.sk/logo.png">
     <meta property="og:url" content="https://www.quizbrothers.sk/dennaotazka/">
     <title>Denná otázka - QuizBrothers</title>
     <link rel="stylesheet" href="../style.css">
     <link rel="stylesheet" href="daily.css">
     <link rel="icon" href="../favicon.webp" type="image/webp">
+    <!-- Voliteľné: ak máš drawable inde, nastav pred daily.js: window.QB_AVATAR_BASE = '/drawable/'; (lomka na konci) -->
 </head>
 <body class="daily-page">
 
@@ -37,7 +38,6 @@
 
     <div class="container daily-container">
         <h1 class="daily-title">Denná otázka</h1>
-        <p class="daily-intro">Prihlás sa cez Google, vyplň profil (prezývka, meno, lokácia, tím) a zahraj si dnešnú otázku. Rebríčky sú rovnaké ako v aplikácii.</p>
 
         <div id="daily-status" class="daily-status" role="status" aria-live="polite"></div>
 
@@ -48,7 +48,10 @@
         </section>
 
         <section id="panel-profile" class="daily-card card hidden">
-            <h2>Profil</h2>
+            <div class="daily-profile-panel-head">
+                <h2 id="profile-heading">Profil</h2>
+                <button type="button" id="btn-profile-back" class="btn btn-secondary daily-btn-outline daily-profile-back hidden" aria-label="Späť">← Späť</button>
+            </div>
             <p class="daily-hint">Všetky polia sú povinné.</p>
             <form id="form-profile" class="daily-form">
                 <label>Prezývka <input type="text" id="pf-nickname" required maxlength="80" autocomplete="nickname"></label>
@@ -63,19 +66,40 @@
                         <option value="">— najprv vyber lokáciu —</option>
                     </select>
                 </label>
+                <div class="daily-avatar-field">
+                    <span class="daily-avatar-field-label">Avatar</span>
+                    <input type="hidden" id="pf-avatar-index" name="avatar_index" value="0">
+                    <div class="daily-avatar-current-row">
+                        <img id="pf-avatar-preview" class="daily-avatar-preview" width="72" height="72" alt="Zvolený avatar">
+                        <button type="button" id="btn-toggle-avatar-picker" class="btn btn-secondary daily-btn-outline daily-avatar-toggle">Vybrať avatara</button>
+                    </div>
+                    <div id="pf-avatar-picker-wrap" class="daily-avatar-picker-wrap hidden">
+                        <div id="pf-avatar-picker" class="daily-avatar-picker" role="listbox" aria-label="Výber avatara"></div>
+                    </div>
+                </div>
                 <button type="submit" class="btn btn-primary">Uložiť profil</button>
             </form>
         </section>
 
         <section id="panel-hub" class="hidden">
+            <div class="daily-hub-stack">
+            <div class="daily-card card daily-profile-card">
+                <div class="daily-profile-card-top">
+                    <img id="hub-profile-avatar" class="daily-hub-avatar" width="56" height="56" alt="">
+                    <h3 class="daily-profile-card-title">Môj profil</h3>
+                </div>
+                <div id="hub-profile-details" class="daily-profile-details" aria-live="polite"></div>
+                <button type="button" id="btn-edit-profile" class="btn btn-secondary daily-btn-outline daily-btn-profile-edit">Upraviť údaje</button>
+            </div>
             <div class="daily-card card daily-hub-card">
                 <p id="hub-greeting" class="daily-greeting"></p>
                 <div id="hub-answered-note" class="daily-note hidden"></div>
                 <div class="daily-hub-actions">
-                    <button type="button" id="btn-start" class="btn btn-primary">Začať dnešnú otázku</button>
+                    <button type="button" id="btn-start" class="btn btn-primary">Odpovedať na dennú otázku</button>
                     <button type="button" id="btn-leaderboards" class="btn btn-secondary daily-btn-dark">Rebríčky</button>
                     <button type="button" id="btn-signout" class="btn btn-secondary daily-btn-outline">Odhlásiť sa</button>
                 </div>
+            </div>
             </div>
         </section>
 
@@ -86,6 +110,7 @@
                 <div class="daily-timer-wrap">Čas: <span id="question-timer">0</span> s</div>
                 <p id="question-text" class="daily-question-text"></p>
                 <div id="question-options" class="daily-options"></div>
+                <button type="button" id="btn-q-submit" class="btn btn-primary daily-q-submit" disabled>Odoslať otázku</button>
             </div>
             <button type="button" id="btn-q-back" class="btn btn-secondary daily-btn-outline daily-margin-top hidden">Späť</button>
         </section>
@@ -116,6 +141,16 @@
                 <button type="button" id="btn-lb-back" class="btn btn-secondary daily-btn-outline daily-margin-top">Späť</button>
             </div>
         </section>
+    </div>
+
+    <!-- Gratulácia k odznaku (ako v appke); nikdy sa neotvára počas panelu s otázkou a časovačom -->
+    <div id="badge-congrats-overlay" class="daily-badge-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="badge-congrats-title">
+        <div class="daily-badge-modal card">
+            <h2 id="badge-congrats-title" class="daily-badge-modal-title">Gratulujeme!</h2>
+            <p id="badge-congrats-sub" class="daily-badge-modal-sub">Získali ste odznak!</p>
+            <img id="badge-congrats-img" class="daily-badge-modal-img" width="140" height="140" alt="Odznak">
+            <button type="button" id="badge-congrats-close" class="btn btn-primary daily-badge-modal-btn">Zavrieť</button>
+        </div>
     </div>
 
     <footer>

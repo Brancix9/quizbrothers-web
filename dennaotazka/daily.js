@@ -38,6 +38,81 @@ googleProvider.setCustomParameters({ prompt: 'select_account' });
 const TZ = 'Europe/Bratislava';
 const LEADERBOARD_MAX = 50;
 const DEFAULT_TIMER_SEC = 15;
+/** Rovnaký rozsah ako v Android appke (avatar_0 … avatar_230 v drawable). */
+const AVATAR_MAX_INDEX = 230;
+
+let avatarPickerBuilt = false;
+
+function getAvatarBase() {
+  const u = typeof window.QB_AVATAR_BASE === 'string' && window.QB_AVATAR_BASE.trim();
+  return u ? u.replace(/\/?$/, '/') : '/drawable/';
+}
+
+function bindAvatarImg(img, index) {
+  if (!img) return;
+  const n = Math.max(0, Math.min(AVATAR_MAX_INDEX, index));
+  const base = getAvatarBase();
+  const webp = `${base}avatar_${n}.webp`;
+  const png = `${base}avatar_${n}.png`;
+  img.alt = `Avatar ${n}`;
+  let step = 0;
+  img.onerror = () => {
+    step += 1;
+    if (step === 1) {
+      img.src = png;
+    } else {
+      img.onerror = null;
+      img.src =
+        'data:image/svg+xml,' +
+        encodeURIComponent(
+          `<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64"><rect fill="#e8e9ef" width="64" height="64"/><text x="32" y="38" text-anchor="middle" font-size="14" font-weight="700" fill="#222454">${n}</text></svg>`
+        );
+    };
+  };
+  img.src = webp;
+}
+
+function buildAvatarPicker() {
+  const wrap = $('pf-avatar-picker');
+  if (!wrap || avatarPickerBuilt) return;
+  for (let i = 0; i <= AVATAR_MAX_INDEX; i++) {
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'daily-avatar-btn';
+    btn.dataset.avatarIndex = String(i);
+    btn.setAttribute('aria-label', `Avatar ${i}`);
+    const img = document.createElement('img');
+    img.loading = 'lazy';
+    img.decoding = 'async';
+    bindAvatarImg(img, i);
+    btn.appendChild(img);
+    btn.addEventListener('click', () => selectAvatarIndex(i));
+    wrap.appendChild(btn);
+  }
+  avatarPickerBuilt = true;
+  syncAvatarPickerSelection();
+}
+
+function syncAvatarPickerSelection() {
+  if (!avatarPickerBuilt) return;
+  const v = Math.max(0, Math.min(AVATAR_MAX_INDEX, parseInt($('pf-avatar-index').value, 10) || 0));
+  document.querySelectorAll('.daily-avatar-btn').forEach((btn) => {
+    const idx = parseInt(btn.dataset.avatarIndex, 10);
+    btn.classList.toggle('daily-avatar-btn--selected', idx === v);
+  });
+}
+
+function selectAvatarIndex(i) {
+  const n = Math.max(0, Math.min(AVATAR_MAX_INDEX, i));
+  $('pf-avatar-index').value = String(n);
+  state.profile.avatar_index = n;
+  syncAvatarPickerSelection();
+  bindAvatarImg($('pf-avatar-preview'), n);
+}
+
+function updateHubProfileAvatar() {
+  bindAvatarImg($('hub-profile-avatar'), state.profile.avatar_index || 0);
+}
 
 function $(id) {
   return document.getElementById(id);
@@ -161,7 +236,11 @@ const state = {
   questionStartMs: 0,
   result: null,
   lbTab: 'day',
-  locationsLoaded: false
+  locationsLoaded: false,
+  /** @type {{ type: string, streakDays?: number }[]} Rovnaká logika ako Android pendingBadgeCongrats */
+  pendingBadgeCongrats: [],
+  /** Posledné načítané hodnoty z badges/{uid} (pre uloženie po zatvorení dialógu) */
+  lastBadgesSnapshot: null
 };
 
 function setStatus(msg) {
@@ -170,6 +249,9 @@ function setStatus(msg) {
 }
 
 function showPanel(name) {
+  if (name === 'question') {
+    hideBadgeCongratsOverlay();
+  }
   ['panel-auth', 'panel-profile', 'panel-hub', 'panel-question', 'panel-result', 'panel-leaderboards'].forEach((id) => {
     const el = $(id);
     if (el) el.classList.toggle('hidden', id !== `panel-${name}`);
@@ -185,6 +267,173 @@ function profileComplete() {
     p.location.trim() &&
     p.team.trim()
   );
+}
+
+function badgeStorageKey(uid, suffix) {
+  return `qb_den_ot_${uid}_${suffix}`;
+}
+
+function parseBadgesDoc(data) {
+  const d = data && typeof data === 'object' ? data : {};
+  const n = (x) => {
+    const v = Number(x);
+    return Number.isFinite(v) ? v : 0;
+  };
+  return {
+    daily_wins: n(d.daily_wins),
+    weekly_wins: n(d.weekly_wins),
+    monthly_wins: n(d.monthly_wins),
+    current_streak: n(d.current_streak),
+    best_streak: n(d.best_streak)
+  };
+}
+
+/**
+ * Rovnaká logika ako QuizViewModel.checkNewBadgeCongrats – prvý beh len inicializuje „posledné“ hodnoty bez gratulácie.
+ */
+function checkNewBadgeCongrats(badges, uid) {
+  const initKey = badgeStorageKey(uid, 'bc_init');
+  if (!localStorage.getItem(initKey)) {
+    localStorage.setItem(initKey, '1');
+    localStorage.setItem(badgeStorageKey(uid, 'bc_last_d'), String(badges.daily_wins));
+    localStorage.setItem(badgeStorageKey(uid, 'bc_last_w'), String(badges.weekly_wins));
+    localStorage.setItem(badgeStorageKey(uid, 'bc_last_m'), String(badges.monthly_wins));
+    localStorage.setItem(badgeStorageKey(uid, 'bc_last_bs'), String(badges.best_streak));
+    return;
+  }
+  const lastD = parseInt(localStorage.getItem(badgeStorageKey(uid, 'bc_last_d')), 10) || 0;
+  const lastW = parseInt(localStorage.getItem(badgeStorageKey(uid, 'bc_last_w')), 10) || 0;
+  const lastM = parseInt(localStorage.getItem(badgeStorageKey(uid, 'bc_last_m')), 10) || 0;
+  const lastBs = parseInt(localStorage.getItem(badgeStorageKey(uid, 'bc_last_bs')), 10) || 0;
+  const newOnes = [];
+  if (badges.daily_wins > lastD) newOnes.push({ type: 'daily' });
+  if (badges.weekly_wins > lastW) newOnes.push({ type: 'weekly' });
+  if (badges.monthly_wins > lastM) newOnes.push({ type: 'monthly' });
+  if (badges.best_streak > lastBs && badges.best_streak > 0) {
+    newOnes.push({ type: 'streak', streakDays: badges.best_streak });
+  }
+  if (newOnes.length > 0) {
+    state.pendingBadgeCongrats = newOnes;
+  }
+}
+
+function markBadgeCongratsDismissed(type) {
+  if (!type) {
+    hideBadgeCongratsOverlay();
+    return;
+  }
+  const uid = state.user?.uid;
+  const b = state.lastBadgesSnapshot;
+  if (!uid || !b) {
+    hideBadgeCongratsOverlay();
+    return;
+  }
+  switch (type) {
+    case 'daily':
+      localStorage.setItem(badgeStorageKey(uid, 'bc_last_d'), String(b.daily_wins));
+      break;
+    case 'weekly':
+      localStorage.setItem(badgeStorageKey(uid, 'bc_last_w'), String(b.weekly_wins));
+      break;
+    case 'monthly':
+      localStorage.setItem(badgeStorageKey(uid, 'bc_last_m'), String(b.monthly_wins));
+      break;
+    case 'streak':
+      localStorage.setItem(badgeStorageKey(uid, 'bc_last_bs'), String(b.best_streak));
+      break;
+    default:
+      break;
+  }
+  state.pendingBadgeCongrats = state.pendingBadgeCongrats.slice(1);
+  hideBadgeCongratsOverlay();
+  tryShowBadgeCongratsModal();
+}
+
+function getDrawableBase() {
+  return getAvatarBase();
+}
+
+/** Obrázky ako v appke: drawable/odznaky/day_en … + fallback badge_day … */
+function bindBadgeCongratsImg(img, badgeType) {
+  if (!img) return;
+  const base = getDrawableBase().replace(/\/?$/, '/');
+  const odznakName =
+    badgeType === 'daily'
+      ? 'day_en'
+      : badgeType === 'weekly'
+        ? 'week_en'
+        : badgeType === 'monthly'
+          ? 'month_en'
+          : badgeType === 'streak'
+            ? 'best_strike'
+            : 'day_en';
+  const fallbackStem =
+    badgeType === 'daily'
+      ? 'badge_day'
+      : badgeType === 'weekly'
+        ? 'badge_week'
+        : badgeType === 'monthly'
+          ? 'badge_month'
+          : badgeType === 'streak'
+            ? 'badge_best_strike'
+            : 'badge_day';
+  const oWebp = `${base}odznaky/${odznakName}.webp`;
+  const oPng = `${base}odznaky/${odznakName}.png`;
+  const fWebp = `${base}${fallbackStem}.webp`;
+  const fPng = `${base}${fallbackStem}.png`;
+  img.alt = 'Odznak';
+  let step = 0;
+  img.onerror = () => {
+    step += 1;
+    if (step === 1) img.src = oPng;
+    else if (step === 2) img.src = fWebp;
+    else if (step === 3) img.src = fPng;
+    else {
+      img.onerror = null;
+      img.src =
+        'data:image/svg+xml,' +
+        encodeURIComponent(
+          `<svg xmlns="http://www.w3.org/2000/svg" width="140" height="140"><rect fill="#e8e9ef" rx="16" width="140" height="140"/><text x="70" y="78" text-anchor="middle" font-size="13" font-weight="700" fill="#222454">Odznak</text></svg>`
+        );
+    }
+  };
+  img.src = oWebp;
+}
+
+function hideBadgeCongratsOverlay() {
+  const el = $('badge-congrats-overlay');
+  if (el) {
+    el.classList.add('hidden');
+    delete el.dataset.currentType;
+  }
+}
+
+function tryShowBadgeCongratsModal() {
+  if (state.activePanel === 'question') return;
+  const overlay = $('badge-congrats-overlay');
+  if (!overlay || !overlay.classList.contains('hidden')) return;
+  const first = state.pendingBadgeCongrats[0];
+  if (!first) return;
+  overlay.dataset.currentType = first.type;
+  bindBadgeCongratsImg($('badge-congrats-img'), first.type);
+  overlay.classList.remove('hidden');
+  const btn = $('badge-congrats-close');
+  if (btn) btn.focus();
+}
+
+async function loadBadgesForCongratsAndMaybeShow() {
+  const uid = state.user?.uid;
+  if (!uid || !profileComplete()) return;
+  try {
+    const snap = await db.collection('badges').doc(uid).get();
+    const d = snap.exists ? snap.data() : {};
+    const badges = parseBadgesDoc(d);
+    state.lastBadgesSnapshot = badges;
+    checkNewBadgeCongrats(badges, uid);
+    tryShowBadgeCongratsModal();
+  } catch (e) {
+    console.warn('[Daily] badges', e);
+  }
 }
 
 async function loadUserProfileDoc(uid) {
@@ -216,7 +465,7 @@ async function saveUserProfileDoc() {
         full_name: p.full_name.trim(),
         location: p.location.trim(),
         team: p.team.trim(),
-        avatar_index: Math.max(0, Math.min(230, p.avatar_index || 0))
+        avatar_index: Math.max(0, Math.min(AVATAR_MAX_INDEX, p.avatar_index || 0))
       },
       { merge: true }
     );
@@ -226,6 +475,12 @@ function fillProfileBasics() {
   $('pf-nickname').value = state.profile.nickname;
   $('pf-fullname').value = state.profile.full_name;
   $('pf-location').value = state.profile.location;
+  const idx = Math.max(0, Math.min(AVATAR_MAX_INDEX, Number(state.profile.avatar_index) || 0));
+  state.profile.avatar_index = idx;
+  $('pf-avatar-index').value = String(idx);
+  bindAvatarImg($('pf-avatar-preview'), idx);
+  buildAvatarPicker();
+  syncAvatarPickerSelection();
 }
 
 async function loadLocationsSelect() {
@@ -335,6 +590,10 @@ function renderQuestionUI() {
     };
     opts.appendChild(btn);
   });
+  const submitBtn = $('btn-q-submit');
+  if (submitBtn) {
+    submitBtn.disabled = state.answerLocked || !state.selectedLetter;
+  }
   let left = q.time;
   $('question-timer').textContent = String(left);
   clearTimer();
@@ -379,7 +638,7 @@ function submitAnswer() {
     location: state.profile.location.trim(),
     teamName: state.profile.team.trim(),
     country: 'Svet',
-    avatar_index: Math.max(0, Math.min(230, state.profile.avatar_index || 0)),
+    avatar_index: Math.max(0, Math.min(AVATAR_MAX_INDEX, state.profile.avatar_index || 0)),
     timestamp: FieldValue.serverTimestamp()
   };
   db.collection('daily_submissions')
@@ -459,7 +718,7 @@ async function renderLeaderboardTab() {
       ]);
       const y = parseChampion(yestDoc);
       if (y) {
-        ch.innerHTML = `<div class="daily-champ-row"><span class="daily-champ-label">Víťaz včera</span><span class="daily-champ-value">${escapeHtml(y.nickname)} · ${y.points} b.</span></div>`;
+        ch.innerHTML = `<div class="daily-champ-row"><span class="daily-champ-label">Víťaz včera</span><span class="daily-champ-value">${escapeHtml(y.nickname)} <span class="daily-champ-sep">·</span> <span class="daily-champ-pts">${y.points} b.</span></span></div>`;
       }
       content.innerHTML = renderEntryList(parseLeaderboardEntries(todayDoc), true);
     } else if (state.lbTab === 'week') {
@@ -469,7 +728,7 @@ async function renderLeaderboardTab() {
       ]);
       const prev = parseChampion(pDoc);
       if (prev) {
-        ch.innerHTML = `<div class="daily-champ-row"><span class="daily-champ-label">Víťaz minulého týždňa</span><span class="daily-champ-value">${escapeHtml(prev.nickname)}${prev.points != null ? ` · ${prev.points} b.` : ''}</span></div>`;
+        ch.innerHTML = `<div class="daily-champ-row"><span class="daily-champ-label">Víťaz minulého týždňa</span><span class="daily-champ-value">${escapeHtml(prev.nickname)}${prev.points != null ? ` <span class="daily-champ-sep">·</span> <span class="daily-champ-pts">${prev.points} b.</span>` : ''}</span></div>`;
       }
       content.innerHTML = renderEntryList(parseLeaderboardEntries(wDoc), true);
     } else if (state.lbTab === 'month') {
@@ -479,7 +738,7 @@ async function renderLeaderboardTab() {
       ]);
       const prev = parseChampion(pDoc);
       if (prev) {
-        ch.innerHTML = `<div class="daily-champ-row"><span class="daily-champ-label">Víťaz minulého mesiaca</span><span class="daily-champ-value">${escapeHtml(prev.nickname)}${prev.points != null ? ` · ${prev.points} b.` : ''}</span></div>`;
+        ch.innerHTML = `<div class="daily-champ-row"><span class="daily-champ-label">Víťaz minulého mesiaca</span><span class="daily-champ-value">${escapeHtml(prev.nickname)}${prev.points != null ? ` <span class="daily-champ-sep">·</span> <span class="daily-champ-pts">${prev.points} b.</span>` : ''}</span></div>`;
       }
       content.innerHTML = renderEntryList(parseLeaderboardEntries(mDoc), true);
     } else if (state.lbTab === 'streak') {
@@ -501,7 +760,7 @@ async function renderLeaderboardTab() {
         return;
       }
       const raw = lDoc.data().seasonRanking;
-      content.innerHTML = renderMyTeam(raw);
+      content.innerHTML = renderMyTeam(raw, state.profile.team);
     }
   } catch (e) {
     content.textContent = 'Chyba: ' + (e.message || 'načítanie');
@@ -512,6 +771,43 @@ function escapeHtml(s) {
   const div = document.createElement('div');
   div.textContent = s;
   return div.innerHTML;
+}
+
+async function showProfilePanel(opts) {
+  const fromHub = opts && opts.fromHub;
+  if (fromHub && state.user) await loadUserProfileDoc(state.user.uid);
+  if (!state.locationsLoaded) await loadLocationsSelect();
+  fillProfileBasics();
+  await loadTeamsForLocation($('pf-location').value || state.profile.location);
+  $('pf-team').value = state.profile.team;
+  const back = $('btn-profile-back');
+  if (back) back.classList.toggle('hidden', !fromHub);
+  const head = $('profile-heading');
+  if (head) head.textContent = fromHub ? 'Upraviť profil' : 'Profil';
+  const apw = $('pf-avatar-picker-wrap');
+  if (apw) apw.classList.add('hidden');
+  const tgl = $('btn-toggle-avatar-picker');
+  if (tgl) tgl.textContent = 'Vybrať avatara';
+  showPanel('profile');
+}
+
+function renderHubProfileDetails() {
+  const wrap = $('hub-profile-details');
+  if (!wrap) return;
+  const p = state.profile;
+  const rows = [
+    ['Prezývka', p.nickname || ''],
+    ['Celé meno', p.full_name || ''],
+    ['Lokácia', p.location || ''],
+    ['Tím', p.team || '']
+  ];
+  wrap.innerHTML = rows
+    .map(([k, v]) => {
+      const val = v.trim() ? escapeHtml(v) : '<span class="daily-profile-missing">—</span>';
+      return `<div class="daily-profile-row"><span class="daily-profile-label">${escapeHtml(k)}</span><span class="daily-profile-value">${val}</span></div>`;
+    })
+    .join('');
+  updateHubProfileAvatar();
 }
 
 function renderEntryList(entries, showTime) {
@@ -536,7 +832,7 @@ function renderStreakList(entries) {
     <div class="daily-lb-row">
       <span class="daily-lb-rank">${e.rank}</span>
       <span class="daily-lb-name">${escapeHtml(e.nickname)}</span>
-      <span class="daily-lb-meta"><span class="daily-lb-pts">${e.bestStreakDays} dní</span></span>
+      <span class="daily-lb-meta"><span class="daily-lb-streak">${e.bestStreakDays} dní</span></span>
     </div>`
     )
     .join('');
@@ -558,8 +854,9 @@ function renderBadges(d) {
     </div>`;
 }
 
-function renderMyTeam(raw) {
+function renderMyTeam(raw, profileTeamName) {
   if (!Array.isArray(raw) || !raw.length) return '<p class="daily-lb-empty">Sezónne poradie tímov zatiaľ nie je k dispozícii.</p>';
+  const myTeamNorm = (profileTeamName || '').trim().toLowerCase();
   const rows = raw
     .map((item) => {
       const m = item && typeof item === 'object' ? item : null;
@@ -578,14 +875,16 @@ function renderMyTeam(raw) {
     .sort((a, b) => b.pts - a.pts);
   if (!rows.length) return '<p class="daily-lb-empty">Žiadne tímy v poradí.</p>';
   return rows
-    .map(
-      (e, i) => `
-    <div class="daily-lb-row">
+    .map((e, i) => {
+      const isMine = myTeamNorm.length > 0 && e.team.toLowerCase() === myTeamNorm;
+      const rowClass = isMine ? 'daily-lb-row daily-myteam-row--mine' : 'daily-lb-row';
+      return `
+    <div class="${rowClass}">
       <span class="daily-lb-rank">${i + 1}</span>
       <span class="daily-lb-name">${escapeHtml(e.team)}</span>
       <span class="daily-lb-meta"><span class="daily-lb-pts">${e.pts} b.</span></span>
-    </div>`
-    )
+    </div>`;
+    })
     .join('');
 }
 
@@ -596,6 +895,7 @@ async function openLeaderboards() {
   });
   showPanel('leaderboards');
   await renderLeaderboardTab();
+  await loadBadgesForCongratsAndMaybeShow();
 }
 
 async function refreshUIForUser() {
@@ -609,15 +909,12 @@ async function refreshUIForUser() {
   state.answeredToday = await checkAnsweredToday(u.uid);
 
   if (!profileComplete()) {
-    showPanel('profile');
-    if (!state.locationsLoaded) await loadLocationsSelect();
-    fillProfileBasics();
-    await loadTeamsForLocation($('pf-location').value || state.profile.location);
-    $('pf-team').value = state.profile.team;
+    await showProfilePanel({ fromHub: false });
     return;
   }
 
   showPanel('hub');
+  renderHubProfileDetails();
   const mail = u.email || '';
   $('hub-greeting').textContent = `Ahoj, ${state.profile.nickname}!${mail ? ` (${mail})` : ''}`;
   const note = $('hub-answered-note');
@@ -629,6 +926,7 @@ async function refreshUIForUser() {
     note.classList.add('hidden');
     $('btn-start').disabled = false;
   }
+  await loadBadgesForCongratsAndMaybeShow();
 }
 
 async function signInGoogle() {
@@ -655,6 +953,10 @@ function wireEvents() {
     state.profile.full_name = $('pf-fullname').value.trim();
     state.profile.location = $('pf-location').value.trim();
     state.profile.team = $('pf-team').value.trim();
+    state.profile.avatar_index = Math.max(
+      0,
+      Math.min(AVATAR_MAX_INDEX, parseInt($('pf-avatar-index').value, 10) || 0)
+    );
     if (!profileComplete()) {
       setStatus('Vyplň všetky polia.');
       return;
@@ -678,13 +980,41 @@ function wireEvents() {
   $('btn-leaderboards').onclick = () => openLeaderboards();
   $('btn-signout').onclick = () => auth.signOut();
 
-  $('btn-q-back').onclick = () => {
+  $('btn-edit-profile').onclick = async () => {
+    await showProfilePanel({ fromHub: true });
+  };
+
+  $('btn-profile-back').onclick = async () => {
+    showPanel('hub');
+    await loadBadgesForCongratsAndMaybeShow();
+  };
+
+  $('btn-toggle-avatar-picker').onclick = () => {
+    buildAvatarPicker();
+    const wrap = $('pf-avatar-picker-wrap');
+    const btn = $('btn-toggle-avatar-picker');
+    if (!wrap || !btn) return;
+    wrap.classList.toggle('hidden');
+    const open = !wrap.classList.contains('hidden');
+    btn.textContent = open ? 'Skryť výber avatara' : 'Vybrať avatara';
+  };
+
+  $('btn-q-back').onclick = async () => {
     clearTimer();
     showPanel('hub');
+    await loadBadgesForCongratsAndMaybeShow();
+  };
+
+  $('btn-q-submit').onclick = () => {
+    if (state.answerLocked || !state.selectedLetter) return;
+    submitAnswer();
   };
 
   $('btn-result-lb').onclick = () => openLeaderboards();
-  $('btn-result-hub').onclick = () => showPanel('hub');
+  $('btn-result-hub').onclick = async () => {
+    showPanel('hub');
+    await loadBadgesForCongratsAndMaybeShow();
+  };
 
   $('btn-lb-back').onclick = () => showPanel('hub');
 
@@ -694,7 +1024,25 @@ function wireEvents() {
       document.querySelectorAll('.daily-lb-tab').forEach((b) => b.classList.remove('active'));
       btn.classList.add('active');
       await renderLeaderboardTab();
+      await loadBadgesForCongratsAndMaybeShow();
     };
+  });
+
+  const badgeOverlay = $('badge-congrats-overlay');
+  const closeBadge = () => {
+    const t = badgeOverlay?.dataset.currentType;
+    markBadgeCongratsDismissed(t || '');
+  };
+  $('badge-congrats-close').onclick = closeBadge;
+  if (badgeOverlay) {
+    badgeOverlay.addEventListener('click', (ev) => {
+      if (ev.target === badgeOverlay) closeBadge();
+    });
+  }
+  document.addEventListener('keydown', (ev) => {
+    if (ev.key !== 'Escape') return;
+    const o = $('badge-congrats-overlay');
+    if (o && !o.classList.contains('hidden')) closeBadge();
   });
 }
 
@@ -714,6 +1062,8 @@ async function boot() {
   auth.onAuthStateChanged(async (user) => {
     state.user = user;
     if (!user) {
+      state.pendingBadgeCongrats = [];
+      state.lastBadgesSnapshot = null;
       showPanel('auth');
       return;
     }
