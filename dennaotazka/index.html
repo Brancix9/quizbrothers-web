@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="sk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta property="og:type" content="website">
+    <meta property="og:title" content="Denná otázka - QuizBrothers">
+    <meta property="og:description" content="Denná otázka QuizBrothers – prihlásenie cez Google, profil a rebríčky ako v aplikácii.">
+    <meta property="og:image" content="https://www.quizbrothers.sk/logo.png">
+    <meta property="og:url" content="https://www.quizbrothers.sk/dennaotazka/">
+    <title>Denná otázka - QuizBrothers</title>
+    <link rel="stylesheet" href="../style.css">
+    <link rel="stylesheet" href="daily.css">
+    <link rel="icon" href="../favicon.webp" type="image/webp">
+</head>
+<body class="daily-page">
+
+    <header>
+        <div class="nav-container">
+            <a href="../" class="logo">
+                <img src="../logo.png" alt="QuizBrothers Logo">
+                <span>Quiz<span>Brothers</span></span>
+            </a>
+            <div class="menu-toggle" onclick="toggleMenu()">☰</div>
+            <nav>
+                <ul id="nav-list">
+                    <li><a href="../">Domov</a></li>
+                    <li><a href="../rezervacia/">Rezervácia stola</a></li>
+                    <li><a href="../aplikacia/">Aplikácia</a></li>
+                    <li><a href="./" class="active">Denná otázka</a></li>
+                    <li><a href="../sienslavy/">Sieň slávy</a></li>
+                    <li><a href="../onas/">O nás</a></li>
+                </ul>
+            </nav>
+        </div>
+    </header>
+
+    <div class="container daily-container">
+        <h1 class="daily-title">Denná otázka</h1>
+        <p class="daily-intro">Prihlás sa cez Google, vyplň profil (prezývka, meno, lokácia, tím) a zahraj si dnešnú otázku. Rebríčky sú rovnaké ako v aplikácii.</p>
+
+        <div id="daily-status" class="daily-status" role="status" aria-live="polite"></div>
+
+        <section id="panel-auth" class="daily-card card">
+            <h2>Prihlásenie</h2>
+            <p>Potrebujeme tvoj účet Google, aby sme ťa vedeli zaradiť do rebríčkov.</p>
+            <button type="button" id="btn-google" class="btn btn-primary daily-btn-google">Prihlásiť sa cez Google</button>
+        </section>
+
+        <section id="panel-profile" class="daily-card card hidden">
+            <h2>Profil</h2>
+            <p class="daily-hint">Všetky polia sú povinné.</p>
+            <form id="form-profile" class="daily-form">
+                <label>Prezývka <input type="text" id="pf-nickname" required maxlength="80" autocomplete="nickname"></label>
+                <label>Celé meno <input type="text" id="pf-fullname" required maxlength="120" autocomplete="name"></label>
+                <label>Lokácia (podnik)
+                    <select id="pf-location" required>
+                        <option value="">— vyber lokáciu —</option>
+                    </select>
+                </label>
+                <label>Tím
+                    <select id="pf-team" required>
+                        <option value="">— najprv vyber lokáciu —</option>
+                    </select>
+                </label>
+                <button type="submit" class="btn btn-primary">Uložiť profil</button>
+            </form>
+        </section>
+
+        <section id="panel-hub" class="hidden">
+            <div class="daily-card card daily-hub-card">
+                <p id="hub-greeting" class="daily-greeting"></p>
+                <div id="hub-answered-note" class="daily-note hidden"></div>
+                <div class="daily-hub-actions">
+                    <button type="button" id="btn-start" class="btn btn-primary">Začať dnešnú otázku</button>
+                    <button type="button" id="btn-leaderboards" class="btn btn-secondary daily-btn-dark">Rebríčky</button>
+                    <button type="button" id="btn-signout" class="btn btn-secondary daily-btn-outline">Odhlásiť sa</button>
+                </div>
+            </div>
+        </section>
+
+        <section id="panel-question" class="daily-card card daily-question-panel hidden">
+            <div id="question-loading" class="daily-center hidden">Načítavam otázku…</div>
+            <div id="question-error" class="daily-error hidden"></div>
+            <div id="question-body" class="hidden">
+                <div class="daily-timer-wrap">Čas: <span id="question-timer">0</span> s</div>
+                <p id="question-text" class="daily-question-text"></p>
+                <div id="question-options" class="daily-options"></div>
+            </div>
+            <button type="button" id="btn-q-back" class="btn btn-secondary daily-btn-outline daily-margin-top hidden">Späť</button>
+        </section>
+
+        <section id="panel-result" class="daily-card card hidden">
+            <h2 id="result-title">Výsledok</h2>
+            <p id="result-summary"></p>
+            <div id="result-options" class="daily-options daily-options-static"></div>
+            <p id="result-explanation" class="daily-explanation"></p>
+            <div class="daily-hub-actions">
+                <button type="button" id="btn-result-lb" class="btn btn-primary">Rebríčky</button>
+                <button type="button" id="btn-result-hub" class="btn btn-secondary daily-btn-dark">Domov</button>
+            </div>
+        </section>
+
+        <section id="panel-leaderboards" class="hidden">
+            <div class="daily-card card">
+                <div class="daily-lb-tabs" role="tablist">
+                    <button type="button" class="daily-lb-tab active" data-lb="day">Víťaz dňa</button>
+                    <button type="button" class="daily-lb-tab" data-lb="week">Víťaz týždňa</button>
+                    <button type="button" class="daily-lb-tab" data-lb="month">Víťaz mesiaca</button>
+                    <button type="button" class="daily-lb-tab" data-lb="streak">Najlepšia séria</button>
+                    <button type="button" class="daily-lb-tab" data-lb="badges">Ocenenia</button>
+                    <button type="button" class="daily-lb-tab" data-lb="myteam">Môj tím</button>
+                </div>
+                <div id="lb-champions" class="daily-champions"></div>
+                <div id="lb-content" class="daily-lb-content">Načítavam…</div>
+                <button type="button" id="btn-lb-back" class="btn btn-secondary daily-btn-outline daily-margin-top">Späť</button>
+            </div>
+        </section>
+    </div>
+
+    <footer>
+        <img src="../logo.png" alt="QuizBrothers Logo" class="footer-logo">
+        <div>&copy; 2026 QuizBrothers</div>
+    </footer>
+
+    <script>function toggleMenu() { document.getElementById('nav-list').classList.toggle('show'); }</script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+    <script src="daily.js"></script>
+</body>
+</html>
