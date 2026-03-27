@@ -165,6 +165,11 @@
     <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
+    <!-- Pred daily.js: redirect namiesto popup; QB_AUTH_DEBUG = true → logy [Auth] v konzole (F12), na produkciu môžeš vypnúť -->
+    <script>
+      window.QB_GOOGLE_USE_REDIRECT = true;
+      window.QB_AUTH_DEBUG = true;
+    </script>
     <script src="daily.js"></script>
 </body>
 </html>

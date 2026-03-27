@@ -1243,7 +1243,12 @@ async function boot() {
     return;
   }
 
+  const authDbg = window.QB_AUTH_DEBUG === true;
+
   auth.onAuthStateChanged(async (user) => {
+    if (authDbg) {
+      console.log('[Auth] onAuthStateChanged', user ? { uid: user.uid, email: user.email, name: user.displayName } : 'žiadny');
+    }
     try {
       state.user = user;
       if (!user) {
@@ -1261,6 +1266,15 @@ async function boot() {
 
   try {
     const result = await auth.getRedirectResult();
+    if (authDbg) {
+      if (result && result.user) {
+        console.log('[Auth] getRedirectResult: OK', { uid: result.user.uid, email: result.user.email });
+      } else {
+        console.log(
+          '[Auth] getRedirectResult: null / bez usera — pri bežnom načítaní stránky (bez návratu z Google) je to normálne, NIE je to sám o sebe dôkaz third-party cookies.'
+        );
+      }
+    }
     if (result && result.user) {
       setStatus('');
     }
@@ -1280,6 +1294,9 @@ async function boot() {
   if (typeof auth.authStateReady === 'function') {
     try {
       await auth.authStateReady();
+      if (authDbg) {
+        console.log('[Auth] authStateReady hotovo, aktuálny user z auth:', auth.currentUser ? auth.currentUser.uid : null);
+      }
     } catch (e) {
       /* ignore */
     }
