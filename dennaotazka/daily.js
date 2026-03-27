@@ -1176,28 +1176,13 @@ function formatAuthError(e) {
 }
 
 /**
- * Na iPhone/iPad (Safari, PWA) je popup často nestabilný; redirect je spoľahlivejší.
- * Vynútiť redirect: window.QB_GOOGLE_USE_REDIRECT = true. Vynútiť popup na Apple: QB_GOOGLE_USE_POPUP = true.
- */
-function useGoogleAuthRedirect() {
-  if (window.QB_GOOGLE_USE_REDIRECT === true) return true;
-  if (window.QB_GOOGLE_USE_POPUP === true) return false;
-  try {
-    const ua = navigator.userAgent || '';
-    if (/iPhone|iPad|iPod/i.test(ua)) return true;
-    if (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1) return true;
-  } catch (e) {
-    /* ignore */
-  }
-  return false;
-}
-
-/**
- * Predvolene popup (desktop/Android). Na iOS/iPadOS predvolene redirect. Fallback na redirect pri blokovanom popupe.
+ * Prihlásenie: predvolene popup (funguje spoľahlivejšie ako redirect na PC aj mobile).
+ * Redirect len ak pred daily.js nastavíš window.QB_GOOGLE_USE_REDIRECT = true,
+ * alebo ako záloha keď prehliadač popup zablokuje.
  */
 async function signInGoogle() {
   setStatus('');
-  if (useGoogleAuthRedirect()) {
+  if (window.QB_GOOGLE_USE_REDIRECT === true) {
     try {
       await auth.signInWithRedirect(googleProvider);
     } catch (e) {
@@ -1210,7 +1195,11 @@ async function signInGoogle() {
     await auth.signInWithPopup(googleProvider);
   } catch (e) {
     const code = e?.code || '';
-    if (code === 'auth/popup-blocked' || code === 'auth/operation-not-supported-in-this-environment') {
+    if (
+      code === 'auth/popup-blocked' ||
+      code === 'auth/operation-not-supported-in-this-environment' ||
+      code === 'auth/internal-error'
+    ) {
       try {
         await auth.signInWithRedirect(googleProvider);
       } catch (e2) {

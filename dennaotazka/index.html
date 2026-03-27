@@ -18,7 +18,7 @@
     <link rel="stylesheet" href="../style.css">
     <link rel="stylesheet" href="daily.css">
     <link rel="icon" href="../favicon.webp" type="image/webp">
-    <!-- Pred daily.js: QB_AVATAR_BASE; QB_AUTH_DEBUG; QB_GOOGLE_*; voliteľne QB_FIRESTORE_LONG_POLL = 'force' | 'auto' | 'off' (Firestore) — pozri komentár pri daily.js -->
+    <!-- Pred daily.js: QB_AVATAR_BASE; QB_AUTH_DEBUG; voliteľne QB_GOOGLE_USE_REDIRECT = true (inak Google cez popup); QB_FIRESTORE_LONG_POLL — pozri komentár pri daily.js -->
 </head>
 <body class="daily-page">
 
@@ -186,7 +186,7 @@
     <script src="vendor/firebase/firebase-app-compat.js"></script>
     <script src="vendor/firebase/firebase-auth-compat.js"></script>
     <script src="vendor/firebase/firebase-firestore-compat.js"></script>
-    <!-- Firebase 10.14.1 self-host. Prihlásenie: iPhone/iPad predvolene redirect. Firestore: v PWA sa používa auto long-polling; v karte Chrome forced long-polling. QB_FIRESTORE_LONG_POLL: 'force' | 'auto' | 'off'. QB_AUTH_DEBUG: logy [Auth]. -->
+    <!-- Firebase 10.14.1 self-host. Google: predvolene popup; QB_GOOGLE_USE_REDIRECT = true = len redirect. Firestore: QB_FIRESTORE_LONG_POLL. QB_AUTH_DEBUG: logy [Auth]. -->
     <script>
       window.QB_AUTH_DEBUG = false;
     </script>
