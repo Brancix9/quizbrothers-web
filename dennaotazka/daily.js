@@ -33,9 +33,9 @@ const auth = firebase.auth();
 auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL).catch(() => {});
 const db = firebase.firestore();
 try {
-  db.settings({ experimentalForceLongPolling: true });
+  db.settings({ experimentalForceLongPolling: true, merge: true });
 } catch (e) {
-  /* už boli odoslané požiadavky */
+  /* merge alebo settings nie je v danej verzii / už boli požiadavky */
 }
 const FieldValue = firebase.firestore.FieldValue;
 const googleProvider = new firebase.auth.GoogleAuthProvider();

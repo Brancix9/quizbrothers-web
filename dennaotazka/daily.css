@@ -78,6 +78,11 @@
     margin-top: 12px;
 }
 
+.daily-auth-privacy-hint {
+    margin-top: 10px;
+    max-width: 38rem;
+}
+
 .daily-hub-stack {
     display: flex;
     flex-direction: column;

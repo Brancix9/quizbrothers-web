@@ -12,7 +12,7 @@
     <link rel="stylesheet" href="../style.css">
     <link rel="stylesheet" href="daily.css">
     <link rel="icon" href="../favicon.webp" type="image/webp">
-    <!-- Voliteľné pred daily.js: window.QB_AVATAR_BASE = '/drawable/'; | Len redirect: window.QB_GOOGLE_USE_REDIRECT = true -->
+    <!-- Pred daily.js: QB_AVATAR_BASE, QB_GOOGLE_USE_REDIRECT, QB_AUTH_DEBUG — pozri skript pred daily.js -->
 </head>
 <body class="daily-page">
 
@@ -45,6 +45,7 @@
             <h2>Prihlásenie</h2>
             <p>Potrebujeme tvoj účet Google, aby sme ťa vedeli zaradiť do rebríčkov.</p>
             <button type="button" id="btn-google" class="btn btn-primary daily-btn-google">Prihlásiť sa cez Google</button>
+            <p class="daily-hint daily-auth-privacy-hint">Ak sa prihlásenie nepodarí (najmä v Edge alebo súkromnom okne): skús vypnúť „sledovanie“ / Tracking Prevention pre túto stránku, alebo normálne okno prehliadača. Blokovanie úložiska pre skripty z cudzích domén môže zabrániť prihláseniu.</p>
         </section>
 
         <section id="panel-profile" class="daily-card card hidden">
@@ -162,13 +163,13 @@
     </footer>
 
     <script>function toggleMenu() { document.getElementById('nav-list').classList.toggle('show'); }</script>
-    <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
-    <!-- Pred daily.js: redirect namiesto popup; QB_AUTH_DEBUG = true → logy [Auth] v konzole (F12), na produkciu môžeš vypnúť -->
+    <script src="vendor/firebase/firebase-app-compat.js"></script>
+    <script src="vendor/firebase/firebase-auth-compat.js"></script>
+    <script src="vendor/firebase/firebase-firestore-compat.js"></script>
+    <!-- Firebase 10.14.1 self-host (rovnaký origin → menej „Tracking Prevention blocked storage“ voči gstatic). QB_GOOGLE_USE_REDIRECT: redirect namiesto popup. QB_AUTH_DEBUG: true = logy [Auth] v konzole (F12). -->
     <script>
       window.QB_GOOGLE_USE_REDIRECT = true;
-      window.QB_AUTH_DEBUG = true;
+      window.QB_AUTH_DEBUG = false;
     </script>
     <script src="daily.js"></script>
 </body>
