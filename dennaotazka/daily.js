@@ -29,13 +29,44 @@ if (!firebase.apps.length) {
   firebase.initializeApp(firebaseConfig);
 }
 
+/** Nainštalovaná PWA / iOS „Add to Home“ – iný úložný kontext ako karta v Chrome; forced long polling tam často rozbije spojenie. */
+function isLikelyInstalledPwa() {
+  try {
+    if (typeof window === 'undefined') return false;
+    if (window.navigator && window.navigator.standalone === true) return true;
+    if (!window.matchMedia) return false;
+    if (window.matchMedia('(display-mode: standalone)').matches) return true;
+    if (window.matchMedia('(display-mode: fullscreen)').matches) return true;
+    return false;
+  } catch (e) {
+    return false;
+  }
+}
+
 const auth = firebase.auth();
 auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL).catch(() => {});
 const db = firebase.firestore();
 try {
-  db.settings({ experimentalForceLongPolling: true, merge: true });
+  const mode = window.QB_FIRESTORE_LONG_POLL;
+  if (mode !== 'off' && mode !== 'none') {
+    if (mode === 'force') {
+      db.settings({ experimentalForceLongPolling: true, merge: true });
+    } else if (mode === 'auto') {
+      db.settings({ experimentalAutoDetectLongPolling: true, merge: true });
+    } else if (isLikelyInstalledPwa()) {
+      db.settings({ experimentalAutoDetectLongPolling: true, merge: true });
+    } else {
+      db.settings({ experimentalForceLongPolling: true, merge: true });
+    }
+  }
 } catch (e) {
   /* merge alebo settings nie je v danej verzii / už boli požiadavky */
+}
+db.enableNetwork().catch(() => {});
+if (typeof window !== 'undefined') {
+  window.addEventListener('online', () => {
+    db.enableNetwork().catch(() => {});
+  });
 }
 const FieldValue = firebase.firestore.FieldValue;
 const googleProvider = new firebase.auth.GoogleAuthProvider();
@@ -247,6 +278,19 @@ const state = {
 function setStatus(msg) {
   const el = $('daily-status');
   if (el) el.textContent = msg || '';
+}
+
+/** Ľudsky zrozumiteľná správa pri Firestore „offline“ (časté v Android PWA, hoci Wi‑Fi ide). */
+function userVisibleFirestoreError(e, emptyFallback) {
+  const raw = (e && e.message) || '';
+  const code = e && e.code;
+  if (code === 'unavailable' || /offline/i.test(raw)) {
+    return (
+      'Spojenie s databázou zlyhalo (aplikácia je v režime offline). Skús obnoviť stránku. ' +
+      'Ak používaš skratku z domovskej obrazovky, otvor stránku aj v Chrome – ak tam funguje, odstráň starú skratku a pridaj stránku znova (PWA má oddelené úložisko).'
+    );
+  }
+  return raw || emptyFallback || 'načítanie';
 }
 
 function showPanel(name) {
@@ -717,8 +761,7 @@ async function startQuestionFlow() {
   } catch (e) {
     $('question-loading').classList.add('hidden');
     $('question-error').classList.remove('hidden');
-    $('question-error').textContent = e.message || 'Nepodarilo sa načítať otázku.';
-    $('btn-q-back').classList.remove('hidden');
+    $('question-error').textContent = userVisibleFirestoreError(e, 'Nepodarilo sa načítať otázku.');
   }
 }
 
@@ -797,7 +840,7 @@ async function renderLeaderboardTab(forTab) {
     }
   } catch (e) {
     if (!lbLeaderboardRenderStillValid(forTab)) return;
-    content.textContent = 'Chyba: ' + (e.message || 'načítanie');
+    content.textContent = 'Chyba: ' + userVisibleFirestoreError(e);
   }
 }
 
@@ -1110,7 +1153,7 @@ async function refreshUIForUser() {
     await loadBadgesForCongratsAndMaybeShow();
   } catch (err) {
     console.error('[Daily] refreshUIForUser', err);
-    setStatus('Chyba pri načítaní účtu: ' + (err.message || 'skús znova obnoviť stránku.'));
+    setStatus('Chyba pri načítaní účtu: ' + userVisibleFirestoreError(err, 'skús znova obnoviť stránku.'));
   }
 }
 
@@ -1333,6 +1376,12 @@ function initApplePwaBanner() {
 
 async function boot() {
   try {
+    await db.enableNetwork();
+  } catch (e) {
+    /* ignore */
+  }
+
+  try {
     wireEvents();
   } catch (e) {
     setStatus('Chyba rozhrania: ' + (e.message || ''));
@@ -1343,25 +1392,10 @@ async function boot() {
 
   const authDbg = window.QB_AUTH_DEBUG === true;
 
-  auth.onAuthStateChanged(async (user) => {
-    if (authDbg) {
-      console.log('[Auth] onAuthStateChanged', user ? { uid: user.uid, email: user.email, name: user.displayName } : 'žiadny');
-    }
-    try {
-      state.user = user;
-      if (!user) {
-        state.pendingBadgeCongrats = [];
-        state.lastBadgesSnapshot = null;
-        showPanel('auth');
-        return;
-      }
-      await refreshUIForUser();
-    } catch (err) {
-      console.error('[Daily] onAuthStateChanged', err);
-      setStatus('Chyba prihlásenia: ' + (err.message || ''));
-    }
-  });
-
+  /**
+   * WebKit / iOS: ak sa onAuthStateChanged zaregistruje pred spracovaním návratu z Google,
+   * prvý beh s user=null „zamrzne“ UI; getRedirectResult musí ísť pred listenerom (Firebase odporúča).
+   */
   try {
     const result = await auth.getRedirectResult();
     if (authDbg) {
@@ -1386,7 +1420,7 @@ async function boot() {
       msg = 'V Firebase Console → Authentication → Sign-in method zapni Google.';
     }
     console.warn('[Daily] getRedirectResult', code, e);
-    setStatus(msg);
+    if (msg) setStatus(msg);
   }
 
   if (typeof auth.authStateReady === 'function') {
@@ -1399,6 +1433,44 @@ async function boot() {
       /* ignore */
     }
   }
+
+  auth.onAuthStateChanged(async (user) => {
+    if (authDbg) {
+      console.log('[Auth] onAuthStateChanged', user ? { uid: user.uid, email: user.email, name: user.displayName } : 'žiadny');
+    }
+    try {
+      state.user = user;
+      if (!user) {
+        state.pendingBadgeCongrats = [];
+        state.lastBadgesSnapshot = null;
+        showPanel('auth');
+        return;
+      }
+      await refreshUIForUser();
+    } catch (err) {
+      console.error('[Daily] onAuthStateChanged', err);
+      setStatus('Chyba prihlásenia: ' + (err.message || ''));
+    }
+  });
+
+  function tryRefreshUiIfLoggedInButAuthPanel() {
+    const u = auth.currentUser;
+    if (!u || state.activePanel !== 'auth') return;
+    state.user = u;
+    refreshUIForUser().catch((err) => {
+      console.error('[Daily] auth UI sync po návrate na stránku', err);
+      setStatus('Chyba pri načítaní účtu: ' + userVisibleFirestoreError(err, 'skús znova obnoviť stránku.'));
+    });
+  }
+
+  window.addEventListener('pageshow', () => {
+    tryRefreshUiIfLoggedInButAuthPanel();
+  });
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible') tryRefreshUiIfLoggedInButAuthPanel();
+  });
+
+  setTimeout(() => tryRefreshUiIfLoggedInButAuthPanel(), 0);
 }
 
 boot();
