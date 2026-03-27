@@ -459,7 +459,7 @@ async function renderLeaderboardTab() {
       ]);
       const y = parseChampion(yestDoc);
       if (y) {
-        ch.innerHTML = `<div><strong>Víťaz včera:</strong> ${escapeHtml(y.nickname)} (${y.points} b.)</div>`;
+        ch.innerHTML = `<div class="daily-champ-row"><span class="daily-champ-label">Víťaz včera</span><span class="daily-champ-value">${escapeHtml(y.nickname)} · ${y.points} b.</span></div>`;
       }
       content.innerHTML = renderEntryList(parseLeaderboardEntries(todayDoc), true);
     } else if (state.lbTab === 'week') {
@@ -469,7 +469,7 @@ async function renderLeaderboardTab() {
       ]);
       const prev = parseChampion(pDoc);
       if (prev) {
-        ch.innerHTML = `<div><strong>Víťaz minulého týždňa:</strong> ${escapeHtml(prev.nickname)}</div>`;
+        ch.innerHTML = `<div class="daily-champ-row"><span class="daily-champ-label">Víťaz minulého týždňa</span><span class="daily-champ-value">${escapeHtml(prev.nickname)}${prev.points != null ? ` · ${prev.points} b.` : ''}</span></div>`;
       }
       content.innerHTML = renderEntryList(parseLeaderboardEntries(wDoc), true);
     } else if (state.lbTab === 'month') {
@@ -479,7 +479,7 @@ async function renderLeaderboardTab() {
       ]);
       const prev = parseChampion(pDoc);
       if (prev) {
-        ch.innerHTML = `<div><strong>Víťaz minulého mesiaca:</strong> ${escapeHtml(prev.nickname)}</div>`;
+        ch.innerHTML = `<div class="daily-champ-row"><span class="daily-champ-label">Víťaz minulého mesiaca</span><span class="daily-champ-value">${escapeHtml(prev.nickname)}${prev.points != null ? ` · ${prev.points} b.` : ''}</span></div>`;
       }
       content.innerHTML = renderEntryList(parseLeaderboardEntries(mDoc), true);
     } else if (state.lbTab === 'streak') {
@@ -515,28 +515,28 @@ function escapeHtml(s) {
 }
 
 function renderEntryList(entries, showTime) {
-  if (!entries.length) return '<p>Rebríček je prázdny alebo sa ešte prepočítava.</p>';
+  if (!entries.length) return '<p class="daily-lb-empty">Rebríček je prázdny alebo sa ešte prepočítava.</p>';
   return entries
     .map(
       (e) => `
     <div class="daily-lb-row">
       <span class="daily-lb-rank">${e.rank}</span>
       <span class="daily-lb-name">${escapeHtml(e.nickname)}</span>
-      <span class="daily-lb-meta">${e.points} b.${showTime ? ` • ${(e.timeMs / 1000).toFixed(1)} s` : ''}</span>
+      <span class="daily-lb-meta"><span class="daily-lb-pts">${e.points} b.</span>${showTime ? `<span class="daily-lb-sep">·</span><span class="daily-lb-time">${(e.timeMs / 1000).toFixed(1)} s</span>` : ''}</span>
     </div>`
     )
     .join('');
 }
 
 function renderStreakList(entries) {
-  if (!entries.length) return '<p>Žiadne dáta.</p>';
+  if (!entries.length) return '<p class="daily-lb-empty">Žiadne dáta.</p>';
   return entries
     .map(
       (e) => `
     <div class="daily-lb-row">
       <span class="daily-lb-rank">${e.rank}</span>
       <span class="daily-lb-name">${escapeHtml(e.nickname)}</span>
-      <span class="daily-lb-meta">${e.bestStreakDays} dní</span>
+      <span class="daily-lb-meta"><span class="daily-lb-pts">${e.bestStreakDays} dní</span></span>
     </div>`
     )
     .join('');
@@ -559,7 +559,7 @@ function renderBadges(d) {
 }
 
 function renderMyTeam(raw) {
-  if (!Array.isArray(raw) || !raw.length) return '<p>Sezónne poradie tímov zatiaľ nie je k dispozícii.</p>';
+  if (!Array.isArray(raw) || !raw.length) return '<p class="daily-lb-empty">Sezónne poradie tímov zatiaľ nie je k dispozícii.</p>';
   const rows = raw
     .map((item) => {
       const m = item && typeof item === 'object' ? item : null;
@@ -576,14 +576,14 @@ function renderMyTeam(raw) {
     })
     .filter(Boolean)
     .sort((a, b) => b.pts - a.pts);
-  if (!rows.length) return '<p>Žiadne tímy v poradí.</p>';
+  if (!rows.length) return '<p class="daily-lb-empty">Žiadne tímy v poradí.</p>';
   return rows
     .map(
       (e, i) => `
     <div class="daily-lb-row">
       <span class="daily-lb-rank">${i + 1}</span>
       <span class="daily-lb-name">${escapeHtml(e.team)}</span>
-      <span class="daily-lb-meta">${e.pts} b.</span>
+      <span class="daily-lb-meta"><span class="daily-lb-pts">${e.pts} b.</span></span>
     </div>`
     )
     .join('');

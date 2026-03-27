@@ -204,67 +204,142 @@
     margin-top: 16px;
 }
 
+/* Rebríčky – širšia karta na mobile */
+#panel-leaderboards .daily-card {
+    max-width: 640px;
+}
+
 .daily-lb-tabs {
     display: flex;
     flex-wrap: wrap;
-    gap: 8px;
-    margin-bottom: 16px;
+    gap: 10px 12px;
+    margin-bottom: 20px;
 }
 
 .daily-lb-tab {
-    padding: 8px 12px;
-    border-radius: 20px;
-    border: 1px solid #222454;
+    padding: 11px 18px;
+    min-height: 44px;
+    border-radius: 12px;
+    border: 2px solid #222454;
     background: #fff;
     color: #222454;
-    font-size: 0.85rem;
+    font-size: 0.9rem;
+    font-weight: 700;
     cursor: pointer;
+    line-height: 1.25;
+    transition: background 0.15s, color 0.15s, border-color 0.15s, box-shadow 0.15s;
+    box-sizing: border-box;
+}
+
+.daily-lb-tab:hover {
+    box-shadow: 0 2px 10px rgba(34, 36, 84, 0.12);
 }
 
 .daily-lb-tab.active {
     background: #27ae60;
     color: #fff;
     border-color: #27ae60;
+    font-weight: 800;
 }
 
 .daily-lb-content {
-    font-size: 0.95rem;
+    font-size: 1rem;
     max-height: 420px;
     overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+}
+
+.daily-lb-empty {
+    color: #555;
+    font-size: 0.95rem;
+    margin: 8px 0;
 }
 
 .daily-lb-row {
     display: grid;
-    grid-template-columns: 36px 1fr auto;
-    gap: 8px;
+    grid-template-columns: 40px 1fr auto;
+    gap: 10px 12px;
     align-items: center;
-    padding: 8px 4px;
-    border-bottom: 1px solid #eee;
+    padding: 12px 6px;
+    border-bottom: 1px solid #e8e9ef;
 }
 
 .daily-lb-rank {
-    font-weight: 700;
+    font-weight: 800;
+    font-size: 1.15rem;
     color: #27ae60;
+    line-height: 1;
 }
 
 .daily-lb-name {
-    color: #333;
+    color: #121430;
+    font-weight: 800;
+    font-size: 1rem;
+    line-height: 1.3;
+    word-break: break-word;
 }
 
 .daily-lb-meta {
-    color: #666;
-    font-size: 0.85rem;
     text-align: right;
+    display: inline-flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 6px;
+    max-width: 100%;
+}
+
+.daily-lb-pts,
+.daily-lb-time {
+    color: #121430;
+    font-weight: 800;
+    font-size: 0.92rem;
+    white-space: nowrap;
+}
+
+.daily-lb-sep {
+    color: #222454;
+    font-weight: 700;
+    opacity: 0.45;
 }
 
 .daily-champions {
-    margin-bottom: 14px;
-    font-size: 0.9rem;
-    color: #555;
+    margin-bottom: 18px;
 }
 
-.daily-champions strong {
+.daily-champ-row {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    padding: 14px 16px;
+    background: linear-gradient(135deg, #f6f7fb 0%, #eef0f7 100%);
+    border-radius: 14px;
+    border-left: 4px solid #27ae60;
+    box-shadow: 0 1px 4px rgba(34, 36, 84, 0.06);
+}
+
+.daily-champ-label {
+    font-size: 0.72rem;
+    font-weight: 800;
     color: #222454;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+}
+
+.daily-champ-value {
+    font-size: 1.1rem;
+    font-weight: 800;
+    color: #121430;
+    line-height: 1.35;
+}
+
+@media (min-width: 400px) {
+    .daily-champ-row {
+        flex-direction: row;
+        flex-wrap: wrap;
+        align-items: baseline;
+        gap: 8px 14px;
+    }
 }
 
 .daily-badges-grid {
@@ -274,25 +349,57 @@
 }
 
 .daily-badge-item {
-    background: #f8f9fa;
-    border-radius: 8px;
-    padding: 12px;
+    background: #f4f5fa;
+    border-radius: 12px;
+    padding: 14px 12px;
     text-align: center;
+    font-weight: 700;
+    color: #222454;
+    font-size: 0.88rem;
+    border: 1px solid rgba(34, 36, 84, 0.08);
 }
 
 .daily-badge-item span {
     display: block;
-    font-size: 1.5rem;
+    font-size: 1.6rem;
     font-weight: 800;
     color: #27ae60;
+    margin-bottom: 6px;
 }
 
+/* Mobile: kategórie v mriežke 2 stĺpce, rozostupy */
 @media (max-width: 768px) {
     .daily-lb-tabs {
-        flex-direction: column;
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 12px;
     }
+
     .daily-lb-tab {
         width: 100%;
         text-align: center;
+        padding: 14px 10px;
+        font-size: 0.82rem;
+        min-height: 48px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+}
+
+@media (max-width: 360px) {
+    .daily-lb-tab {
+        font-size: 0.78rem;
+        padding: 12px 8px;
+    }
+
+    .daily-lb-row {
+        grid-template-columns: 34px 1fr minmax(0, auto);
+        gap: 8px;
+    }
+
+    .daily-lb-pts,
+    .daily-lb-time {
+        font-size: 0.85rem;
     }
 }
