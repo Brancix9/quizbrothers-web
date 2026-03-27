@@ -1176,9 +1176,8 @@ function formatAuthError(e) {
 }
 
 /**
- * Prihlásenie: predvolene popup (funguje spoľahlivejšie ako redirect na PC aj mobile).
- * Redirect len ak pred daily.js nastavíš window.QB_GOOGLE_USE_REDIRECT = true,
- * alebo ako záloha keď prehliadač popup zablokuje.
+ * Prihlásenie: predvolene popup (aj v PWA; ak zlyhá, záložný redirect).
+ * Vynútiť len redirect: QB_GOOGLE_USE_REDIRECT = true.
  */
 async function signInGoogle() {
   setStatus('');
