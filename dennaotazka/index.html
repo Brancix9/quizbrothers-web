@@ -12,7 +12,7 @@
     <link rel="stylesheet" href="../style.css">
     <link rel="stylesheet" href="daily.css">
     <link rel="icon" href="../favicon.webp" type="image/webp">
-    <!-- Pred daily.js: QB_AVATAR_BASE, QB_GOOGLE_USE_REDIRECT, QB_AUTH_DEBUG — pozri skript pred daily.js -->
+    <!-- Pred daily.js: QB_AVATAR_BASE; QB_AUTH_DEBUG; voliteľne QB_GOOGLE_USE_REDIRECT = true (redirect namiesto popup) — pozri skript pred daily.js -->
 </head>
 <body class="daily-page">
 
@@ -166,9 +166,8 @@
     <script src="vendor/firebase/firebase-app-compat.js"></script>
     <script src="vendor/firebase/firebase-auth-compat.js"></script>
     <script src="vendor/firebase/firebase-firestore-compat.js"></script>
-    <!-- Firebase 10.14.1 self-host (rovnaký origin → menej „Tracking Prevention blocked storage“ voči gstatic). QB_GOOGLE_USE_REDIRECT: redirect namiesto popup. QB_AUTH_DEBUG: true = logy [Auth] v konzole (F12). -->
+    <!-- Firebase 10.14.1 self-host. Prihlásenie: predvolene popup (funguje dobre na mobile). Redirect: window.QB_GOOGLE_USE_REDIRECT = true. QB_AUTH_DEBUG: true = logy [Auth] v konzole (F12). -->
     <script>
-      window.QB_GOOGLE_USE_REDIRECT = true;
       window.QB_AUTH_DEBUG = false;
     </script>
     <script src="daily.js"></script>

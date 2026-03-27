@@ -1098,8 +1098,8 @@ function formatAuthError(e) {
 }
 
 /**
- * Predvolene popup (spoľahlivejší návrat ako redirect na niektorých sieťach).
- * Len redirect: pred daily.js nastav window.QB_GOOGLE_USE_REDIRECT = true
+ * Predvolene popup (na mobile často najrýchlejšie). Ak je popup zablokovaný, fallback na redirect.
+ * Len redirect vždy: pred daily.js nastav window.QB_GOOGLE_USE_REDIRECT = true
  */
 async function signInGoogle() {
   setStatus('');
