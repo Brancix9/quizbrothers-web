@@ -722,57 +722,72 @@ async function startQuestionFlow() {
   }
 }
 
-async function renderLeaderboardTab() {
+/** Po await Firestore: neprepisovať DOM, ak už používateľ prepol záložku alebo odišiel z panelu. */
+function lbLeaderboardRenderStillValid(forTab) {
+  if (state.lbTab !== forTab) return false;
+  const p = $('panel-leaderboards');
+  return !!(p && !p.classList.contains('hidden'));
+}
+
+async function renderLeaderboardTab(forTab) {
   const content = $('lb-content');
   const ch = $('lb-champions');
+  if (!content || !ch) return;
   ch.innerHTML = '';
   content.textContent = 'Načítavam…';
 
   try {
-    if (state.lbTab === 'day') {
+    if (forTab === 'day') {
       const [todayDoc, yestDoc] = await Promise.all([
         db.collection('leaderboards').doc('daily_today').get(),
         db.collection('leaderboards').doc('daily_yesterday').get()
       ]);
+      if (!lbLeaderboardRenderStillValid(forTab)) return;
       const y = parseChampion(yestDoc);
       if (y) {
         ch.innerHTML = `<div class="daily-champ-row"><span class="daily-champ-label">Víťaz včera</span><span class="daily-champ-value">${escapeHtml(y.nickname)} <span class="daily-champ-sep">·</span> <span class="daily-champ-pts">${y.points} b.</span></span></div>`;
       }
       content.innerHTML = renderEntryList(parseLeaderboardEntries(todayDoc), true);
-    } else if (state.lbTab === 'week') {
+    } else if (forTab === 'week') {
       const [wDoc, pDoc] = await Promise.all([
         db.collection('leaderboards').doc('weekly_stats').get(),
         db.collection('leaderboards').doc('weekly_previous').get()
       ]);
+      if (!lbLeaderboardRenderStillValid(forTab)) return;
       const prev = parseChampion(pDoc);
       if (prev) {
         ch.innerHTML = `<div class="daily-champ-row"><span class="daily-champ-label">Víťaz minulého týždňa</span><span class="daily-champ-value">${escapeHtml(prev.nickname)}${prev.points != null ? ` <span class="daily-champ-sep">·</span> <span class="daily-champ-pts">${prev.points} b.</span>` : ''}</span></div>`;
       }
       content.innerHTML = renderEntryList(parseLeaderboardEntries(wDoc), true);
-    } else if (state.lbTab === 'month') {
+    } else if (forTab === 'month') {
       const [mDoc, pDoc] = await Promise.all([
         db.collection('leaderboards').doc('monthly_stats').get(),
         db.collection('leaderboards').doc('monthly_previous').get()
       ]);
+      if (!lbLeaderboardRenderStillValid(forTab)) return;
       const prev = parseChampion(pDoc);
       if (prev) {
         ch.innerHTML = `<div class="daily-champ-row"><span class="daily-champ-label">Víťaz minulého mesiaca</span><span class="daily-champ-value">${escapeHtml(prev.nickname)}${prev.points != null ? ` <span class="daily-champ-sep">·</span> <span class="daily-champ-pts">${prev.points} b.</span>` : ''}</span></div>`;
       }
       content.innerHTML = renderEntryList(parseLeaderboardEntries(mDoc), true);
-    } else if (state.lbTab === 'streak') {
+    } else if (forTab === 'streak') {
       const sDoc = await db.collection('leaderboards').doc('streak_stats').get();
+      if (!lbLeaderboardRenderStillValid(forTab)) return;
       content.innerHTML = renderStreakList(parseStreakEntries(sDoc));
-    } else if (state.lbTab === 'badges') {
+    } else if (forTab === 'badges') {
       const bDoc = await db.collection('badges').doc(state.user.uid).get();
+      if (!lbLeaderboardRenderStillValid(forTab)) return;
       const d = bDoc.exists ? bDoc.data() : {};
       content.innerHTML = renderBadges(d);
-    } else if (state.lbTab === 'myteam') {
+    } else if (forTab === 'myteam') {
       const loc = state.profile.location.trim();
       if (!loc) {
+        if (!lbLeaderboardRenderStillValid(forTab)) return;
         content.innerHTML = '<p>Nemáš vyplnenú lokáciu v profile.</p>';
         return;
       }
       const lDoc = await db.collection('locations').doc(loc).get();
+      if (!lbLeaderboardRenderStillValid(forTab)) return;
       if (!lDoc.exists) {
         content.innerHTML = '<p>Pre tvoju lokáciu nie sú dáta.</p>';
         return;
@@ -781,6 +796,7 @@ async function renderLeaderboardTab() {
       content.innerHTML = renderMyTeam(raw, state.profile.team);
     }
   } catch (e) {
+    if (!lbLeaderboardRenderStillValid(forTab)) return;
     content.textContent = 'Chyba: ' + (e.message || 'načítanie');
   }
 }
@@ -915,7 +931,6 @@ function scrollActiveLbTabIntoView() {
   });
 }
 
-let lbTabSwitchLock = false;
 /** Stav potiahnutia rebríčka (iOS PWA občas neodošle touchend – reset pri návrate na stránku). */
 let lbSwipeG = null;
 let lbSwipePtr = null;
@@ -927,19 +942,14 @@ function resetLeaderboardTouchState() {
 
 async function switchLeaderboardTab(lbKey) {
   if (!lbKey || !LB_TAB_ORDER.includes(lbKey)) return;
-  if (lbTabSwitchLock) return;
-  lbTabSwitchLock = true;
-  try {
-    state.lbTab = lbKey;
-    document.querySelectorAll('.daily-lb-tab').forEach((b) => {
-      b.classList.toggle('active', b.getAttribute('data-lb') === lbKey);
-    });
-    await renderLeaderboardTab();
+  state.lbTab = lbKey;
+  document.querySelectorAll('.daily-lb-tab').forEach((b) => {
+    b.classList.toggle('active', b.getAttribute('data-lb') === lbKey);
+  });
+  await renderLeaderboardTab(lbKey);
+  if (state.lbTab === lbKey && $('panel-leaderboards') && !$('panel-leaderboards').classList.contains('hidden')) {
     scrollActiveLbTabIntoView();
-  } finally {
-    lbTabSwitchLock = false;
   }
-  /* Mimo zámku – na iOS nemá blokovať ďalšie kliky/swipe pri pomalom Firestore */
   void loadBadgesForCongratsAndMaybeShow();
 }
 
@@ -1061,12 +1071,9 @@ function initLeaderboardSwipe() {
     lbSwipePtr = null;
   });
 
-  /* iOS PWA: občas chýba touchend / zostane „visieť“ gesture alebo zámok po pozastavení aplikácie */
+  /* iOS PWA: občas chýba touchend / zostane „visieť“ gesture po pozastavení aplikácie */
   const thawLeaderboards = () => {
     resetLeaderboardTouchState();
-    if (document.visibilityState === 'visible') {
-      lbTabSwitchLock = false;
-    }
   };
   document.addEventListener('visibilitychange', thawLeaderboards);
   window.addEventListener('pageshow', (ev) => {
