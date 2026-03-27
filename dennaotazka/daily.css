@@ -138,6 +138,10 @@
     box-sizing: border-box;
 }
 
+.daily-status.daily-status--progress {
+    color: #222454;
+}
+
 .daily-hint {
     color: #666;
     font-size: 0.9rem;

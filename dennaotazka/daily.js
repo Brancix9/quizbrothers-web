@@ -258,9 +258,12 @@ const state = {
   lastBadgesSnapshot: null
 };
 
-function setStatus(msg) {
+/** @param {'progress' | undefined} tone — progress = tmavomodrá (nie chybová červená) */
+function setStatus(msg, tone) {
   const el = $('daily-status');
-  if (el) el.textContent = msg || '';
+  if (!el) return;
+  el.textContent = msg || '';
+  el.classList.toggle('daily-status--progress', tone === 'progress' && !!msg);
 }
 
 /** Ľudsky zrozumiteľná správa pri Firestore „offline“ (časté v Android PWA, hoci Wi‑Fi ide). */
@@ -1119,7 +1122,7 @@ async function refreshUIForUser() {
     return;
   }
   if (state.activePanel === 'auth') {
-    setStatus('Načítavam účet…');
+    setStatus('Načítavam účet…', 'progress');
   } else {
     setStatus('');
   }
