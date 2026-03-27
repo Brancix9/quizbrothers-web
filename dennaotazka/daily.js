@@ -888,6 +888,15 @@ function renderMyTeam(raw, profileTeamName) {
     .join('');
 }
 
+function scrollActiveLbTabIntoView() {
+  requestAnimationFrame(() => {
+    const active = document.querySelector('#panel-leaderboards .daily-lb-tab.active');
+    if (active) {
+      active.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+    }
+  });
+}
+
 async function openLeaderboards() {
   state.lbTab = 'day';
   document.querySelectorAll('.daily-lb-tab').forEach((b) => {
@@ -895,6 +904,7 @@ async function openLeaderboards() {
   });
   showPanel('leaderboards');
   await renderLeaderboardTab();
+  scrollActiveLbTabIntoView();
   await loadBadgesForCongratsAndMaybeShow();
 }
 
@@ -917,14 +927,13 @@ async function refreshUIForUser() {
   renderHubProfileDetails();
   const mail = u.email || '';
   $('hub-greeting').textContent = `Ahoj, ${state.profile.nickname}!${mail ? ` (${mail})` : ''}`;
-  const note = $('hub-answered-note');
+  const btnStart = $('btn-start');
   if (state.answeredToday) {
-    note.classList.remove('hidden');
-    note.textContent = 'Dnes už si odpovedal. Môžeš si pozrieť rebríčky.';
-    $('btn-start').disabled = true;
+    btnStart.disabled = true;
+    btnStart.textContent = 'Dnes už si odpovedal.';
   } else {
-    note.classList.add('hidden');
-    $('btn-start').disabled = false;
+    btnStart.disabled = false;
+    btnStart.textContent = 'Odpovedať na dennú otázku';
   }
   await loadBadgesForCongratsAndMaybeShow();
 }
@@ -1024,6 +1033,7 @@ function wireEvents() {
       document.querySelectorAll('.daily-lb-tab').forEach((b) => b.classList.remove('active'));
       btn.classList.add('active');
       await renderLeaderboardTab();
+      scrollActiveLbTabIntoView();
       await loadBadgesForCongratsAndMaybeShow();
     };
   });

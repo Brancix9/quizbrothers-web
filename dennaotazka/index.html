@@ -93,7 +93,6 @@
             </div>
             <div class="daily-card card daily-hub-card">
                 <p id="hub-greeting" class="daily-greeting"></p>
-                <div id="hub-answered-note" class="daily-note hidden"></div>
                 <div class="daily-hub-actions">
                     <button type="button" id="btn-start" class="btn btn-primary">Odpovedať na dennú otázku</button>
                     <button type="button" id="btn-leaderboards" class="btn btn-secondary daily-btn-dark">Rebríčky</button>
@@ -128,13 +127,15 @@
 
         <section id="panel-leaderboards" class="hidden">
             <div class="daily-card card">
-                <div class="daily-lb-tabs" role="tablist">
-                    <button type="button" class="daily-lb-tab active" data-lb="day">Víťaz dňa</button>
-                    <button type="button" class="daily-lb-tab" data-lb="week">Víťaz týždňa</button>
-                    <button type="button" class="daily-lb-tab" data-lb="month">Víťaz mesiaca</button>
-                    <button type="button" class="daily-lb-tab" data-lb="streak">Najlepšia séria</button>
-                    <button type="button" class="daily-lb-tab" data-lb="badges">Ocenenia</button>
-                    <button type="button" class="daily-lb-tab" data-lb="myteam">Môj tím</button>
+                <div class="daily-lb-tabs-scroll" aria-label="Výber typu rebríčka">
+                    <div class="daily-lb-tabs" role="tablist">
+                        <button type="button" class="daily-lb-tab active" data-lb="day">Víťaz dňa</button>
+                        <button type="button" class="daily-lb-tab" data-lb="week">Víťaz týždňa</button>
+                        <button type="button" class="daily-lb-tab" data-lb="month">Víťaz mesiaca</button>
+                        <button type="button" class="daily-lb-tab" data-lb="streak">Najlepšia séria</button>
+                        <button type="button" class="daily-lb-tab" data-lb="badges">Ocenenia</button>
+                        <button type="button" class="daily-lb-tab" data-lb="myteam">Môj tím</button>
+                    </div>
                 </div>
                 <div id="lb-champions" class="daily-champions"></div>
                 <div id="lb-content" class="daily-lb-content">Načítavam…</div>

@@ -266,11 +266,6 @@
     margin: 0 0 4px;
 }
 
-.daily-hub-card .daily-note {
-    margin: 0 0 4px;
-    padding: 8px 12px;
-}
-
 .daily-hub-actions {
     display: flex;
     flex-direction: column;
@@ -339,14 +334,6 @@
 .daily-greeting {
     margin: 0 0 8px;
     color: #333;
-}
-
-.daily-note {
-    background: rgba(39, 174, 96, 0.12);
-    border-radius: 8px;
-    padding: 12px 14px;
-    color: #1e8449;
-    font-size: 0.95rem;
 }
 
 .daily-question-panel {
@@ -467,15 +454,40 @@
     max-width: min(var(--daily-content-max), 100%);
 }
 
+/* Horizontálny carousel – jeden riadok, šetri výšku na mobile */
+.daily-lb-tabs-scroll {
+    margin: 0 0 12px;
+    overflow-x: auto;
+    overflow-y: hidden;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(34, 36, 84, 0.35) transparent;
+}
+
+.daily-lb-tabs-scroll::-webkit-scrollbar {
+    height: 5px;
+}
+
+.daily-lb-tabs-scroll::-webkit-scrollbar-thumb {
+    background: rgba(34, 36, 84, 0.3);
+    border-radius: 5px;
+}
+
 .daily-lb-tabs {
     display: flex;
-    flex-wrap: wrap;
-    gap: 10px 12px;
-    margin-bottom: 20px;
+    flex-wrap: nowrap;
+    align-items: stretch;
+    gap: 8px;
+    padding: 2px 2px 6px;
+    margin-bottom: 0;
+    width: max-content;
+    max-width: none;
+    box-sizing: border-box;
 }
 
 .daily-lb-tab {
-    padding: 11px 18px;
+    flex: 0 0 auto;
+    padding: 11px 16px;
     min-height: 44px;
     border-radius: 12px;
     border: 2px solid #222454;
@@ -487,6 +499,10 @@
     line-height: 1.25;
     transition: background 0.15s, color 0.15s, border-color 0.15s, box-shadow 0.15s;
     box-sizing: border-box;
+    white-space: nowrap;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
 }
 
 .daily-lb-tab:hover {
@@ -714,7 +730,7 @@
     margin-bottom: 6px;
 }
 
-/* Mobile: kategórie v mriežke 2 stĺpce; kontajner už je na celú šírku viewportu */
+/* Mobile: kompaktnejšie taby v carousele */
 @media (max-width: 768px) {
     .daily-page .container.daily-container {
         margin-top: 6px;
@@ -729,21 +745,14 @@
         margin-bottom: 6px;
     }
 
-    .daily-lb-tabs {
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: 10px;
+    .daily-lb-tabs-scroll {
+        margin-bottom: 10px;
     }
 
     .daily-lb-tab {
-        width: 100%;
-        text-align: center;
-        padding: 12px 8px;
+        padding: 10px 12px;
         font-size: 0.82rem;
-        min-height: 48px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
+        min-height: 42px;
     }
 
     .daily-lb-content {
