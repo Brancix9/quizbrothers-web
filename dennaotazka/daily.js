@@ -30,6 +30,7 @@ if (!firebase.apps.length) {
 }
 
 const auth = firebase.auth();
+auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL).catch(() => {});
 const db = firebase.firestore();
 const FieldValue = firebase.firestore.FieldValue;
 const googleProvider = new firebase.auth.GoogleAuthProvider();
@@ -1059,20 +1060,25 @@ async function refreshUIForUser() {
     return;
   }
   setStatus('');
-  await loadUserProfileDoc(u.uid);
-  state.answeredToday = await checkAnsweredToday(u.uid);
+  try {
+    await loadUserProfileDoc(u.uid);
+    state.answeredToday = await checkAnsweredToday(u.uid);
 
-  if (!profileComplete()) {
-    await showProfilePanel({ fromHub: false });
-    return;
+    if (!profileComplete()) {
+      await showProfilePanel({ fromHub: false });
+      return;
+    }
+
+    showPanel('hub');
+    renderHubProfileDetails();
+    const mail = u.email || '';
+    $('hub-greeting').textContent = `Ahoj, ${state.profile.nickname}!${mail ? ` (${mail})` : ''}`;
+    updateHubStartButton();
+    await loadBadgesForCongratsAndMaybeShow();
+  } catch (err) {
+    console.error('[Daily] refreshUIForUser', err);
+    setStatus('Chyba pri načítaní účtu: ' + (err.message || 'skús znova obnoviť stránku.'));
   }
-
-  showPanel('hub');
-  renderHubProfileDetails();
-  const mail = u.email || '';
-  $('hub-greeting').textContent = `Ahoj, ${state.profile.nickname}!${mail ? ` (${mail})` : ''}`;
-  updateHubStartButton();
-  await loadBadgesForCongratsAndMaybeShow();
 }
 
 async function signInGoogle() {
@@ -1083,7 +1089,7 @@ async function signInGoogle() {
     } catch (e) {
       const code = e?.code || '';
       if (code === 'auth/popup-blocked' || code === 'auth/operation-not-supported-in-this-environment') {
-        setStatus('Presmerujeme na Google…');
+        setStatus('');
         await auth.signInWithRedirect(googleProvider);
         return;
       }
@@ -1091,7 +1097,6 @@ async function signInGoogle() {
     }
     return;
   }
-  setStatus('Presmerujeme na Google…');
   try {
     await auth.signInWithRedirect(googleProvider);
   } catch (e) {
@@ -1213,22 +1218,48 @@ async function boot() {
     setStatus('Chyba rozhrania: ' + (e.message || ''));
     return;
   }
-  try {
-    await auth.getRedirectResult();
-  } catch (e) {
-    setStatus(e.message || 'Chyba po presmerovaní z Google.');
-  }
 
   auth.onAuthStateChanged(async (user) => {
-    state.user = user;
-    if (!user) {
-      state.pendingBadgeCongrats = [];
-      state.lastBadgesSnapshot = null;
-      showPanel('auth');
-      return;
+    try {
+      state.user = user;
+      if (!user) {
+        state.pendingBadgeCongrats = [];
+        state.lastBadgesSnapshot = null;
+        showPanel('auth');
+        return;
+      }
+      await refreshUIForUser();
+    } catch (err) {
+      console.error('[Daily] onAuthStateChanged', err);
+      setStatus('Chyba prihlásenia: ' + (err.message || ''));
     }
-    await refreshUIForUser();
   });
+
+  try {
+    const result = await auth.getRedirectResult();
+    if (result && result.user) {
+      setStatus('');
+    }
+  } catch (e) {
+    const code = e?.code || '';
+    let msg = e.message || 'Chyba po presmerovaní z Google.';
+    if (code === 'auth/unauthorized-domain') {
+      msg =
+        'Doména stránky nie je v Firebase → Authentication → Settings → Authorized domains. Pridaj presne túto adresu (vrátane www alebo bez www).';
+    } else if (code === 'auth/operation-not-allowed') {
+      msg = 'V Firebase Console → Authentication → Sign-in method zapni Google.';
+    }
+    console.warn('[Daily] getRedirectResult', code, e);
+    setStatus(msg);
+  }
+
+  if (typeof auth.authStateReady === 'function') {
+    try {
+      await auth.authStateReady();
+    } catch (e) {
+      /* ignore */
+    }
+  }
 }
 
 boot();
