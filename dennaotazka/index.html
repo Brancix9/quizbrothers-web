@@ -2,7 +2,13 @@
 <html lang="sk">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="theme-color" content="#222454">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Denná otázka">
+    <link rel="manifest" href="manifest.json">
+    <link rel="apple-touch-icon" href="../logo.png">
     <meta property="og:type" content="website">
     <meta property="og:title" content="Denná otázka - QuizBrothers">
     <meta property="og:description" content="Denná otázka QuizBrothers – rebríčky ako v aplikácii.">
@@ -38,6 +44,14 @@
 
     <div class="container daily-container">
         <h1 class="daily-title">Denná otázka</h1>
+
+        <div id="daily-ios-pwa-banner" class="daily-ios-pwa-banner hidden" role="region" aria-labelledby="daily-ios-pwa-title">
+            <div class="daily-ios-pwa-inner">
+                <p id="daily-ios-pwa-title" class="daily-ios-pwa-title">Stiahnuť na plochu</p>
+                <p class="daily-ios-pwa-text">Pridaj si stránku ako aplikáciu: na iPhone alebo iPade funguje to v <strong>Safari</strong>, <strong>Chrome</strong> aj ďalších prehliadačoch. Otvor ponuku <strong>Zdieľať</strong> (v Safari ikona štvorčeka so šípkou dole; v Chrome zvyčajne cez <strong>⋯</strong> → Zdieľať) a zvoľ <strong>Pridať na domovskú obrazovku</strong>. Potom spustíš Dennú otázku priamo z ikony.</p>
+                <button type="button" class="btn btn-secondary daily-btn-outline daily-ios-pwa-dismiss" id="daily-ios-pwa-dismiss">Rozumiem, skryť</button>
+            </div>
+        </div>
 
         <div id="daily-status" class="daily-status" role="status" aria-live="polite"></div>
 

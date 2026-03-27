@@ -1235,6 +1235,51 @@ function wireEvents() {
   });
 }
 
+/** Apple mobil / tablet: iPhone, iPad, iPod + iPadOS desktop UA. Zahŕňa Safari, Chrome, Firefox… na iOS (všetky používajú WebKit; UA stále obsahuje iPhone/iPad). */
+function isAppleTouchDeviceForPwa() {
+  const ua = navigator.userAgent || '';
+  if (/iPhone|iPad|iPod/.test(ua)) return true;
+  try {
+    if (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1) return true;
+  } catch (e) {
+    /* ignore */
+  }
+  return false;
+}
+
+function initApplePwaBanner() {
+  if (!isAppleTouchDeviceForPwa()) return;
+
+  if (window.navigator.standalone === true) return;
+  try {
+    if (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches) return;
+  } catch (e) {
+    /* ignore */
+  }
+
+  try {
+    if (window.localStorage.getItem('qb_daily_ios_pwa_dismiss') === '1') return;
+  } catch (e) {
+    /* súkromné okno / blokované úložisko */
+  }
+
+  const el = document.getElementById('daily-ios-pwa-banner');
+  if (!el) return;
+  el.classList.remove('hidden');
+
+  const btn = document.getElementById('daily-ios-pwa-dismiss');
+  if (btn) {
+    btn.addEventListener('click', () => {
+      el.classList.add('hidden');
+      try {
+        window.localStorage.setItem('qb_daily_ios_pwa_dismiss', '1');
+      } catch (e2) {
+        /* ignore */
+      }
+    });
+  }
+}
+
 async function boot() {
   try {
     wireEvents();
@@ -1242,6 +1287,8 @@ async function boot() {
     setStatus('Chyba rozhrania: ' + (e.message || ''));
     return;
   }
+
+  initApplePwaBanner();
 
   const authDbg = window.QB_AUTH_DEBUG === true;
 

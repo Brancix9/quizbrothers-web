@@ -23,6 +23,58 @@
     margin-bottom: 8px;
 }
 
+/* Apple (iPhone / iPad / iPod): návod na Pridať na domovskú obrazovku (PWA); zobrazí daily.js ak nie je standalone */
+.daily-ios-pwa-banner {
+    max-width: min(var(--daily-content-max), 100%);
+    width: 100%;
+    margin: 0 auto 12px;
+    padding: 14px 16px;
+    box-sizing: border-box;
+    background: linear-gradient(135deg, #2d3166 0%, #222454 100%);
+    border-radius: 12px;
+    color: #fff;
+    box-shadow: 0 4px 14px rgba(34, 36, 84, 0.2);
+}
+
+.daily-ios-pwa-inner {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    align-items: stretch;
+}
+
+.daily-ios-pwa-title {
+    margin: 0;
+    font-size: 1.05rem;
+    font-weight: 700;
+    color: #fff;
+}
+
+.daily-ios-pwa-text {
+    margin: 0;
+    font-size: 0.9rem;
+    line-height: 1.45;
+    color: rgba(255, 255, 255, 0.92);
+}
+
+.daily-ios-pwa-text strong {
+    color: #fff;
+    font-weight: 600;
+}
+
+.daily-ios-pwa-dismiss {
+    align-self: flex-start;
+    margin-top: 2px;
+    border-color: rgba(255, 255, 255, 0.55) !important;
+    color: #fff !important;
+    background: transparent !important;
+}
+
+.daily-ios-pwa-dismiss:hover,
+.daily-ios-pwa-dismiss:focus-visible {
+    background: rgba(255, 255, 255, 0.12) !important;
+}
+
 .daily-card {
     text-align: left;
     max-width: min(var(--daily-content-max), 100%);
