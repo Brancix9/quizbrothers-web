@@ -18,7 +18,7 @@
     <link rel="stylesheet" href="../style.css">
     <link rel="stylesheet" href="daily.css">
     <link rel="icon" href="../favicon.webp" type="image/webp">
-    <!-- Pred daily.js: QB_AVATAR_BASE; QB_AUTH_DEBUG; QB_GOOGLE_USE_REDIRECT; QB_FIRESTORE_LONG_POLL = 'force'|'off' — komentár pri daily.js -->
+    <!-- Pred daily.js: QB_AVATAR_BASE; QB_AUTH_DEBUG; QB_GOOGLE_USE_REDIRECT; QB_FIRESTORE_LONG_POLL; QB_FUNCTIONS_REGION (ak nie us-central1) -->
 </head>
 <body class="daily-page">
 
@@ -186,7 +186,8 @@
     <script src="vendor/firebase/firebase-app-compat.js"></script>
     <script src="vendor/firebase/firebase-auth-compat.js"></script>
     <script src="vendor/firebase/firebase-firestore-compat.js"></script>
-    <!-- Firebase 10.14.1 self-host. Google: popup (+ fallback redirect). Firestore: predvolene auto long-poll; QB_FIRESTORE_LONG_POLL = 'force' len ak sieť vyžaduje forced. QB_AUTH_DEBUG. -->
+    <script src="vendor/firebase/firebase-functions-compat.js"></script>
+    <!-- Firebase 10.14.1 self-host. Functions: getLeaderboardRealtime (us-central1). QB_FUNCTIONS_REGION ak deploy iný región. -->
     <script>
       window.QB_AUTH_DEBUG = false;
     </script>

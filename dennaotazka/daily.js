@@ -56,6 +56,8 @@ const googleProvider = new firebase.auth.GoogleAuthProvider();
 googleProvider.setCustomParameters({ prompt: 'select_account' });
 
 const TZ = 'Europe/Bratislava';
+/** Cloud Functions región projektu (Callable getLeaderboardRealtime) – zhodné s settings.json / deploy. */
+const FUNCTIONS_REGION_DEFAULT = 'us-central1';
 const LEADERBOARD_MAX = 50;
 /** Poradie záložiek rebríčkov – musí sedieť s data-lb v HTML (swipe vľavo = ďalšia) */
 const LB_TAB_ORDER = ['day', 'week', 'month', 'streak', 'badges', 'myteam'];
@@ -257,6 +259,33 @@ const state = {
   /** Posledné načítané hodnoty z badges/{uid} (pre uloženie po zatvorení dialógu) */
   lastBadgesSnapshot: null
 };
+
+/** Promise prebiehajúceho prepočtu rebríčkov po odoslaní odpovede (getLeaderboardRealtime). */
+let pendingLeaderboardRefreshPromise = null;
+
+function getFunctionsCompat() {
+  if (typeof firebase === 'undefined' || typeof firebase.app !== 'function') return null;
+  try {
+    const reg =
+      typeof window.QB_FUNCTIONS_REGION === 'string' && window.QB_FUNCTIONS_REGION.trim()
+        ? window.QB_FUNCTIONS_REGION.trim()
+        : FUNCTIONS_REGION_DEFAULT;
+    return firebase.app().functions(reg);
+  } catch (e) {
+    console.warn('[Daily] Firebase Functions', e);
+    return null;
+  }
+}
+
+/**
+ * Rovnaký endpoint ako „živé rebríčky“ v appke: prepočíta daily_today, weekly_stats, monthly_stats, streak_stats.
+ */
+async function refreshLeaderboardsOnServer() {
+  const fns = getFunctionsCompat();
+  if (!fns) return;
+  const callable = fns.httpsCallable('getLeaderboardRealtime');
+  await callable({});
+}
 
 /** @param {'progress' | undefined} tone — progress = tmavomodrá (nie chybová červená) */
 function setStatus(msg, tone) {
@@ -694,6 +723,12 @@ function submitAnswer() {
     .then(() => {
       state.answeredToday = true;
       updateHubStartButton();
+      const p = refreshLeaderboardsOnServer().catch((e) => {
+        console.warn('[Daily] getLeaderboardRealtime po odpovedi', e);
+      });
+      pendingLeaderboardRefreshPromise = p.finally(() => {
+        if (pendingLeaderboardRefreshPromise === p) pendingLeaderboardRefreshPromise = null;
+      });
     })
     .catch((e) => {
       setStatus('Odpoveď sa nepodarilo uložiť: ' + (e.message || 'chyba'));
@@ -1112,6 +1147,14 @@ function initLeaderboardSwipe() {
 
 async function openLeaderboards() {
   showPanel('leaderboards');
+  const wait = pendingLeaderboardRefreshPromise;
+  if (wait) {
+    try {
+      await wait;
+    } catch (e) {
+      /* chyba už v console z refreshLeaderboardsOnServer */
+    }
+  }
   await switchLeaderboardTab('day');
 }
 
