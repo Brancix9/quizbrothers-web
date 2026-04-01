@@ -148,6 +148,22 @@ function dayOfMonthBratislava() {
   return Number.isFinite(d) ? d : 1;
 }
 
+/** Počet dní v mesiaci yyyy-MM (rovnaká logika ako v Android QuizViewModel). */
+function daysInMonthForYearMonth(ym) {
+  const parts = String(ym).split('-');
+  const y = parseInt(parts[0], 10);
+  const mo = parseInt(parts[1], 10);
+  if (!Number.isFinite(y) || !Number.isFinite(mo) || mo < 1 || mo > 12) return 31;
+  return new Date(y, mo, 0).getDate();
+}
+
+function isValidDailyOrder(order, dim) {
+  if (!Array.isArray(order) || order.length < dim || dim < 1) return false;
+  const slice = order.slice(0, dim).map((n) => Number(n));
+  if (slice.some((n) => !Number.isFinite(n) || n < 1 || n > dim)) return false;
+  return new Set(slice).size === dim;
+}
+
 function stripOptionPrefix(text) {
   return String(text).replace(/^[A-D]:\s*/i, '').trim();
 }
@@ -607,16 +623,17 @@ async function syncHubAnswerState() {
 }
 
 async function ensureQuestionOrder(uid, ym) {
+  const dim = daysInMonthForYearMonth(ym);
   const docId = `${uid}_${ym}`;
   const ref = db.collection('daily_question_orders').doc(docId);
   const snap = await ref.get();
   if (snap.exists) {
     const order = snap.data().order;
-    if (Array.isArray(order) && order.length >= 31) {
-      return order.slice(0, 31).map((n) => Number(n));
+    if (isValidDailyOrder(order, dim)) {
+      return order.slice(0, dim).map((n) => Number(n));
     }
   }
-  const newOrder = shuffle(Array.from({ length: 31 }, (_, i) => i + 1));
+  const newOrder = shuffle(Array.from({ length: dim }, (_, i) => i + 1));
   await ref.set({ order: newOrder });
   return newOrder;
 }
@@ -624,7 +641,8 @@ async function ensureQuestionOrder(uid, ym) {
 async function loadDailyQuestionForUser(uid) {
   const ym = yearMonthBratislava();
   const dom = dayOfMonthBratislava();
-  const idx = Math.min(Math.max(dom - 1, 0), 30);
+  const dim = daysInMonthForYearMonth(ym);
+  const idx = Math.min(Math.max(dom - 1, 0), dim - 1);
   const order = await ensureQuestionOrder(uid, ym);
   if (!order || order.length <= idx) throw new Error('Nepodarilo sa získať poradie otázok.');
   const qnum = order[idx];
