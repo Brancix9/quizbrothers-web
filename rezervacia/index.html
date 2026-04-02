@@ -1090,14 +1090,30 @@
                 return;
             }
 
+            const releaseInFuture = isReleaseTimeInFuture();
+
             let currentTeamCount = 0;
             if (teamSelect !== 'new') {
                 const existing = teamsData.find(t => t.id === teamSelect);
-                if(existing) currentTeamCount = existing.current;
+                if(existing) {
+                    // Pred potvrdením statické rezervácie "obsadzujú" kapacitu cez default.
+                    // current môže byť 0, takže sa nedá potvrdiť ani keď nemenia obsadenosť.
+                    if (releaseInFuture && existing.isStatic && !existing.confirmed) {
+                        currentTeamCount = existing.default || 0;
+                    } else {
+                        currentTeamCount = existing.current || 0;
+                    }
+                }
             } else {
                 const newName = document.getElementById('customTeamName').value;
                 const existing = teamsData.find(t => t.id === newName);
-                if(existing) currentTeamCount = existing.current;
+                if(existing) {
+                    if (releaseInFuture && existing.isStatic && !existing.confirmed) {
+                        currentTeamCount = existing.default || 0;
+                    } else {
+                        currentTeamCount = existing.current || 0;
+                    }
+                }
             }
 
             const currentOccupied = calculateOccupied();
@@ -1393,22 +1409,40 @@
             const isFull = remaining <= 0;
             
             if (isFull && btn) {
+                const releaseInFuture = isReleaseTimeInFuture();
                 let currentTeamCount = 0;
                 if (teamSelect && teamSelect.value !== 'new') {
                     const existing = teamsData.find(t => t.id === teamSelect.value);
-                    if(existing) currentTeamCount = existing.current;
+                    if(existing) {
+                        // Pri rezervovaných tímoch na ľavej strane default predstavuje ich obsadenosť.
+                        if (releaseInFuture && existing.isStatic && !existing.confirmed) {
+                            currentTeamCount = existing.default || 0;
+                        } else {
+                            currentTeamCount = existing.current || 0;
+                        }
+                    }
                 } else if (document.getElementById('customTeamName')) {
                     const newName = document.getElementById('customTeamName').value;
                     const existing = teamsData.find(t => t.id === newName);
-                    if(existing) currentTeamCount = existing.current;
+                    if(existing) {
+                        if (releaseInFuture && existing.isStatic && !existing.confirmed) {
+                            currentTeamCount = existing.default || 0;
+                        } else {
+                            currentTeamCount = existing.current || 0;
+                        }
+                    }
                 }
                 
                 const newCount = parseInt(playerCountInput.value) || 4;
-                const willDecrease = newCount < currentTeamCount;
+                // Keď je kapacita plná, potvrdenie je povolené aj pri rovnakom počte,
+                // ak tým nezvyšuje obsadenosť (t.j. iba potvrdiť / znížiť).
+                const canConfirm = newCount <= currentTeamCount;
                 
-                if (willDecrease) {
+                if (canConfirm) {
                     btn.disabled = false;
-                    btn.innerText = "Potvrdiť zmenu (↓ uvoľňuješ miesto)";
+                    btn.innerText = newCount < currentTeamCount
+                        ? "Potvrdiť zmenu (↓ uvoľňuješ miesto)"
+                        : "Potvrdiť účasť";
                 } else {
                     btn.disabled = true;
                     btn.innerText = "PLNO - zmeniť iba na menší počet";
