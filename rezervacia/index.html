@@ -1155,21 +1155,6 @@
                     try {
                         await updateDoc(doc(db, "teams", team.id), { current: count, confirmed: true, declined: false });
                         console.log("✅ Tím úspešne updatovaný!");
-                        
-                        // 📍 EXPLICITNE aktualizuj lokálne dáta IHNEĎ
-                        team.current = count;
-                        team.confirmed = true;
-                        team.declined = false;
-                        localStorage.setItem('teams_cache', JSON.stringify(teamsData));
-                        
-                        console.log('🟡 Calling updateDashboard()...');
-                        // 📍 IHNEĎ aktualizuj UI
-                        updateDashboard();
-                        console.log('🟡 Calling populateTeamSelect()...');
-                        populateTeamSelect();
-                        console.log('🟡 Calling renderAdminPinTable()...');
-                        renderAdminPinTable();
-                        console.log('🟡 UI update complete!');
                     } catch (updateErr) {
                         console.warn("⚠️ updateDoc chyba (možno offline):", updateErr);
                         throw updateErr;
@@ -1233,24 +1218,6 @@
                         await setDoc(doc(db, "teams", newName), {
                             default: count, current: count, pin: newTeamPin, confirmed: true, isStatic: false, tableId: "", declined: false
                         });
-                        
-                        // 📍 EXPLICITNE pridám nový tím do lokálnych dát IHNEĎ
-                        teamsData.push({
-                            id: newName,
-                            default: count,
-                            current: count,
-                            pin: newTeamPin,
-                            confirmed: true,
-                            isStatic: false,
-                            tableId: "",
-                            declined: false
-                        });
-                        localStorage.setItem('teams_cache', JSON.stringify(teamsData));
-                        
-                        // 📍 IHNEĎ aktualizuj UI
-                        updateDashboard();
-                        populateTeamSelect();
-                        renderAdminPinTable();
                         
                         document.getElementById('formMessage').innerText = `✅ Tím ${newName} zaregistrovaný!`;
                         document.getElementById('formMessage').style.color = 'green';
