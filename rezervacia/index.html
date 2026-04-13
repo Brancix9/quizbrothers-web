@@ -462,6 +462,7 @@
             <button onclick="uploadDefaults()" style="background:#222454; color:white; border:none; padding:8px 15px; cursor:pointer; font-weight:bold; border-radius:4px; margin-left:10px;">🚀 NAHRAŤ PREDVOLENÉ TÍMY</button>
             
             <button onclick="resetAllData()" style="background:#e74c3c; color:white; border:none; padding:8px 15px; cursor:pointer; font-weight:bold; border-radius:4px;">⚠️ FULL WIPE</button>
+            <button onclick="adminLogout()" style="background:#95a5a6; color:white; border:none; padding:8px 15px; cursor:pointer; font-weight:bold; border-radius:4px; margin-left:10px;">🚪 Odhlásiť sa</button>
         </div>
 
         <div class="pin-manager">
@@ -658,7 +659,7 @@
         perf.mark('firestore-import-end');
         
         perf.mark('auth-import-start');
-        import { getAuth } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+        import { getAuth, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
         perf.mark('auth-import-end');
 
         const firebaseConfig = {
@@ -2033,6 +2034,23 @@
                 else batch.update(ref, { current: t.default, confirmed: false });
             });
             await batch.commit(); alert("Reset hotový.");
+        }
+
+        window.adminLogout = async function() {
+            try {
+                if (window.qbAdmin && window.qbAdmin.logout) {
+                    window.qbAdmin.logout();
+                    return;
+                }
+                const auth = getAuth();
+                await signOut(auth);
+                window.adminLoggedIn = false;
+                document.getElementById('adminSection').style.display = 'none';
+                location.reload();
+            } catch (err) {
+                console.error("Chyba pri odhlasovaní:", err);
+                alert("❌ Chyba pri odhlasovaní: " + err.message);
+            }
         }
         
         // Table assignments storage
