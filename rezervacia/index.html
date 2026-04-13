@@ -2010,11 +2010,18 @@
             const name = document.getElementById('addTeamName').value.trim();
             const cap = parseInt(document.getElementById('addTeamCap').value);
             const pin = String(document.getElementById('addTeamPin').value.trim());
-            if(name && cap && pin) {
-                await setDoc(doc(db, "teams", name), { default: cap, current: cap, pin: pin, confirmed: false, isStatic: true, tableId: "" });
+            if (!name) { alert("Zadaj názov tímu!"); return; }
+            if (!cap || cap < 1 || cap > 15) { alert("Kapacita musí byť 1–15!"); return; }
+            if (!pin) { alert("Zadaj PIN!"); return; }
+            try {
+                await setDoc(doc(db, "teams", name), { default: cap, current: cap, pin: pin, confirmed: false, isStatic: true, tableId: "", declined: false });
                 document.getElementById('addTeamName').value = "";
                 document.getElementById('addTeamCap').value = "4";
                 document.getElementById('addTeamPin').value = "000";
+                alert("✅ Tím " + name + " pridaný!");
+            } catch (err) {
+                console.error("Chyba pri pridávaní tímu:", err);
+                alert("❌ Chyba: " + err.message);
             }
         }
         window.resetAllData = async function() {
