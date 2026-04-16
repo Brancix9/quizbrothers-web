@@ -992,6 +992,16 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
         import { getFirestore, doc, onSnapshot, setDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+        import { getAuth } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+
+        function isAdmin() {
+            try {
+                const a = getAuth();
+                return !!(a && a.currentUser);
+            } catch (e) {
+                return false;
+            }
+        }
 
         const firebaseConfig = {
             apiKey: "AIzaSyCgKeENYtYJWf2_DZOw4irg6GPLq3XKhEc",
@@ -1032,16 +1042,19 @@
                             }
                         });
                         
-                        // Aktualizuj Firebase ak máme nové sezóny
-                        const hasNewSeasons = window.currentSeasons.some(s => !data.seasons.includes(s));
-                        if (hasNewSeasons) {
-                            console.log('🔄 Aktualizujem zoznam sezón vo Firebase');
-                            setDoc(contentDoc, { seasons: window.currentSeasons }, { merge: true });
+                        // Aktualizuj Firebase ak máme nové sezóny (iba admin)
+                        if (isAdmin()) {
+                            const hasNewSeasons = window.currentSeasons.some(s => !data.seasons.includes(s));
+                            if (hasNewSeasons) {
+                                console.log('🔄 Aktualizujem zoznam sezón vo Firebase');
+                                setDoc(contentDoc, { seasons: window.currentSeasons }, { merge: true });
+                            }
                         }
                     } else {
-                        // Ak Firebase nemá žiadne sezóny, ulož lokálne
-                        console.log('🔄 Prvé uloženie sezón do Firebase');
-                        setDoc(contentDoc, { seasons: window.currentSeasons }, { merge: true });
+                        if (isAdmin()) {
+                            console.log('🔄 Prvé uloženie sezón do Firebase');
+                            setDoc(contentDoc, { seasons: window.currentSeasons }, { merge: true });
+                        }
                     }
                     
                     // Načítaj dáta pre všetky sezóny
@@ -1064,9 +1077,11 @@
                                 { name: "Kamene", points: "3b" }
                             ];
                             window.standingsData[year] = finalStandings2019_2020;
-                            setDoc(doc(db, "web_content", "hall_of_fame"), {
-                                [fieldName]: finalStandings2019_2020
-                            }, { merge: true });
+                            if (isAdmin()) {
+                                setDoc(doc(db, "web_content", "hall_of_fame"), {
+                                    [fieldName]: finalStandings2019_2020
+                                }, { merge: true });
+                            }
                             console.log('✅ Finálne poradie pre 2019-2020 nastavené');
                         } else if (year === "2018-2019") {
                             const finalStandings2018_2019 = [
@@ -1086,9 +1101,11 @@
                                 { name: "DUO", points: "7b" }
                             ];
                             window.standingsData[year] = finalStandings2018_2019;
-                            setDoc(doc(db, "web_content", "hall_of_fame"), {
-                                [fieldName]: finalStandings2018_2019
-                            }, { merge: true });
+                            if (isAdmin()) {
+                                setDoc(doc(db, "web_content", "hall_of_fame"), {
+                                    [fieldName]: finalStandings2018_2019
+                                }, { merge: true });
+                            }
                             console.log('✅ Finálne poradie pre 2018-2019 nastavené');
                         } else if (data[fieldName] && Array.isArray(data[fieldName]) && data[fieldName].length > 0) {
                             console.log(`📊 Načítané dáta pre ${year}:`, data[fieldName].length, 'tímov');
@@ -1115,15 +1132,16 @@
                             
                             window.standingsData[2025] = defaultStandings;
                             
-                            // Automaticky ulož defaultné dáta do Firebase
-                            setDoc(doc(db, "web_content", "hall_of_fame"), {
-                                standings_2025: defaultStandings,
-                                seasons: window.currentSeasons
-                            }, { merge: true }).then(() => {
-                                console.log('✅ Defaultné poradie pre 2025 uložené do Firebase');
-                            }).catch(err => {
-                                console.error('❌ Chyba pri ukladaní:', err);
-                            });
+                            if (isAdmin()) {
+                                setDoc(doc(db, "web_content", "hall_of_fame"), {
+                                    standings_2025: defaultStandings,
+                                    seasons: window.currentSeasons
+                                }, { merge: true }).then(() => {
+                                    console.log('✅ Defaultné poradie pre 2025 uložené do Firebase');
+                                }).catch(err => {
+                                    console.error('❌ Chyba pri ukladaní:', err);
+                                });
+                            }
                         } else if (year === 2024) {
                             // Pre rok 2024 vytvor defaultné dáta ak neexistujú
                             console.log('⚠️ Žiadne dáta v Firebase pre 2024, používam defaultné');
@@ -1147,15 +1165,16 @@
                             
                             window.standingsData[2024] = defaultStandings2024;
                             
-                            // Automaticky ulož defaultné dáta do Firebase
-                            setDoc(doc(db, "web_content", "hall_of_fame"), {
-                                standings_2024: defaultStandings2024,
-                                seasons: window.currentSeasons
-                            }, { merge: true }).then(() => {
-                                console.log('✅ Defaultné poradie pre 2024 uložené do Firebase');
-                            }).catch(err => {
-                                console.error('❌ Chyba pri ukladaní:', err);
-                            });
+                            if (isAdmin()) {
+                                setDoc(doc(db, "web_content", "hall_of_fame"), {
+                                    standings_2024: defaultStandings2024,
+                                    seasons: window.currentSeasons
+                                }, { merge: true }).then(() => {
+                                    console.log('✅ Defaultné poradie pre 2024 uložené do Firebase');
+                                }).catch(err => {
+                                    console.error('❌ Chyba pri ukladaní:', err);
+                                });
+                            }
                         } else if (year === 2023) {
                             // Pre rok 2023 vytvor defaultné dáta ak neexistujú
                             console.log('⚠️ Žiadne dáta v Firebase pre 2023, používam defaultné');
@@ -1175,21 +1194,23 @@
                             
                             window.standingsData[2023] = defaultStandings2023;
                             
-                            // Automaticky ulož defaultné dáta do Firebase
-                            // Pridaj 2023 do seasons ak tam nie je
                             const updatedSeasons = window.currentSeasons.includes(2023) 
                                 ? window.currentSeasons 
                                 : [...window.currentSeasons, 2023];
                             
-                            setDoc(doc(db, "web_content", "hall_of_fame"), {
-                                standings_2023: defaultStandings2023,
-                                seasons: updatedSeasons
-                            }, { merge: true }).then(() => {
-                                console.log('✅ Defaultné poradie pre 2023 uložené do Firebase');
+                            if (isAdmin()) {
+                                setDoc(doc(db, "web_content", "hall_of_fame"), {
+                                    standings_2023: defaultStandings2023,
+                                    seasons: updatedSeasons
+                                }, { merge: true }).then(() => {
+                                    console.log('✅ Defaultné poradie pre 2023 uložené do Firebase');
+                                    window.currentSeasons = updatedSeasons;
+                                }).catch(err => {
+                                    console.error('❌ Chyba pri ukladaní:', err);
+                                });
+                            } else {
                                 window.currentSeasons = updatedSeasons;
-                            }).catch(err => {
-                                console.error('❌ Chyba pri ukladaní:', err);
-                            });
+                            }
                         } else if (year === 2022) {
                             // Pre rok 2022 vytvor defaultné dáta ak neexistujú
                             console.log('⚠️ Žiadne dáta v Firebase pre 2022, používam defaultné');
@@ -1207,21 +1228,23 @@
                             
                             window.standingsData[2022] = defaultStandings2022;
                             
-                            // Automaticky ulož defaultné dáta do Firebase
-                            // Pridaj 2022 do seasons ak tam nie je
                             const updatedSeasons2022 = window.currentSeasons.includes(2022) 
                                 ? window.currentSeasons 
                                 : [...window.currentSeasons, 2022];
                             
-                            setDoc(doc(db, "web_content", "hall_of_fame"), {
-                                standings_2022: defaultStandings2022,
-                                seasons: updatedSeasons2022
-                            }, { merge: true }).then(() => {
-                                console.log('✅ Defaultné poradie pre 2022 uložené do Firebase');
+                            if (isAdmin()) {
+                                setDoc(doc(db, "web_content", "hall_of_fame"), {
+                                    standings_2022: defaultStandings2022,
+                                    seasons: updatedSeasons2022
+                                }, { merge: true }).then(() => {
+                                    console.log('✅ Defaultné poradie pre 2022 uložené do Firebase');
+                                    window.currentSeasons = updatedSeasons2022;
+                                }).catch(err => {
+                                    console.error('❌ Chyba pri ukladaní:', err);
+                                });
+                            } else {
                                 window.currentSeasons = updatedSeasons2022;
-                            }).catch(err => {
-                                console.error('❌ Chyba pri ukladaní:', err);
-                            });
+                            }
                         } else if (year === "2020-2021") {
                             // COVID sezóna - žiadne dáta, špeciálny dizajn
                             console.log('⚠️ COVID-19 sezóna 2020-2021 - žiadne výsledky');
@@ -1249,10 +1272,12 @@
                     
                     window.standingsData[2025] = defaultStandings;
                     
-                    setDoc(doc(db, "web_content", "hall_of_fame"), {
-                        standings_2025: defaultStandings,
-                        seasons: window.currentSeasons
-                    }, { merge: true });
+                    if (isAdmin()) {
+                        setDoc(doc(db, "web_content", "hall_of_fame"), {
+                            standings_2025: defaultStandings,
+                            seasons: window.currentSeasons
+                        }, { merge: true });
+                    }
                 }
                 
                 // Po načítaní dát z Firebase vykresli sezóny
