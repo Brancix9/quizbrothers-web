@@ -622,20 +622,106 @@ async function syncHubAnswerState() {
   updateHubStartButton();
 }
 
+/** Predchádzajúci kalendárny mesiac v tvare yyyy-MM (napr. 2026-01 → 2025-12). */
+function previousYearMonth(ym) {
+  const parts = String(ym).split('-');
+  const y = parseInt(parts[0], 10);
+  const m = parseInt(parts[1], 10);
+  if (!Number.isFinite(y) || !Number.isFinite(m)) return ym;
+  if (m === 1) return `${y - 1}-12`;
+  return `${y}-${String(m - 1).padStart(2, '0')}`;
+}
+
+/** Pool doc IDs všetkých otázok za kalendárny rok yearMonth (12 mesiacov × daysInMonth). */
+function buildYearPool(ym) {
+  const parts = String(ym).split('-');
+  const y = parseInt(parts[0], 10);
+  if (!Number.isFinite(y)) return [];
+  const pool = [];
+  for (let m = 1; m <= 12; m++) {
+    const ymStr = `${y}-${String(m).padStart(2, '0')}`;
+    const days = daysInMonthForYearMonth(ymStr);
+    for (let n = 1; n <= days; n++) {
+      pool.push(`${ymStr}_${n}`);
+    }
+  }
+  return pool;
+}
+
+/** Extrahuje all_used set z predch. order dokumentu (priorita: all_used → question_ids → odvod z order). */
+function extractAllUsedFromPrevDoc(prevSnap, prevYm) {
+  if (!prevSnap || !prevSnap.exists) return new Set();
+  const data = prevSnap.data() || {};
+  const allUsed = Array.isArray(data.all_used)
+    ? data.all_used.filter((x) => typeof x === 'string' && x.length > 0)
+    : null;
+  if (allUsed && allUsed.length > 0) return new Set(allUsed);
+  const qids = Array.isArray(data.question_ids)
+    ? data.question_ids.filter((x) => typeof x === 'string' && x.length > 0)
+    : null;
+  if (qids && qids.length > 0) return new Set(qids);
+  const order = Array.isArray(data.order)
+    ? data.order.map((n) => Number(n)).filter((n) => Number.isFinite(n))
+    : null;
+  if (order && order.length > 0) {
+    return new Set(order.map((n) => `${prevYm}_${n}`));
+  }
+  return new Set();
+}
+
+/**
+ * Skontroluje daily_question_orders/{uid}_{yearMonth}. Nový formát dokumentu obsahuje:
+ *  - order: permutácia 1..daysInMonth (spätná kompatibilita so staršími klientmi)
+ *  - question_ids: plné Firestore doc IDs z celoročného poolu (napr. "2026-07_15")
+ *  - all_used: kumulatívny zoznam použitých question_ids (zabraňuje opakovaniu medzi mesiacmi)
+ *
+ * Vracia zoznam doc IDs dĺžky daysInMonth (index D-1 = otázka pre deň D).
+ * Pre staré dokumenty bez question_ids sa doc IDs odvodia z order v aktuálnom mesiaci.
+ */
 async function ensureQuestionOrder(uid, ym) {
   const dim = daysInMonthForYearMonth(ym);
   const docId = `${uid}_${ym}`;
   const ref = db.collection('daily_question_orders').doc(docId);
   const snap = await ref.get();
   if (snap.exists) {
-    const order = snap.data().order;
-    if (isValidDailyOrder(order, dim)) {
-      return order.slice(0, dim).map((n) => Number(n));
+    const data = snap.data() || {};
+    const order = Array.isArray(data.order) ? data.order.map((n) => Number(n)) : null;
+    if (order && isValidDailyOrder(order, dim)) {
+      const qids = Array.isArray(data.question_ids)
+        ? data.question_ids.filter((x) => typeof x === 'string' && x.length > 0)
+        : null;
+      if (qids && qids.length >= dim) {
+        return qids.slice(0, dim);
+      }
+      return order.slice(0, dim).map((n) => `${ym}_${n}`);
     }
   }
+
+  const prevYm = previousYearMonth(ym);
+  let allUsed = new Set();
+  try {
+    const prevSnap = await db.collection('daily_question_orders').doc(`${uid}_${prevYm}`).get();
+    allUsed = extractAllUsedFromPrevDoc(prevSnap, prevYm);
+  } catch (e) {
+    console.warn('[Daily] Nepodarilo sa načítať predch. mesiac, pokračujem bez all_used', e);
+  }
+
+  const pool = buildYearPool(ym);
+  let available = pool.filter((id) => !allUsed.has(id));
+  let baseAllUsed = allUsed;
+  if (available.length < dim) {
+    available = pool;
+    baseAllUsed = new Set();
+  }
+  const pickedIds = shuffle(available).slice(0, dim);
   const newOrder = shuffle(Array.from({ length: dim }, (_, i) => i + 1));
-  await ref.set({ order: newOrder });
-  return newOrder;
+  const newAllUsed = Array.from(new Set([...baseAllUsed, ...pickedIds]));
+  await ref.set({
+    order: newOrder,
+    question_ids: pickedIds,
+    all_used: newAllUsed
+  });
+  return pickedIds;
 }
 
 async function loadDailyQuestionForUser(uid) {
@@ -643,10 +729,9 @@ async function loadDailyQuestionForUser(uid) {
   const dom = dayOfMonthBratislava();
   const dim = daysInMonthForYearMonth(ym);
   const idx = Math.min(Math.max(dom - 1, 0), dim - 1);
-  const order = await ensureQuestionOrder(uid, ym);
-  if (!order || order.length <= idx) throw new Error('Nepodarilo sa získať poradie otázok.');
-  const qnum = order[idx];
-  const qid = `${ym}_${qnum}`;
+  const docIds = await ensureQuestionOrder(uid, ym);
+  if (!docIds || docIds.length <= idx) throw new Error('Nepodarilo sa získať poradie otázok.');
+  const qid = docIds[idx];
   const qsnap = await db.collection('daily_questions').doc(qid).get();
   if (!qsnap.exists) throw new Error('Otázka pre tento deň ešte nie je dostupná.');
   const q = parseQuestionData(qsnap.data());
