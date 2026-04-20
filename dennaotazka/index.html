@@ -184,12 +184,15 @@
 
     <script>function toggleMenu() { document.getElementById('nav-list').classList.toggle('show'); }</script>
     <script src="vendor/firebase/firebase-app-compat.js"></script>
+    <script src="vendor/firebase/firebase-app-check-compat.js"></script>
     <script src="vendor/firebase/firebase-auth-compat.js"></script>
     <script src="vendor/firebase/firebase-firestore-compat.js"></script>
     <script src="vendor/firebase/firebase-functions-compat.js"></script>
     <!-- Firebase 10.14.1 self-host. Functions: getLeaderboardRealtime (us-central1). QB_FUNCTIONS_REGION ak deploy iný región. -->
+    <!-- App Check: predvolene reCAPTCHA Enterprise; pri v3 v konzole nastav QB_APPCHECK_USE_ENTERPRISE = false -->
     <script>
       window.QB_AUTH_DEBUG = false;
+      window.QB_APPCHECK_USE_ENTERPRISE = true;
     </script>
     <script src="daily.js"></script>
 </body>
