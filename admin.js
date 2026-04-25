@@ -2,6 +2,18 @@
 (function() {
     'use strict';
     
+    /** Rovnaký zoznam ako dôveryhodní editori v Firestore; nie je to náhrada za serverové pravidlá. */
+    const ORGANIZER_EMAILS = new Set([
+        'branislav.gonos@gmail.com',
+        'marcel.gonos@gmail.com',
+        'bg.brano99@gmail.com'
+    ]);
+    
+    function isOrganizerEmail(email) {
+        if (!email || typeof email !== 'string') return false;
+        return ORGANIZER_EMAILS.has(email.trim().toLowerCase());
+    }
+    
     const STORAGE_KEY = 'qb_admin_texts';
     
     let isAdminMode = false;
@@ -199,8 +211,14 @@
             const errorMsg = document.getElementById('admin-login-error');
             
             try {
-                const { signInWithEmailAndPassword } = await import("https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js");
-                await signInWithEmailAndPassword(auth, email, password);
+                const { signInWithEmailAndPassword, signOut } = await import("https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js");
+                const cred = await signInWithEmailAndPassword(auth, email, password);
+                if (!isOrganizerEmail(cred.user.email)) {
+                    await signOut(auth);
+                    errorMsg.style.display = 'block';
+                    errorMsg.textContent = '❌ Tento účet nemá oprávnenie upravovať texty (admin).';
+                    return;
+                }
                 // Ak je prihlasenie úspešné, modal sa automaticky uzavrie
                 const modal = document.getElementById('admin-login-modal');
                 if (modal) modal.remove();
@@ -958,17 +976,8 @@
         toggleMinimize: toggleMinimize,
         resetFirebaseData: resetFirebaseData,
         isUserAdmin: function() {
-            // Return true if user is logged in via Firebase - v AKÉKOĽVEK auth inštancií
-            // Najprv skús admin.js auth
-            if (auth && auth.currentUser) {
-                return true;
-            }
-            // Potom skús window.auth (ak je nastavený)
-            if (window.auth && window.auth.currentUser) {
-                return true;
-            }
-            // Ak ani jedno nie je, vrať false
-            return false;
+            const u = (auth && auth.currentUser) || (window.auth && window.auth.currentUser);
+            return isOrganizerEmail(u && u.email);
         },
         getAuth: function() {
             // Return auth object so other scripts can use it
@@ -998,16 +1007,18 @@
             try {
                 const { onAuthStateChanged } = await import("https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js");
                 onAuthStateChanged(window.auth, async (user) => {
-                    if (user) {
+                    if (user && isOrganizerEmail(user.email)) {
                         window.adminLoggedIn = true;
-                        console.log("✅ Admin je prihlásený:", user.email);
-                        // Načítaj texty asynchronne v pozadí (NEBLOKUJĚš UI)
+                        console.log("✅ Admin (organizátor) je prihlásený:", user.email);
                         loadSavedTexts().catch(e => console.warn('Text load error:', e));
                     } else {
                         window.adminLoggedIn = false;
-                        console.log("❌ Admin sa odhlásil");
+                        if (user) {
+                            console.log("ℹ️ Prihlásený bežný účet (nie organizátor):", user.email);
+                        } else {
+                            console.log("❌ Žiadny auth používateľ");
+                        }
                         deactivate();
-                        // NEVOLAJ loadSavedTexts() - nechaj onSnapshot z index.html aby načítal správne dáta
                     }
                 });
             } catch (e) {
