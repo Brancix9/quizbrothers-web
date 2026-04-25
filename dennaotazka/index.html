@@ -189,10 +189,10 @@
     <script src="vendor/firebase/firebase-firestore-compat.js"></script>
     <script src="vendor/firebase/firebase-functions-compat.js"></script>
     <!-- Firebase 10.14.1 self-host. Functions: getLeaderboardRealtime (us-central1). QB_FUNCTIONS_REGION ak deploy iný región. -->
-    <!-- App Check: predvolene reCAPTCHA Enterprise; pri v3 v konzole nastav QB_APPCHECK_USE_ENTERPRISE = false -->
+    <!-- App Check: reCAPTCHA v3 (zhodne s Firebase App Check) – pre Enterprise daj QB_APPCHECK_USE_ENTERPRISE = true -->
     <script>
       window.QB_AUTH_DEBUG = false;
-      window.QB_APPCHECK_USE_ENTERPRISE = true;
+      window.QB_APPCHECK_USE_ENTERPRISE = false;
     </script>
     <script src="daily.js"></script>
 </body>

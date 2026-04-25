@@ -29,6 +29,39 @@ if (!firebase.apps.length) {
   firebase.initializeApp(firebaseConfig);
 }
 
+/**
+ * Firebase App Check (reCAPTCHA) – musí byť pred prvým Firestore/Auth požiadavkom.
+ * Skript: vendor/firebase/firebase-app-check-compat.js (10.14.1).
+ * Override: window.QB_APPCHECK_SITE_KEY, vypnutie window.QB_APPCHECK_OFF === true
+ * reCAPTCHA v3 (predvolene): window.QB_APPCHECK_USE_ENTERPRISE = false alebo nenastavené
+ * reCAPTCHA Enterprise: window.QB_APPCHECK_USE_ENTERPRISE = true
+ */
+(function initWebAppCheck() {
+  if (typeof window !== 'undefined' && window.QB_APPCHECK_OFF === true) return;
+  if (typeof firebase.appCheck !== 'function') {
+    console.warn('[QuizBrothers] App Check: chýba firebase-app-check-compat.js');
+    return;
+  }
+  const siteKey =
+    (typeof window.QB_APPCHECK_SITE_KEY === 'string' && window.QB_APPCHECK_SITE_KEY.trim()) ||
+    '6Lci_cAsAAAAAL9VrBYxUUlUCVYw9gEyUPqy6Q8T';
+  const useEnterprise =
+    typeof window.QB_APPCHECK_USE_ENTERPRISE === 'boolean'
+      ? window.QB_APPCHECK_USE_ENTERPRISE
+      : false;
+  try {
+    if (useEnterprise && firebase.appCheck.ReCaptchaEnterpriseProvider) {
+      firebase
+        .appCheck()
+        .activate(new firebase.appCheck.ReCaptchaEnterpriseProvider(siteKey), true);
+    } else {
+      firebase.appCheck().activate(siteKey, true);
+    }
+  } catch (e) {
+    console.warn('[QuizBrothers] App Check activate zlyhal:', e);
+  }
+})();
+
 const auth = firebase.auth();
 auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL).catch(() => {});
 const db = firebase.firestore();
