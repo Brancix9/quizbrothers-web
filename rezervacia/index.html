@@ -414,7 +414,7 @@
         </div>
     </div>
 
-    <button class="admin-login-btn" id="adminOldLoginBtn" onclick="toggleAdmin()" style="display: none;">ADMIN LOGIN</button>
+    <button class="admin-login-btn" type="button" id="adminOldLoginBtn" onclick="window.qbAdmin?.showLoginModal?.();" style="display: none;">Admin prihlásenie (heslo)</button>
 
     <div id="adminSection">
         <div class="admin-config">
@@ -685,6 +685,15 @@
 
         let authInstance = window.auth || getAuth(window.app);
         window.auth = authInstance;
+
+        /** Admin panel: len po Firebase prihlásení (e-mail+heslo) a iba pre účty v admin.js ORGANIZER_EMAILS. */
+        window.rezervaciaHasAdminAccess = function() {
+            try {
+                return Boolean(window.qbAdmin && window.qbAdmin.isUserAdmin && window.qbAdmin.isUserAdmin());
+            } catch (e) {
+                return false;
+            }
+        };
 
         perf.measure('Firestore Import', 'firestore-import-start', 'firestore-import-end');
         perf.measure('Auth Import', 'auth-import-start', 'auth-import-end');
@@ -1536,14 +1545,6 @@
             }
         }
 
-        window.toggleAdmin = async function() {
-            const pin = await window.promptPin("Admin PIN:");
-            if (pin === globalSettings.masterPin) {
-                document.getElementById('adminSection').style.display = 'block';
-                renderAdminPinTable(); window.scrollTo(0, document.body.scrollHeight);
-            } else { alert("Zlý PIN"); }
-        }
-
         window.saveQuizDate = async function() {
             const val = document.getElementById('adminQuizDate').value;
             if(val) {
@@ -2038,12 +2039,10 @@
 
         window.adminLogout = async function() {
             try {
-                if (window.qbAdmin && window.qbAdmin.logout) {
-                    window.qbAdmin.logout();
+                if (window.qbAdmin && window.qbAdmin.isUserAdmin && window.qbAdmin.isUserAdmin() && window.qbAdmin.logout) {
+                    await window.qbAdmin.logout();
                     return;
                 }
-                const auth = getAuth();
-                await signOut(auth);
                 window.adminLoggedIn = false;
                 document.getElementById('adminSection').style.display = 'none';
                 location.reload();
@@ -2084,7 +2083,7 @@
         
         // Open modal to assign team to table
         window.adminEdit = function(el) {
-            if (!window.adminLoggedIn && !(window.auth && window.auth.currentUser)) {
+            if (!window.rezervaciaHasAdminAccess || !window.rezervaciaHasAdminAccess()) {
                 alert("Mapu upravuješ cez zoznam tímov nižšie.");
                 return;
             }
@@ -2392,11 +2391,7 @@
         }
 
         function updateAdminUIVisibility() {
-            const isAdmin = window.qbAdmin && window.qbAdmin.isUserAdmin();
-            const isAdminLoggedIn = window.adminLoggedIn === true;
-            const adminAuth = window.auth && window.auth.currentUser;
-            
-            const finalIsAdmin = isAdmin || isAdminLoggedIn || (adminAuth ? true : false);
+            const finalIsAdmin = window.rezervaciaHasAdminAccess && window.rezervaciaHasAdminAccess();
             
             const adminSection = document.getElementById('adminSection');
             const pinSection = document.getElementById('pinSection');
@@ -2419,23 +2414,6 @@
                 pinSection.style.display = 'block';
                 adminLoginPrompt.style.display = 'block';
                 if (oldAdminBtn) oldAdminBtn.style.display = 'block';
-            }
-        }
-        
-        const originalToggleAdmin = window.toggleAdmin;
-        window.toggleAdmin = async function() {
-            const pin = await window.promptPin("Admin PIN:");
-            if (pin === globalSettings.masterPin) {
-                document.getElementById('adminSection').style.display = 'block';
-                renderAdminPinTable();
-                loadWebContentToEditor('home');
-                loadWebContentToEditor('about');
-                loadWebContentToEditor('app');
-                await loadTableAssignments();
-                updateMapVisuals();
-                window.scrollTo(0, document.body.scrollHeight);
-            } else {
-                alert("Zlý PIN");
             }
         }
         
