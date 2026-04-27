@@ -322,6 +322,8 @@
 </head>
 <body>
 
+    <div id="adminSecretTrigger" aria-hidden="true" style="position:fixed;bottom:0;left:0;width:28px;height:28px;opacity:0;z-index:5;pointer-events:auto;"></div>
+
     <header>
         <div class="nav-container">
             <a href="../" class="logo">
@@ -357,9 +359,9 @@
             <h3 style="color:#222454;">⏳ Rezervované (do dňa kvízu do <span id="reservedDeadlineDisplay">15:00</span>)</h3>
             <ul id="listReserved" class="team-list"></ul>
             
-            <div id="adminLoginPrompt" style="display: none; text-align: center; margin-top: 20px; padding: 10px 15px; background: #f0f8ff; border-radius: 10px;">
+            <div id="adminLoginPrompt" style="display: none !important; text-align: center; margin-top: 20px; padding: 10px 15px; background: #f0f8ff; border-radius: 10px;">
                 <p style="color: #222454; font-weight: bold; margin: 0 0 8px 0; font-size: 14px;">Ste administrátor?</p>
-                <button onclick="window.qbAdmin.showLoginModal()" style="background: #222454; color: white; border: none; padding: 12px 20px; cursor: pointer; font-weight: bold; border-radius: 5px;">🔐 Prihlásiť sa ako Admin</button>
+                <button type="button" style="background: #222454; color: white; border: none; padding: 12px 20px; cursor: pointer; font-weight: bold; border-radius: 5px;">Skryté (Ctrl+Shift+Q)</button>
             </div>
         </div>
 
@@ -371,9 +373,22 @@
             </div>
 
             <form id="quizForm">
+                <div id="newTeamRegistrationBlock" style="display:none; margin-top:6px; padding:6px 8px; background:#f0f7ff; border-radius:8px; border-left:4px solid #1877F2;">
+                    <p id="newTeamRegIntro" style="margin:0 0 2px 0; color:#222454; font-weight:bold;">Máš nový tím?</p>
+                    <div id="newTeamGoogleRow" style="margin-bottom:10px;">
+                        <button type="button" id="btnGoogleSignInNewTeam" class="btn-submit" style="background:#1877F2; max-width:100%; padding:10px 12px; font-size:14px; margin-top:2px; margin-bottom:0;">Prihlásiť sa cez Google</button>
+                        <p id="newTeamGoogleStatus" style="font-size:12px; color:#666; margin:5px 0 0 0;"></p>
+                    </div>
+                    <div id="newTeamContactRow" style="display:none;">
+                        <label for="contactPersonName" style="color:#222454;">Kontaktná osoba (meno a priezvisko)</label>
+                        <input type="text" id="contactPersonName" name="contactPersonName" autocomplete="name" maxlength="80" placeholder="Napr. Ján Novák" style="width:100%; box-sizing:border-box; margin-top:4px; padding:8px;">
+                        <p style="font-size:12px; color:#555; margin:6px 0 0 0;">Kontaktný e-mail (z Google, nedá sa zmeniť): <strong id="contactEmailDisplay">—</strong></p>
+                    </div>
+                </div>
+
                 <label>Vyber svoj tím:</label>
                 <select id="teamSelect" name="teamSelect" onchange="handleTeamChange()">
-                    <option value="new">Nový tím / Vybrať tím</option>
+                    <option value="new">Vybrať tím</option>
                 </select>
                 <small id="teamReservedInfo" style="color:#222454; display:none; font-weight:bold; margin-top:5px;"></small>
 
@@ -389,6 +404,7 @@
                     <label id="pinLabel" style="color:#27ae60;">Vytvor si PIN kód:</label>
                     <input type="text" id="teamPin" name="teamPin" inputmode="numeric" pattern="[0-9]*" placeholder="Napr. 123">
                     <small id="pinHelp" style="color:#666; display:block; margin-top:5px;">Tento PIN budeš potrebovať pre zmeny.</small>
+                    <p id="googleUserHint" style="font-size:12px;color:#666;margin-top:6px;"></p>
                 </div>
                 
                 <button type="button" id="submitBtn" class="btn-submit">Potvrdiť účasť</button>
@@ -413,8 +429,6 @@
             </div>
         </div>
     </div>
-
-    <button class="admin-login-btn" type="button" id="adminOldLoginBtn" onclick="window.qbAdmin?.showLoginModal?.();" style="display: none;">Admin prihlásenie (heslo)</button>
 
     <div id="adminSection">
         <div class="admin-config">
@@ -468,7 +482,7 @@
         <div class="pin-manager">
             <h3>✅ Potvrdené tímy - Správa</h3>
             <table class="pin-table">
-                <thead><tr><th>Tím</th><th>Počet hráčov</th><th>Status</th><th>Akcie</th></tr></thead>
+                <thead><tr><th>Tím</th><th>Kontakt</th><th>E-mail</th><th>Počet hráčov</th><th>Status</th><th>Akcie</th></tr></thead>
                 <tbody id="adminConfirmedTableBody"></tbody>
             </table>
             <p style="text-align:center; color:#666; margin-top:15px; font-size:12px;">Tímy, ktoré potvrdili účasť. Môžeš upraviť počet hráčov alebo odstrániť tím.</p>
@@ -478,7 +492,7 @@
         <div class="pin-manager">
             <h3>🔐 Správa Tímov</h3>
             <table class="pin-table">
-                <thead><tr><th>Tím</th><th>Predvolená Kap.</th><th>PIN</th><th>Akcie</th></tr></thead>
+                <thead><tr><th>Tím</th><th>Kontakt</th><th>E-mail</th><th>Predvol. kap.</th><th>PIN</th><th>Akcie</th></tr></thead>
                 <tbody id="adminPinTableBody"></tbody>
             </table>
             <button onclick="window.saveAllAdminTeams()" style="background:#27ae60; color:white; border:none; padding:10px 20px; cursor:pointer; font-weight:bold; border-radius:4px; margin-top:10px; width:100%;">💾 Uložiť všetky tímy naraz</button>
@@ -651,6 +665,8 @@
         perf.mark('script-start');
 
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { initializeAppCheck, ReCaptchaV3Provider } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app-check.js";
+        import { getFunctions, httpsCallable } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-functions.js";
         console.log("✅ Firebase App module imported");
         
         perf.mark('firestore-import-start');
@@ -659,7 +675,7 @@
         perf.mark('firestore-import-end');
         
         perf.mark('auth-import-start');
-        import { getAuth, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+        import { getAuth, signOut, GoogleAuthProvider, signInWithPopup, onAuthStateChanged, sendEmailVerification } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
         perf.mark('auth-import-end');
 
         const firebaseConfig = {
@@ -683,8 +699,122 @@
         const app = window.app;
         const db = window.db;
 
+        try {
+            initializeAppCheck(app, {
+                provider: new ReCaptchaV3Provider('6Lci_cAsAAAAAL9VrBYxUUlUCVYw9gEyUPqy6Q8T'),
+                isTokenAutoRefreshEnabled: true
+            });
+        } catch (e) {
+            console.warn('App Check init:', e);
+        }
+
+        const functions = getFunctions(app);
+        const callCreateReservation = httpsCallable(functions, 'createReservation');
+        const callUpdateReservation = httpsCallable(functions, 'updateReservation');
+        const callDeclineReservation = httpsCallable(functions, 'declineReservation');
+        const callCancelReservation = httpsCallable(functions, 'cancelReservation');
+
+        const googleProvider = new GoogleAuthProvider();
+        googleProvider.setCustomParameters({ prompt: 'select_account' });
+
+        let teamSecretsMap = {};
+        let teamSecretsUnsub = null;
+
+        function mergeTeamPinsForAdmin() {
+            if (!window.rezervaciaHasAdminAccess || !window.rezervaciaHasAdminAccess()) return;
+            teamsData.forEach(t => { t.pin = teamSecretsMap[t.id] != null ? teamSecretsMap[t.id] : (t.pin || ''); });
+        }
+
+        function attachTeamSecretsListener() {
+            if (teamSecretsUnsub) return;
+            if (!window.rezervaciaHasAdminAccess || !window.rezervaciaHasAdminAccess()) return;
+            try {
+                teamSecretsUnsub = onSnapshot(collection(db, 'team_secrets'), (snapshot) => {
+                    teamSecretsMap = {};
+                    snapshot.forEach((d) => { teamSecretsMap[d.id] = (d.data().pin != null) ? String(d.data().pin) : ''; });
+                    mergeTeamPinsForAdmin();
+                    if (window.renderAdminPinTable) renderAdminPinTable();
+                }, (err) => { console.error('team_secrets listener', err); });
+            } catch (e) {
+                console.error('attachTeamSecretsListener', e);
+            }
+        }
+
+        function detachTeamSecretsListener() {
+            if (teamSecretsUnsub) {
+                try { teamSecretsUnsub(); } catch (e) {}
+                teamSecretsUnsub = null;
+            }
+        }
+
         let authInstance = window.auth || getAuth(window.app);
         window.auth = authInstance;
+
+        onAuthStateChanged(authInstance, () => {
+            const el = document.getElementById('googleUserHint');
+            if (el) el.textContent = authInstance.currentUser
+                ? ('Prihlásený: ' + (authInstance.currentUser.email || 'Google'))
+                : '';
+            if (window.refreshNewTeamRegistrationUI) window.refreshNewTeamRegistrationUI();
+        });
+
+        window.refreshNewTeamRegistrationUI = function() {
+            const block = document.getElementById('newTeamRegistrationBlock');
+            const select = document.getElementById('teamSelect');
+            const customEl = document.getElementById('customTeamName');
+            if (!block || !select || !customEl) return;
+            const customName = customEl.value.trim();
+            const existing = customName ? teamsData.find(t => t.id === customName) : null;
+            const contactRow = document.getElementById('newTeamContactRow');
+            const googleStatus = document.getElementById('newTeamGoogleStatus');
+            const btnGoogle = document.getElementById('btnGoogleSignInNewTeam');
+            const contactEmailDisplay = document.getElementById('contactEmailDisplay');
+            const contactNameInput = document.getElementById('contactPersonName');
+            if (select.value !== 'new') {
+                block.style.display = 'none';
+                return;
+            }
+            block.style.display = 'block';
+            const user = authInstance.currentUser;
+            let canUnlockName = false;
+            if (user) {
+                if (btnGoogle) btnGoogle.style.display = 'none';
+                if (contactRow) contactRow.style.display = 'block';
+                if (contactEmailDisplay) contactEmailDisplay.textContent = user.email || '—';
+                if (googleStatus) {
+                    if (!user.emailVerified) {
+                        googleStatus.textContent = 'E-mail ešte nie je overený. Skontroluj schránku (od Google) alebo v nastaveniach účtu požiadaj o nový overovací odkaz.';
+                        googleStatus.style.color = '#c0392b';
+                    } else {
+                        googleStatus.textContent = 'Účet Google je prihlásený a e-mail je overený. Vyplň kontaktnú osobu nižšie.';
+                        googleStatus.style.color = '#27ae60';
+                        const contactName = contactNameInput ? contactNameInput.value.trim() : '';
+                        canUnlockName = contactName.length >= 2;
+                    }
+                }
+            } else {
+                if (btnGoogle) btnGoogle.style.display = 'block';
+                if (contactRow) contactRow.style.display = 'none';
+                if (googleStatus) {
+                    googleStatus.textContent = '';
+                    googleStatus.style.color = '#666';
+                }
+            }
+            if (existing) {
+                canUnlockName = true;
+            }
+            const newTeamInputWrap = document.getElementById('newTeamInput');
+            if (newTeamInputWrap) {
+                newTeamInputWrap.style.display = canUnlockName ? 'block' : 'none';
+            }
+            customEl.disabled = !canUnlockName;
+            if (!canUnlockName) {
+                customEl.placeholder = 'Odomkne sa po Google + kontaktnej osobe';
+                if (!existing) customEl.value = '';
+            } else {
+                customEl.placeholder = 'Zadaj názov tímu';
+            }
+        };
 
         /** Admin panel: len po Firebase prihlásení (e-mail+heslo) a iba pre účty v admin.js ORGANIZER_EMAILS. */
         window.rezervaciaHasAdminAccess = function() {
@@ -839,9 +969,19 @@
             console.log(`📦 Počet dokumentov: ${snapshot.size}`);
             console.log(`📦 Čas od štartu stránky: ${(perf.markers['snapshot-teams-received'] - perf.markers['script-start']).toFixed(0)}ms`);
             teamsData = [];
-            snapshot.forEach(doc => { teamsData.push({ id: doc.id, ...doc.data() }); });
+            snapshot.forEach(doc => {
+                const row = { id: doc.id, ...doc.data() };
+                if ('pin' in row) delete row.pin;
+                teamsData.push(row);
+            });
+            mergeTeamPinsForAdmin();
             
-            localStorage.setItem('teams_cache', JSON.stringify(teamsData));
+            try {
+                const forCache = teamsData.map(t => { const c = { ...t }; delete c.pin; return c; });
+                localStorage.setItem('teams_cache', JSON.stringify(forCache));
+            } catch (e) {
+                localStorage.setItem('teams_cache', JSON.stringify(teamsData));
+            }
             console.log("✅ Teams z Firebase sú hotové");
             
             updateDashboard(); 
@@ -996,6 +1136,26 @@
             });
         }
 
+        const btnGoogleNewTeam = document.getElementById('btnGoogleSignInNewTeam');
+        if (btnGoogleNewTeam) {
+            btnGoogleNewTeam.addEventListener('click', async function() {
+                try {
+                    await signInWithPopup(authInstance, googleProvider);
+                    await authInstance.currentUser?.reload?.();
+                } catch (err) {
+                    console.error(err);
+                    alert('❌ Prihlásenie cez Google zlyhalo.');
+                }
+                if (window.refreshNewTeamRegistrationUI) window.refreshNewTeamRegistrationUI();
+            });
+        }
+        const contactNameInput = document.getElementById('contactPersonName');
+        if (contactNameInput) {
+            contactNameInput.addEventListener('input', function() {
+                if (window.refreshNewTeamRegistrationUI) window.refreshNewTeamRegistrationUI();
+            });
+        }
+
         window.handleTeamChange = function() {
             const select = document.getElementById('teamSelect');
             const customInputDiv = document.getElementById('newTeamInput');
@@ -1011,7 +1171,7 @@
             // ✅ PIN SEKCIA JE VŽDY VIDITEĽNÁ - neskrývame ju!
             
             if (select.value === 'new') {
-                customInputDiv.style.display = 'block';
+                customInputDiv.style.display = 'none';
                 countInput.value = 4;
                 teamReservedInfo.style.display = 'none';
                 declineBtn.style.display = 'none';
@@ -1073,6 +1233,7 @@
                 }
             }
             checkDeadline();
+            if (window.refreshNewTeamRegistrationUI) window.refreshNewTeamRegistrationUI();
         }
 
         window.handleFormSubmit = async function(e) {
@@ -1139,40 +1300,16 @@
                         alert("❌ Tím nebol nájdený!");
                         return;
                     }
-                    
-                    // 🔐 PIN MUSÍ BYŤ VŽDY VALIDOVANÝ, NIKDY SKIPOVAŤ!
                     if (!enteredPin || !enteredPin.trim()) {
                         const promptedPin = await window.promptPin("❓ Zadaj PIN kód:");
-                        if (!promptedPin) {
-                            return;
-                        }
+                        if (!promptedPin) return;
                         enteredPin = promptedPin;
                     }
-                    
                     const pinTrimmed = enteredPin.trim();
-                    const teamPinTrimmed = String(team.pin || "").trim();
-                    const masterPinTrimmed = String(globalSettings.masterPin || "").trim();
-                    
-                    if (pinTrimmed !== teamPinTrimmed && pinTrimmed !== masterPinTrimmed) {
-                        alert("❌ Nesprávny PIN!");
-                        return;
-                    }
-                    
-                    // Zapamätaj si, či tím už bol potvrdený pred updatom
                     const wasAlreadyConfirmed = team.confirmed === true;
-                    
-                    console.log("📝 Skúšam updatovať tím:", team.id, { current: count, confirmed: true });
-                    try {
-                        await updateDoc(doc(db, "teams", team.id), { current: count, confirmed: true, declined: false });
-                        console.log("✅ Tím úspešne updatovaný!");
-                    } catch (updateErr) {
-                        console.warn("⚠️ updateDoc chyba (možno offline):", updateErr);
-                        throw updateErr;
-                    }
-                    
-                    // Rozlíš prvé potvrdenie vs. aktualizáciu
-                    const message = wasAlreadyConfirmed 
-                        ? `✅ Tím ${team.id} aktualizovaný!` 
+                    await callUpdateReservation({ teamId: team.id, pin: pinTrimmed, current: count });
+                    const message = wasAlreadyConfirmed
+                        ? `✅ Tím ${team.id} aktualizovaný!`
                         : `✅ Tím ${team.id} potvrdený!`;
                     document.getElementById('formMessage').innerText = message;
                     document.getElementById('formMessage').style.color = 'green';
@@ -1182,69 +1319,69 @@
                         alert("❌ Zadaj názov tímu!");
                         return;
                     }
-                    
-                    // 🔐 PIN MUSÍ BYŤ VŽDY ZADANÝ A VALIDOVANÝ!
                     let newTeamPin = document.getElementById('teamPin').value.trim();
                     if (!newTeamPin) {
                         alert("❌ Zadaj si PIN kód pre nový tím!");
                         return;
                     }
-                    
                     const existing = teamsData.find(t => t.id === newName);
                     if (existing) {
-                        // 🔐 AJ EXISTUJÚCI TÍM MUSÍ MÁŤ VALIDOVANÝ PIN
-                        const pinTrimmed = newTeamPin;
-                        const existingPinTrimmed = String(existing.pin || "").trim();
-                        const masterPinTrimmed = String(globalSettings.masterPin || "").trim();
-                        if (pinTrimmed !== existingPinTrimmed && pinTrimmed !== masterPinTrimmed) {
-                            alert("❌ Tím už existuje. Zlý PIN.");
-                            return;
-                        }
-                        
-                        // Zapamätaj si, či tím už bol potvrdený pred updatom
                         const wasAlreadyConfirmed = existing.confirmed === true;
-                        
-                        await updateDoc(doc(db, "teams", newName), { current: count, confirmed: true, declined: false });
-                        
-                        // 📍 EXPLICITNE aktualizuj lokálne dáta IHNEĎ
-                        existing.current = count;
-                        existing.confirmed = true;
-                        existing.declined = false;
-                        localStorage.setItem('teams_cache', JSON.stringify(teamsData));
-                        
-                        // 📍 IHNEĎ aktualizuj UI
-                        updateDashboard();
-                        populateTeamSelect();
-                        renderAdminPinTable();
-                        
-                        // Rozlíš prvé potvrdenie vs. aktualizáciu
-                        const message = wasAlreadyConfirmed 
-                            ? `✅ Tím ${newName} aktualizovaný!` 
+                        await callUpdateReservation({ teamId: newName, pin: newTeamPin, current: count });
+                        const message = wasAlreadyConfirmed
+                            ? `✅ Tím ${newName} aktualizovaný!`
                             : `✅ Tím ${newName} potvrdený!`;
                         document.getElementById('formMessage').innerText = message;
                         document.getElementById('formMessage').style.color = 'green';
                     } else {
-                        // 🔐 NOVÝ TÍM MUSÍ MÁŤ PIN - JE JUŽ OVERENÝ
-                        await setDoc(doc(db, "teams", newName), {
-                            default: count, current: count, pin: newTeamPin, confirmed: true, isStatic: false, tableId: "", declined: false
+                        if (!authInstance.currentUser) {
+                            alert("❌ Pre nový tím sa najprv prihlás cez Google (modrý blok vyššie).");
+                            return;
+                        }
+                        try {
+                            await authInstance.currentUser.reload();
+                        } catch (re) { console.warn(re); }
+                        if (!authInstance.currentUser.emailVerified) {
+                            if (confirm("E-mail v Google účte ešte nie je overený. Môžeme poslať nový overovací e-mail?")) {
+                                try {
+                                    await sendEmailVerification(authInstance.currentUser);
+                                    alert("Odkaz na overenie bol odoslaný. Po overení skús znova odoslať formulár.");
+                                } catch (ve) {
+                                    alert("Nepodarilo sa odoslať e-mail: " + (ve.message || ve));
+                                }
+                            }
+                            return;
+                        }
+                        const contactName = (document.getElementById('contactPersonName') && document.getElementById('contactPersonName').value || "").trim();
+                        if (contactName.length < 2) {
+                            alert("❌ Vyplň meno a priezvisko kontaktnej osoby.");
+                            return;
+                        }
+                        const nameField = document.getElementById('customTeamName');
+                        if (nameField && nameField.disabled) {
+                            alert("❌ Najprv dokonči Google prihlásenie a kontaktnú osobu.");
+                            return;
+                        }
+                        await callCreateReservation({
+                            teamName: newName,
+                            playerCount: count,
+                            pin: newTeamPin,
+                            contactName: contactName
                         });
-                        
                         document.getElementById('formMessage').innerText = `✅ Tím ${newName} zaregistrovaný!`;
                         document.getElementById('formMessage').style.color = 'green';
                     }
                 }
-                
-                // ⏱️ Delay reset a handleTeamChange aby Firebase listener stihol aktualizovať UI
+
                 setTimeout(() => {
                     document.getElementById('quizForm').reset();
-                    if (window.handleTeamChange) {
-                        window.handleTeamChange();
-                    }
+                    if (window.handleTeamChange) window.handleTeamChange();
                 }, 300);
             } catch (err) {
                 console.error("Chyba pri odosielaní:", err);
-                alert("❌ Chyba: " + err.message);
-                document.getElementById('formMessage').innerText = "❌ Chyba pri odosielaní: " + err.message;
+                const msg = (err && err.message) ? err.message : String(err);
+                alert("❌ Chyba: " + msg);
+                document.getElementById('formMessage').innerText = "❌ Chyba pri odosielaní: " + msg;
                 document.getElementById('formMessage').style.color = 'red';
             }
         }
@@ -1276,7 +1413,7 @@
 
         function populateTeamSelect() {
             const select = document.getElementById('teamSelect');
-            select.innerHTML = '<option value="new">Nový tím / Vybrať tím</option>';
+            select.innerHTML = '<option value="new">Vybrať tím</option>';
             
             // ✅ ZMENA: Filtruj statické tímy podľa času uvoľnenia
             const releaseInFuture = isReleaseTimeInFuture();
@@ -1478,11 +1615,7 @@
             if (timeUntilMidnight > 0) {
                 console.log(`⏰ Automatické čistenie naplánované na: ${nextDay.toLocaleString()}`);
                 autoCleanupTimeout = setTimeout(async () => {
-                    console.log("🧹 Spúšťam automatické čistenie potvrdených tímov...");
-                    const today = new Date();
-                    if (today > nextDay) {
-                        await window.clearAllConfirmedTeams();
-                    }
+                    console.log("🧹 Nočné čistenie potvrdených tímov rieši Cloud Function (reservationPostQuizCleanup).");
                 }, timeUntilMidnight);
             }
         }
@@ -1513,24 +1646,7 @@
             if (timeUntilRelease > 0) {
                 console.log(`⏰ Automatické uvoľnenie naplánované na: ${releaseTime.toLocaleString()}`);
                 autoReleaseTimeout = setTimeout(async () => {
-                    console.log("🔓 Spúšťam automatické uvoľnenie miest od nepotvrdených rezervovaných tímov...");
-                    try {
-                        const batch = writeBatch(db);
-                        teamsData.forEach(team => {
-                            // Len statické tímy, ktoré NEPOTVRDILI - vráť ich počet na 0
-                            if (team.isStatic && !team.confirmed) {
-                                const ref = doc(db, "teams", team.id);
-                                batch.update(ref, { current: 0 });
-                            }
-                            // Potvrdené tímy (bez ohľadu či sú statické alebo nie) ostanú nezmenené!
-                        });
-                        await batch.commit();
-                        console.log("✅ Miesta od nepotvrdených tímov boli úspešne uvoľnené!");
-                        updateDashboard();
-                        populateTeamSelect();
-                    } catch (err) {
-                        console.error("❌ Chyba pri uvoľňovaní miest:", err);
-                    }
+                    console.log("🔓 Uvoľnenie miest rieši Cloud Function (reservationAutoRelease).");
                 }, timeUntilRelease);
             } else {
                 console.log("⏰ Uvoľnenie už prebehlo alebo je naplánované na minulosť");
@@ -1651,55 +1767,150 @@
             defaultTeamsList.forEach(team => {
                 const ref = doc(db, "teams", team.id);
                 batch.set(ref, {
-                    default: team.default, current: team.default, pin: team.pin, confirmed: false, isStatic: true, tableId: ""
+                    default: team.default, current: team.default, confirmed: false, isStatic: true, tableId: "", declined: false
                 });
+                batch.set(doc(db, "team_secrets", team.id), { pin: team.pin });
+                teamSecretsMap[team.id] = team.pin;
             });
             await batch.commit(); alert("Tímy nahraté!");
         }
 
         window.renderAdminPinTable = function() {
-            console.log('🔶 renderAdminPinTable CALLED');
             const activeElement = document.activeElement;
-            console.log('Active element:', activeElement);
-            console.log('Active element tag:', activeElement ? activeElement.tagName : 'null');
-            if (activeElement && (activeElement.tagName === 'INPUT' || activeElement.tagName === 'TEXTAREA') && 
+            if (activeElement && (activeElement.tagName === 'INPUT' || activeElement.tagName === 'TEXTAREA') &&
                 activeElement.closest('#adminConfirmedTableBody, #adminPinTableBody')) {
-                console.log('🔶 BLOCKED - active element is in admin table');
                 return;
             }
-            console.log('🔶 Proceeding with render...');
-            
+
             const confirmedTbody = document.getElementById('adminConfirmedTableBody');
-            confirmedTbody.innerHTML = "";
+            confirmedTbody.innerHTML = '';
             const confirmedTeams = teamsData.filter(t => t.confirmed);
             if (confirmedTeams.length === 0) {
-                confirmedTbody.innerHTML = '<tr><td colspan="4" style="text-align:center; color:#999; padding:20px;">Žiadne potvrdené tímy</td></tr>';
+                const tr = document.createElement('tr');
+                const td = document.createElement('td');
+                td.colSpan = 6;
+                td.style.textAlign = 'center';
+                td.style.color = '#999';
+                td.style.padding = '20px';
+                td.textContent = 'Žiadne potvrdené tímy';
+                tr.appendChild(td);
+                confirmedTbody.appendChild(tr);
             } else {
                 confirmedTeams.forEach((t) => {
                     const tr = document.createElement('tr');
-                    tr.innerHTML = `
-                        <td><strong>${t.id}</strong> ${!t.isStatic ? '<span style="color:#999; font-size:11px;">(Nový)</span>' : ''}</td>
-                        <td><input type="number" class="admin-input w-small" id="confirmed_count_${t.id}" value="${t.current}" min="1" max="15" style="width:60px;"></td>
-                        <td><span style="color:#27ae60; font-weight:bold;">✅ Potvrdený</span></td>
-                        <td>
-                            <button class="btn-save-pin" onclick="window.updateConfirmedTeam('${t.id}')" style="margin-right:10px;">💾 Uložiť</button>
-                            <button class="btn-delete-team" onclick="window.removeConfirmedTeam('${t.id}')">🗑️ Odstrániť</button>
-                        </td>`;
+                    const tdTeam = document.createElement('td');
+                    const strong = document.createElement('strong');
+                    strong.textContent = t.id;
+                    tdTeam.appendChild(strong);
+                    if (!t.isStatic) {
+                        const sp = document.createElement('span');
+                        sp.style.color = '#999';
+                        sp.style.fontSize = '11px';
+                        sp.textContent = ' (Nový)';
+                        tdTeam.appendChild(sp);
+                    }
+                    tr.appendChild(tdTeam);
+                    const tdContact = document.createElement('td');
+                    tdContact.textContent = (!t.isStatic && t.contactName) ? String(t.contactName) : '—';
+                    tr.appendChild(tdContact);
+                    const tdEmail = document.createElement('td');
+                    tdEmail.style.fontSize = '12px';
+                    tdEmail.style.wordBreak = 'break-word';
+                    tdEmail.textContent = (!t.isStatic && t.creatorEmail) ? String(t.creatorEmail) : '—';
+                    tr.appendChild(tdEmail);
+                    const tdCnt = document.createElement('td');
+                    const inpCnt = document.createElement('input');
+                    inpCnt.type = 'number';
+                    inpCnt.className = 'admin-input w-small';
+                    inpCnt.id = 'confirmed_count_' + t.id;
+                    inpCnt.value = String(t.current);
+                    inpCnt.min = 1;
+                    inpCnt.max = 15;
+                    inpCnt.style.width = '60px';
+                    tdCnt.appendChild(inpCnt);
+                    tr.appendChild(tdCnt);
+                    const tdStat = document.createElement('td');
+                    const spanOk = document.createElement('span');
+                    spanOk.style.color = '#27ae60';
+                    spanOk.style.fontWeight = 'bold';
+                    spanOk.textContent = '✅ Potvrdený';
+                    tdStat.appendChild(spanOk);
+                    tr.appendChild(tdStat);
+                    const tdAct = document.createElement('td');
+                    const bSave = document.createElement('button');
+                    bSave.className = 'btn-save-pin';
+                    bSave.textContent = '💾 Uložiť';
+                    bSave.style.marginRight = '10px';
+                    bSave.onclick = function() { window.updateConfirmedTeam(t.id); };
+                    const bDel = document.createElement('button');
+                    bDel.className = 'btn-delete-team';
+                    bDel.textContent = '🗑️ Odstrániť';
+                    bDel.onclick = function() { window.removeConfirmedTeam(t.id); };
+                    tdAct.appendChild(bSave);
+                    tdAct.appendChild(bDel);
+                    tr.appendChild(tdAct);
                     confirmedTbody.appendChild(tr);
                 });
             }
 
             const tbody = document.getElementById('adminPinTableBody');
-            tbody.innerHTML = "";
+            tbody.innerHTML = '';
             teamsData.forEach((t) => {
                 const tr = document.createElement('tr');
-                const declinedBadge = t.declined ? '<span style="color:#e74c3c; font-weight:bold;">❌ NEPRÍDEME</span>' : '';
-                tr.innerHTML = `
-                    <td>${t.id} ${!t.isStatic ? '(Nový)' : ''} ${t.confirmed ? '<span style="color:#27ae60;">✓</span>' : ''} ${declinedBadge}</td>
-                    <td><input type="number" class="admin-input w-small" id="cap_${t.id}" value="${t.default}"></td>
-                    <td><input type="text" class="admin-input w-med" id="pin_${t.id}" inputmode="numeric" pattern="[0-9]*" value="${t.pin}"></td>
-                    <td><button class="btn-save-pin" onclick="window.saveAdminTeam('${t.id}')" style="margin-right:10px;">Uložiť</button>
-                    <button class="btn-delete-team" onclick="window.deleteTeam('${t.id}')">Zmazať</button></td>`;
+                const tdName = document.createElement('td');
+                tdName.appendChild(document.createTextNode(t.id + (!t.isStatic ? ' (Nový)' : '') + (t.confirmed ? ' ' : '')));
+                if (t.confirmed) {
+                    const chk = document.createElement('span');
+                    chk.style.color = '#27ae60';
+                    chk.textContent = '✓';
+                    tdName.appendChild(chk);
+                }
+                if (t.declined) {
+                    const db = document.createElement('span');
+                    db.style.color = '#e74c3c';
+                    db.style.fontWeight = 'bold';
+                    db.textContent = ' ❌ NEPRÍDEME';
+                    tdName.appendChild(db);
+                }
+                tr.appendChild(tdName);
+                const tdC = document.createElement('td');
+                tdC.textContent = (!t.isStatic && t.contactName) ? String(t.contactName) : '—';
+                tr.appendChild(tdC);
+                const tdE = document.createElement('td');
+                tdE.style.fontSize = '12px';
+                tdE.style.wordBreak = 'break-word';
+                tdE.textContent = (!t.isStatic && t.creatorEmail) ? String(t.creatorEmail) : '—';
+                tr.appendChild(tdE);
+                const tdCap = document.createElement('td');
+                const inpCap = document.createElement('input');
+                inpCap.type = 'number';
+                inpCap.className = 'admin-input w-small';
+                inpCap.id = 'cap_' + t.id;
+                inpCap.value = String(t.default);
+                tdCap.appendChild(inpCap);
+                tr.appendChild(tdCap);
+                const tdPin = document.createElement('td');
+                const inpPin = document.createElement('input');
+                inpPin.type = 'text';
+                inpPin.className = 'admin-input w-med';
+                inpPin.id = 'pin_' + t.id;
+                inpPin.inputMode = 'numeric';
+                inpPin.value = (t.pin != null && t.pin !== undefined) ? String(t.pin) : '';
+                tdPin.appendChild(inpPin);
+                tr.appendChild(tdPin);
+                const tdA = document.createElement('td');
+                const bS = document.createElement('button');
+                bS.className = 'btn-save-pin';
+                bS.textContent = 'Uložiť';
+                bS.style.marginRight = '10px';
+                bS.onclick = function() { window.saveAdminTeam(t.id); };
+                const bD = document.createElement('button');
+                bD.className = 'btn-delete-team';
+                bD.textContent = 'Zmazať';
+                bD.onclick = function() { window.deleteTeam(t.id); };
+                tdA.appendChild(bS);
+                tdA.appendChild(bD);
+                tr.appendChild(tdA);
                 tbody.appendChild(tr);
             });
         }
@@ -1753,6 +1964,8 @@
                 }
                 try {
                     await deleteDoc(doc(db, "teams", id));
+                    await deleteDoc(doc(db, "team_secrets", id));
+                    delete teamSecretsMap[id];
                     populateTeamSelect();
                     alert(`✅ Tím "${id}" bol úspešne odstránený!`);
                 } catch (err) {
@@ -1793,6 +2006,7 @@
                         });
                     } else {
                         batch.delete(doc(db, "teams", team.id));
+                        batch.delete(doc(db, "team_secrets", team.id));
                     }
                 });
                 
@@ -1841,15 +2055,6 @@
                 return;
             }
             
-            const enteredPinTrimmed = enteredPin.trim();
-            const teamPinTrimmed = String(team.pin || "").trim();
-            const masterPinTrimmed = String(globalSettings.masterPin || "").trim();
-            
-            if (enteredPinTrimmed !== teamPinTrimmed && enteredPinTrimmed !== masterPinTrimmed) {
-                alert("❌ Nesprávny PIN! Zrušenie zlyhalo.");
-                return;
-            }
-            
             const confirmMsg = team.isStatic 
                 ? `⚠️ Chceš naozaj zrušiť účasť tímu "${teamId}"?\n\nTím má ${team.current} hráčov.\nBudeš medzi rezervovanými s počtom ${team.default} os.\n\nDá sa to kedykoľvek opakovať.`
                 : `⚠️ Chceš naozaj zrušiť účasť tímu "${teamId}"?\n\nTím má ${team.current} hráčov.\nTáto akcia je nevratná - tím sa úplne odstráni!\n\nPotom sa budeš musieť znova zaregistrovať.`;
@@ -1859,24 +2064,13 @@
             }
             
             try {
-                if (team.isStatic) {
-                    await updateDoc(doc(db, "teams", teamId), { 
-                        confirmed: false, 
-                        current: team.default,
-                        declined: false 
-                    });
-                    // Úspech - bez alert, confirm bolo dostačujúce
-                } else {
-                    await deleteDoc(doc(db, "teams", teamId));
-                    // Úspech - bez alert, confirm bolo dostačujúce
-                }
+                await callCancelReservation({ teamId: teamId, pin: enteredPin.trim() });
                 
                 document.getElementById('teamSelect').value = 'new';
                 document.getElementById('teamPin').value = "";
                 document.getElementById('customTeamName').value = "";
                 document.getElementById('cancelBtn').style.display = 'none';
                 
-                // Zobraz success správu v existujúcom formMessage elemente
                 const formMsg = document.getElementById('formMessage');
                 if (formMsg) {
                     formMsg.innerText = `✅ Účasť tímu "${teamId}" bola zrušená!`;
@@ -1887,7 +2081,7 @@
                 
             } catch (err) {
                 console.error("Chyba pri zrušení účasti:", err);
-                alert("❌ Chyba pri zrušení účasti: " + err.message);
+                alert("❌ Chyba pri zrušení účasti: " + (err && err.message ? err.message : err));
             }
         }
         
@@ -1921,15 +2115,6 @@
                 enteredPin = promptedPin;
             }
             
-            const enteredPinTrimmed = enteredPin.trim();
-            const teamPinTrimmed = String(team.pin || "").trim();
-            const masterPinTrimmed = String(globalSettings.masterPin || "").trim();
-            
-            if (enteredPinTrimmed !== teamPinTrimmed && enteredPinTrimmed !== masterPinTrimmed) {
-                alert("❌ Nesprávny PIN! Akcia bola zrušená.");
-                return;
-            }
-            
             const confirmMsg = `⚠️ Chceš odvolať účasť tímu "${teamId}"?\n\nTým sa uvoľní ${team.default} miest pre iné tímy.\n\nPôvodný počet miest ostane zachovaný - môžeš sa kedykoľvek zaregistrovať späť.`;
             
             if (!confirm(confirmMsg)) {
@@ -1937,10 +2122,7 @@
             }
             
             try {
-                await updateDoc(doc(db, "teams", teamId), { 
-                    current: 0,
-                    declined: true
-                });
+                await callDeclineReservation({ teamId: teamId, pin: enteredPin.trim() });
                 alert(`✅ Miesta tímu "${teamId}" bola úspešne uvoľnená!\n\n${team.default} miest je teraz dostupných pre iné tímy.`);
                 
                 document.getElementById('teamSelect').value = 'new';
@@ -1951,7 +2133,7 @@
                 
             } catch (err) {
                 console.error("Chyba pri odvolaní účasti:", err);
-                alert("❌ Chyba pri odvolaní účasti: " + err.message);
+                alert("❌ Chyba pri odvolaní účasti: " + (err && err.message ? err.message : err));
             }
         }
         
@@ -1961,9 +2143,12 @@
             const cap = parseInt(document.getElementById(`cap_${id}`).value);
             const pin = String(document.getElementById(`pin_${id}`).value.trim());
             const t = teamsData.find(x => x.id === id);
-            let updates = { default: cap, pin: pin, declined: false };
+            let updates = { default: cap, declined: false };
             if (!t.confirmed) updates.current = cap;
-            await updateDoc(doc(db, "teams", id), updates); alert("Uložené");
+            await updateDoc(doc(db, "teams", id), updates);
+            await setDoc(doc(db, "team_secrets", id), { pin: pin }, { merge: true });
+            teamSecretsMap[id] = pin;
+            alert("Uložené");
         }
         
         window.saveAllAdminTeams = async function() {
@@ -1980,11 +2165,11 @@
                     const pin = String(pinInput.value.trim());
                     
                     if (!isNaN(cap) && cap > 0) {
-                        let updates = { default: cap, pin: pin, declined: false };
+                        let updates = { default: cap, declined: false };
                         if (!t.confirmed) updates.current = cap;
-                        
-                        const ref = doc(db, "teams", t.id);
-                        batch.update(ref, updates);
+                        batch.update(doc(db, "teams", t.id), updates);
+                        batch.set(doc(db, "team_secrets", t.id), { pin: pin }, { merge: true });
+                        teamSecretsMap[t.id] = pin;
                         successCount++;
                     } else {
                         errorCount++;
@@ -2005,6 +2190,8 @@
         window.deleteTeam = async function(id) { 
             if(confirm("Zmazať " + id + "?")) {
                 await deleteDoc(doc(db, "teams", id));
+                await deleteDoc(doc(db, "team_secrets", id));
+                delete teamSecretsMap[id];
                 populateTeamSelect();
             }
         }
@@ -2016,7 +2203,9 @@
             if (!cap || cap < 1 || cap > 15) { alert("Kapacita musí byť 1–15!"); return; }
             if (!pin) { alert("Zadaj PIN!"); return; }
             try {
-                await setDoc(doc(db, "teams", name), { default: cap, current: cap, pin: pin, confirmed: false, isStatic: true, tableId: "", declined: false });
+                await setDoc(doc(db, "teams", name), { default: cap, current: cap, confirmed: false, isStatic: true, tableId: "", declined: false });
+                await setDoc(doc(db, "team_secrets", name), { pin: pin }, { merge: true });
+                teamSecretsMap[name] = pin;
                 document.getElementById('addTeamName').value = "";
                 document.getElementById('addTeamCap').value = "4";
                 document.getElementById('addTeamPin').value = "000";
@@ -2031,8 +2220,12 @@
             const batch = writeBatch(db);
             teamsData.forEach(t => {
                 const ref = doc(db, "teams", t.id);
-                if (!t.isStatic) batch.delete(ref);
-                else batch.update(ref, { current: t.default, confirmed: false });
+                if (!t.isStatic) {
+                    batch.delete(ref);
+                    batch.delete(doc(db, "team_secrets", t.id));
+                } else {
+                    batch.update(ref, { current: t.default, confirmed: false });
+                }
             });
             await batch.commit(); alert("Reset hotový.");
         }
@@ -2396,13 +2589,12 @@
             const adminSection = document.getElementById('adminSection');
             const pinSection = document.getElementById('pinSection');
             const adminLoginPrompt = document.getElementById('adminLoginPrompt');
-            const oldAdminBtn = document.getElementById('adminOldLoginBtn');
             
             if (finalIsAdmin) {
                 adminSection.style.display = 'block';
                 pinSection.style.display = 'none';
-                adminLoginPrompt.style.display = 'none';
-                if (oldAdminBtn) oldAdminBtn.style.display = 'none';
+                if (adminLoginPrompt) adminLoginPrompt.style.display = 'none';
+                attachTeamSecretsListener();
                 
                 loadWebContentToEditor('home');
                 loadWebContentToEditor('about');
@@ -2412,8 +2604,8 @@
             } else {
                 adminSection.style.display = 'none';
                 pinSection.style.display = 'block';
-                adminLoginPrompt.style.display = 'block';
-                if (oldAdminBtn) oldAdminBtn.style.display = 'block';
+                if (adminLoginPrompt) adminLoginPrompt.style.display = 'none';
+                detachTeamSecretsListener();
             }
         }
         
@@ -2428,46 +2620,41 @@
         <div>&copy; 2026 QuizBrothers. Všetky práva vyhradené.</div>
     </footer>
 
-    <!-- Admin Button Initialization -->
+    <script src="../admin.js"></script>
     <script>
         (function() {
-            function createAdminButton() {
-                if (document.getElementById('admin-activate-btn')) return;
-                const btn = document.createElement('button');
-                btn.id = 'admin-activate-btn';
-                btn.innerHTML = '⚙';
-                btn.title = 'Admin mód';
-                btn.style.cssText = `
-                    background: none;
-                    border: none;
-                    font-size: 24px;
-                    cursor: pointer;
-                    opacity: 0.5;
-                    transition: opacity 0.3s;
-                    padding: 10px;
-                    position: fixed;
-                    bottom: 20px;
-                    right: 20px;
-                    z-index: 9999;
-                `;
-                btn.onmouseover = function() { this.style.opacity = '1'; };
-                btn.onmouseout = function() { this.style.opacity = '0.5'; };
-                btn.onclick = function() {
-                    if (window.qbAdmin && window.qbAdmin.showLoginModal) {
-                        window.qbAdmin.showLoginModal();
+            function showAdminLogin() {
+                if (window.qbAdmin && typeof window.qbAdmin.showLoginModal === 'function') {
+                    window.qbAdmin.showLoginModal();
+                }
+            }
+            document.addEventListener('keydown', function(e) {
+                if (e.ctrlKey && e.shiftKey && (e.key === 'q' || e.key === 'Q')) {
+                    e.preventDefault();
+                    showAdminLogin();
+                }
+            });
+            var secretClicks = 0, secretTimer = null;
+            function bindTrigger() {
+                var trg = document.getElementById('adminSecretTrigger');
+                if (!trg) return;
+                trg.addEventListener('click', function() {
+                    secretClicks += 1;
+                    if (secretTimer) clearTimeout(secretTimer);
+                    secretTimer = setTimeout(function() { secretClicks = 0; }, 2500);
+                    if (secretClicks >= 5) {
+                        secretClicks = 0;
+                        showAdminLogin();
                     }
-                };
-                document.body.appendChild(btn);
+                });
             }
             if (document.readyState === 'loading') {
-                document.addEventListener('DOMContentLoaded', createAdminButton);
+                document.addEventListener('DOMContentLoaded', bindTrigger);
             } else {
-                createAdminButton();
+                bindTrigger();
             }
         })();
     </script>
-
-    <script src="../admin.js"></script>
     
     <!-- Custom PIN Modal Dialog - ISOLATED AT END -->
     <div id="pinModalOverlay" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.7); z-index:9998; pointer-events:auto;" data-no-admin-edit="true"></div>
