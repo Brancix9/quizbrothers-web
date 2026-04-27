@@ -1144,7 +1144,22 @@
                     await authInstance.currentUser?.reload?.();
                 } catch (err) {
                     console.error(err);
-                    alert('❌ Prihlásenie cez Google zlyhalo.');
+                    const code = err && err.code ? String(err.code) : '';
+                    const msg = err && err.message ? String(err.message) : String(err);
+                    let hint = '';
+                    if (code.includes('operation-not-allowed')) {
+                        hint = 'Google provider nie je zapnutý vo Firebase Authentication.';
+                    } else if (code.includes('unauthorized-domain')) {
+                        hint = 'Doména nie je povolená v Authentication -> Settings -> Authorized domains.';
+                    } else if (code.includes('popup-blocked')) {
+                        hint = 'Prehliadač zablokoval popup. Povoľ popup okná pre túto stránku.';
+                    } else if (code.includes('popup-closed-by-user')) {
+                        hint = 'Popup bol zatvorený pred dokončením prihlásenia.';
+                    }
+                    alert('❌ Prihlásenie cez Google zlyhalo.\n\n' +
+                        (code ? ('Kód: ' + code + '\n') : '') +
+                        (hint ? ('Tip: ' + hint + '\n') : '') +
+                        'Detail: ' + msg);
                 }
                 if (window.refreshNewTeamRegistrationUI) window.refreshNewTeamRegistrationUI();
             });
