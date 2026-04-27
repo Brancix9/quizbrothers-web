@@ -836,10 +836,9 @@
                         googleStatus.textContent = 'E-mail ešte nie je overený. Skontroluj schránku (od Google) alebo v nastaveniach účtu požiadaj o nový overovací odkaz.';
                         googleStatus.style.color = '#c0392b';
                     } else {
-                        googleStatus.textContent = 'Účet Google je prihlásený a e-mail je overený. Vyplň kontaktnú osobu nižšie.';
+                        googleStatus.textContent = 'Účet Google je prihlásený. Zadaj názov tímu a vyplň kontaktnú osobu (povinné pred potvrdením).';
                         googleStatus.style.color = '#27ae60';
-                        const contactName = contactNameInput ? contactNameInput.value.trim() : '';
-                        canUnlockName = contactName.length >= 2;
+                        canUnlockName = true;
                         if (btnChangePin && profile && profile.teamName) {
                             const ownerTeam = teamsData.find(t => t.id === String(profile.teamName).trim() && t.creatorUid === user.uid);
                             if (ownerTeam) btnChangePin.style.display = 'block';
