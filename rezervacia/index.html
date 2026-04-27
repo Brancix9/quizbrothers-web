@@ -377,23 +377,25 @@
                     <p id="newTeamRegIntro" style="margin:0 0 2px 0; color:#222454; font-weight:bold;">Máš nový tím?</p>
                     <div id="newTeamGoogleRow" style="margin-bottom:10px;">
                         <button type="button" id="btnGoogleSignInNewTeam" class="btn-submit" style="background:#1877F2; max-width:100%; padding:10px 12px; font-size:14px; margin-top:2px; margin-bottom:0;">Prihlásiť sa cez Google</button>
+                        <button type="button" id="btnGoogleSignOutNewTeam" class="btn-submit" style="display:none; background:#666; max-width:100%; padding:8px 12px; font-size:13px; margin-top:6px;">Odhlásiť</button>
+                        <button type="button" id="btnChangePinNewTeam" class="btn-submit" style="display:none; background:#8e44ad; max-width:100%; padding:8px 12px; font-size:13px; margin-top:6px;">Zmeniť PIN</button>
                         <p id="newTeamGoogleStatus" style="font-size:12px; color:#666; margin:5px 0 0 0;"></p>
                     </div>
                     <div id="newTeamContactRow" style="display:none;">
-                        <label for="contactPersonName" style="color:#222454;">Kontaktná osoba (meno a priezvisko)</label>
+                        <label for="contactPersonName" style="color:#222454;">Kontaktná osoba (meno a priezvisko)<span style="color:#e74c3c;">*</span></label>
                         <input type="text" id="contactPersonName" name="contactPersonName" autocomplete="name" maxlength="80" placeholder="Napr. Ján Novák" style="width:100%; box-sizing:border-box; margin-top:4px; padding:8px;">
                         <p style="font-size:12px; color:#555; margin:6px 0 0 0;">Kontaktný e-mail (z Google, nedá sa zmeniť): <strong id="contactEmailDisplay">—</strong></p>
                     </div>
                 </div>
 
-                <label>Vyber svoj tím:</label>
+                <label id="teamSelectLabel">Vyber svoj tím:</label>
                 <select id="teamSelect" name="teamSelect" onchange="handleTeamChange()">
                     <option value="new">Vybrať tím</option>
                 </select>
                 <small id="teamReservedInfo" style="color:#222454; display:none; font-weight:bold; margin-top:5px;"></small>
 
                 <div id="newTeamInput" style="display:block;">
-                    <label>Názov nového tímu:</label>
+                    <label id="newTeamNameLabel">Názov nového tímu:</label>
                     <input type="text" id="customTeamName" name="customTeamName" placeholder="Zadaj názov tímu" oninput="handleTeamChange()">
                 </div>
 
@@ -713,6 +715,7 @@
         const callUpdateReservation = httpsCallable(functions, 'updateReservation');
         const callDeclineReservation = httpsCallable(functions, 'declineReservation');
         const callCancelReservation = httpsCallable(functions, 'cancelReservation');
+        const callChangeReservationPin = httpsCallable(functions, 'changeReservationPin');
 
         const googleProvider = new GoogleAuthProvider();
         googleProvider.setCustomParameters({ prompt: 'select_account' });
@@ -749,6 +752,37 @@
 
         let authInstance = window.auth || getAuth(window.app);
         window.auth = authInstance;
+        const NEW_TEAM_PROFILE_KEY_PREFIX = 'qb_new_team_profile_';
+        function getNewTeamProfileKey(user) {
+            if (!user || !user.uid) return null;
+            return NEW_TEAM_PROFILE_KEY_PREFIX + user.uid;
+        }
+        function loadNewTeamProfile(user) {
+            const key = getNewTeamProfileKey(user);
+            if (!key) return null;
+            try {
+                const raw = localStorage.getItem(key);
+                if (!raw) return null;
+                const data = JSON.parse(raw);
+                return (data && typeof data === 'object') ? data : null;
+            } catch (e) {
+                return null;
+            }
+        }
+        function saveNewTeamProfile(partial) {
+            const user = authInstance.currentUser;
+            const key = getNewTeamProfileKey(user);
+            if (!user || !key) return;
+            const prev = loadNewTeamProfile(user) || {};
+            const next = {
+                contactName: typeof partial.contactName === 'string' ? partial.contactName : (prev.contactName || ''),
+                teamName: typeof partial.teamName === 'string' ? partial.teamName : (prev.teamName || ''),
+                updatedAt: Date.now()
+            };
+            try {
+                localStorage.setItem(key, JSON.stringify(next));
+            } catch (e) {}
+        }
 
         onAuthStateChanged(authInstance, () => {
             const el = document.getElementById('googleUserHint');
@@ -768,19 +802,35 @@
             const contactRow = document.getElementById('newTeamContactRow');
             const googleStatus = document.getElementById('newTeamGoogleStatus');
             const btnGoogle = document.getElementById('btnGoogleSignInNewTeam');
+            const btnGoogleSignOut = document.getElementById('btnGoogleSignOutNewTeam');
+            const btnChangePin = document.getElementById('btnChangePinNewTeam');
             const contactEmailDisplay = document.getElementById('contactEmailDisplay');
             const contactNameInput = document.getElementById('contactPersonName');
+            const teamSelectLabel = document.getElementById('teamSelectLabel');
+            const teamNameLabel = document.getElementById('newTeamNameLabel');
             if (select.value !== 'new') {
                 block.style.display = 'none';
+                select.style.display = 'block';
+                if (teamSelectLabel) teamSelectLabel.innerText = 'Vyber svoj tím:';
+                if (teamNameLabel) teamNameLabel.innerText = 'Názov nového tímu:';
                 return;
             }
             block.style.display = 'block';
             const user = authInstance.currentUser;
             let canUnlockName = false;
             if (user) {
+                const profile = loadNewTeamProfile(user);
                 if (btnGoogle) btnGoogle.style.display = 'none';
+                if (btnGoogleSignOut) btnGoogleSignOut.style.display = 'block';
+                if (btnChangePin) btnChangePin.style.display = 'none';
                 if (contactRow) contactRow.style.display = 'block';
                 if (contactEmailDisplay) contactEmailDisplay.textContent = user.email || '—';
+                if (contactNameInput && profile && profile.contactName && !contactNameInput.value.trim()) {
+                    contactNameInput.value = String(profile.contactName);
+                }
+                if (customEl && profile && profile.teamName && !customEl.value.trim()) {
+                    customEl.value = String(profile.teamName);
+                }
                 if (googleStatus) {
                     if (!user.emailVerified) {
                         googleStatus.textContent = 'E-mail ešte nie je overený. Skontroluj schránku (od Google) alebo v nastaveniach účtu požiadaj o nový overovací odkaz.';
@@ -790,10 +840,16 @@
                         googleStatus.style.color = '#27ae60';
                         const contactName = contactNameInput ? contactNameInput.value.trim() : '';
                         canUnlockName = contactName.length >= 2;
+                        if (btnChangePin && profile && profile.teamName) {
+                            const ownerTeam = teamsData.find(t => t.id === String(profile.teamName).trim() && t.creatorUid === user.uid);
+                            if (ownerTeam) btnChangePin.style.display = 'block';
+                        }
                     }
                 }
             } else {
                 if (btnGoogle) btnGoogle.style.display = 'block';
+                if (btnGoogleSignOut) btnGoogleSignOut.style.display = 'none';
+                if (btnChangePin) btnChangePin.style.display = 'none';
                 if (contactRow) contactRow.style.display = 'none';
                 if (googleStatus) {
                     googleStatus.textContent = '';
@@ -807,6 +863,9 @@
             if (newTeamInputWrap) {
                 newTeamInputWrap.style.display = canUnlockName ? 'block' : 'none';
             }
+            if (teamSelectLabel) teamSelectLabel.innerText = canUnlockName ? 'Zadaj názov tímu:' : 'Vyber svoj tím:';
+            select.style.display = canUnlockName ? 'none' : 'block';
+            if (teamNameLabel) teamNameLabel.innerText = 'Zadaj názov tímu:';
             customEl.disabled = !canUnlockName;
             if (!canUnlockName) {
                 customEl.placeholder = 'Odomkne sa po Google + kontaktnej osobe';
@@ -1164,10 +1223,61 @@
                 if (window.refreshNewTeamRegistrationUI) window.refreshNewTeamRegistrationUI();
             });
         }
+        const btnGoogleSignOutNewTeam = document.getElementById('btnGoogleSignOutNewTeam');
+        if (btnGoogleSignOutNewTeam) {
+            btnGoogleSignOutNewTeam.addEventListener('click', async function() {
+                try {
+                    await signOut(authInstance);
+                } catch (err) {
+                    console.error(err);
+                    alert('❌ Odhlásenie zlyhalo.');
+                }
+                if (window.refreshNewTeamRegistrationUI) window.refreshNewTeamRegistrationUI();
+            });
+        }
+        const btnChangePinNewTeam = document.getElementById('btnChangePinNewTeam');
+        if (btnChangePinNewTeam) {
+            btnChangePinNewTeam.addEventListener('click', async function() {
+                const user = authInstance.currentUser;
+                if (!user) {
+                    alert('❌ Najprv sa prihlás cez Google.');
+                    return;
+                }
+                const profile = loadNewTeamProfile(user);
+                const suggestedTeam = profile && profile.teamName ? String(profile.teamName).trim() : '';
+                const teamId = (window.prompt('Názov tímu pre zmenu PINu:', suggestedTeam) || '').trim();
+                if (!teamId) return;
+                const oldPin = (window.prompt('Zadaj aktuálny PIN:') || '').trim();
+                if (!oldPin) return;
+                const newPin = (window.prompt('Zadaj nový PIN (1–10 znakov):') || '').trim();
+                if (!newPin) return;
+                if (newPin.length > 10) {
+                    alert('❌ Nový PIN môže mať max 10 znakov.');
+                    return;
+                }
+                try {
+                    await callChangeReservationPin({ teamId, oldPin, newPin });
+                    const pinInput = document.getElementById('teamPin');
+                    if (pinInput) pinInput.value = newPin;
+                    saveNewTeamProfile({ teamName: teamId });
+                    alert('✅ PIN bol úspešne zmenený.');
+                } catch (err) {
+                    console.error(err);
+                    alert('❌ Zmena PINu zlyhala: ' + (err && err.message ? err.message : err));
+                }
+            });
+        }
         const contactNameInput = document.getElementById('contactPersonName');
         if (contactNameInput) {
             contactNameInput.addEventListener('input', function() {
+                saveNewTeamProfile({ contactName: contactNameInput.value.trim() });
                 if (window.refreshNewTeamRegistrationUI) window.refreshNewTeamRegistrationUI();
+            });
+        }
+        const customTeamNameInput = document.getElementById('customTeamName');
+        if (customTeamNameInput) {
+            customTeamNameInput.addEventListener('input', function() {
+                saveNewTeamProfile({ teamName: customTeamNameInput.value.trim() });
             });
         }
 
@@ -1383,6 +1493,7 @@
                             pin: newTeamPin,
                             contactName: contactName
                         });
+                        saveNewTeamProfile({ contactName: contactName, teamName: newName });
                         document.getElementById('formMessage').innerText = `✅ Tím ${newName} zaregistrovaný!`;
                         document.getElementById('formMessage').style.color = 'green';
                     }
