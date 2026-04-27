@@ -96,18 +96,13 @@
             <div class="admin-login-overlay"></div>
             <div class="admin-login-container">
                 <h2>🔐 Admin Login</h2>
-                <form id="admin-login-form">
-                    <div class="form-group">
-                        <label for="admin-email">Email:</label>
-                        <input type="email" id="admin-email" required placeholder="tvoj@email.com">
-                    </div>
-                    <div class="form-group">
-                        <label for="admin-password">Heslo:</label>
-                        <input type="password" id="admin-password" required placeholder="••••••••">
-                    </div>
-                    <button type="submit" class="admin-login-btn">Prihlásiť sa</button>
-                    <p id="admin-login-error" style="color: #e74c3c; margin-top: 10px; display: none;"></p>
-                </form>
+                <p style="margin: 0 0 15px 0; color:#555; font-size: 14px;">
+                    Prihlás sa cez Google účet organizátora.
+                </p>
+                <button type="button" id="admin-google-login-btn" class="admin-login-btn" style="background:#1877F2;">
+                    Prihlásiť sa cez Google
+                </button>
+                <p id="admin-login-error" style="color: #e74c3c; margin-top: 10px; display: none;"></p>
             </div>
         `;
         document.body.appendChild(modal);
@@ -202,36 +197,27 @@
             document.head.appendChild(style);
         }
         
-        // Event listener pre login
-        const form = document.getElementById('admin-login-form');
-        form.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const email = document.getElementById('admin-email').value;
-            const password = document.getElementById('admin-password').value;
+        // Event listener pre Google login
+        const googleBtn = document.getElementById('admin-google-login-btn');
+        googleBtn.addEventListener('click', async () => {
             const errorMsg = document.getElementById('admin-login-error');
-            
             try {
-                const { signInWithEmailAndPassword, signOut } = await import("https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js");
-                const cred = await signInWithEmailAndPassword(auth, email, password);
+                const {GoogleAuthProvider, signInWithPopup, signOut} = await import("https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js");
+                const provider = new GoogleAuthProvider();
+                provider.setCustomParameters({prompt: 'select_account'});
+                const cred = await signInWithPopup(auth, provider);
                 if (!isOrganizerEmail(cred.user.email)) {
                     await signOut(auth);
                     errorMsg.style.display = 'block';
                     errorMsg.textContent = '❌ Tento účet nemá oprávnenie upravovať texty (admin).';
                     return;
                 }
-                // Ak je prihlasenie úspešné, modal sa automaticky uzavrie
                 const modal = document.getElementById('admin-login-modal');
                 if (modal) modal.remove();
                 activateAdminMode();
             } catch (error) {
                 errorMsg.style.display = 'block';
-                if (error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password') {
-                    errorMsg.textContent = '❌ Nesprávny email alebo heslo!';
-                } else if (error.code === 'auth/invalid-email') {
-                    errorMsg.textContent = '❌ Neplatný email!';
-                } else {
-                    errorMsg.textContent = '❌ Chyba pri prihlasovaní: ' + error.message;
-                }
+                errorMsg.textContent = '❌ Chyba pri prihlasovaní cez Google: ' + (error.message || error);
             }
         });
         
