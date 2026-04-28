@@ -694,13 +694,7 @@
         window.app = initializeApp(firebaseConfig);
         perf.mark('init-app-end');
         
-        perf.mark('get-firestore-start');
-        window.db = getFirestore(window.app);
-        perf.mark('get-firestore-end');
-        
         const app = window.app;
-        const db = window.db;
-
         try {
             initializeAppCheck(app, {
                 provider: new ReCaptchaV3Provider('6Lci_cAsAAAAAL9VrBYxUUlUCVYw9gEyUPqy6Q8T'),
@@ -709,6 +703,11 @@
         } catch (e) {
             console.warn('App Check init:', e);
         }
+        
+        perf.mark('get-firestore-start');
+        window.db = getFirestore(window.app);
+        perf.mark('get-firestore-end');
+        const db = window.db;
 
         const functions = getFunctions(app);
         const callCreateReservation = httpsCallable(functions, 'createReservation');
