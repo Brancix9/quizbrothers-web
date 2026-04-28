@@ -861,7 +861,10 @@
             if (newTeamInputWrap) {
                 newTeamInputWrap.style.display = canUnlockName ? 'block' : 'none';
             }
-            if (teamSelectLabel) teamSelectLabel.innerText = canUnlockName ? 'Zadaj názov tímu:' : 'Vyber svoj tím:';
+            if (teamSelectLabel) {
+                teamSelectLabel.innerText = 'Vyber svoj tím:';
+                teamSelectLabel.style.display = canUnlockName ? 'none' : 'block';
+            }
             select.style.display = canUnlockName ? 'none' : 'block';
             if (teamNameLabel) teamNameLabel.innerText = 'Zadaj názov tímu:';
             customEl.disabled = !canUnlockName;
