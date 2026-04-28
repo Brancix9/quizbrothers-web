@@ -1381,6 +1381,7 @@
             const count = parseInt(document.getElementById('playerCount').value) || 4;
             let enteredPin = document.getElementById('teamPin').value;
             const teamSelect = document.getElementById('teamSelect').value;
+            let submittedTeamId = '';
             
             if (!checkDeadline()) {
                 console.log("❌ Deadline check neprešiel!");
@@ -1434,6 +1435,7 @@
                     const pinTrimmed = enteredPin.trim();
                     const wasAlreadyConfirmed = team.confirmed === true;
                     await callUpdateReservation({ teamId: team.id, pin: pinTrimmed, current: count });
+                    submittedTeamId = team.id;
                     const message = wasAlreadyConfirmed
                         ? `✅ Tím ${team.id} aktualizovaný!`
                         : `✅ Tím ${team.id} potvrdený!`;
@@ -1454,6 +1456,7 @@
                     if (existing) {
                         const wasAlreadyConfirmed = existing.confirmed === true;
                         await callUpdateReservation({ teamId: newName, pin: newTeamPin, current: count });
+                        submittedTeamId = newName;
                         const message = wasAlreadyConfirmed
                             ? `✅ Tím ${newName} aktualizovaný!`
                             : `✅ Tím ${newName} potvrdený!`;
@@ -1494,6 +1497,7 @@
                             pin: newTeamPin,
                             contactName: contactName
                         });
+                        submittedTeamId = newName;
                         saveNewTeamProfile({ contactName: contactName, teamName: newName });
                         document.getElementById('formMessage').innerText = `✅ Tím ${newName} zaregistrovaný!`;
                         document.getElementById('formMessage').style.color = 'green';
@@ -1501,7 +1505,23 @@
                 }
 
                 setTimeout(() => {
-                    document.getElementById('quizForm').reset();
+                    const teamSelectEl = document.getElementById('teamSelect');
+                    const customTeamEl = document.getElementById('customTeamName');
+                    const pinEl = document.getElementById('teamPin');
+                    const countEl = document.getElementById('playerCount');
+
+                    if (teamSelectEl && submittedTeamId) {
+                        if (teamSelectEl.value === 'new') {
+                            if (customTeamEl) customTeamEl.value = submittedTeamId;
+                        } else {
+                            teamSelectEl.value = submittedTeamId;
+                        }
+                    } else {
+                        document.getElementById('quizForm').reset();
+                    }
+
+                    if (pinEl) pinEl.value = '';
+                    if (countEl && Number.isFinite(count)) countEl.value = count;
                     if (window.handleTeamChange) window.handleTeamChange();
                 }, 300);
             } catch (err) {
@@ -1648,6 +1668,11 @@
             const teamSelect = document.getElementById('teamSelect');
             const playerCountInput = document.getElementById('playerCount');
             const isFull = remaining <= 0;
+            const selectedTeamId = teamSelect && teamSelect.value === 'new'
+                ? (document.getElementById('customTeamName')?.value || '').trim()
+                : (teamSelect ? teamSelect.value : '');
+            const selectedTeam = selectedTeamId ? teamsData.find(t => t.id === selectedTeamId) : null;
+            const isAlreadyConfirmed = !!(selectedTeam && selectedTeam.confirmed);
             
             if (isFull && btn) {
                 const releaseInFuture = isReleaseTimeInFuture();
@@ -1683,14 +1708,14 @@
                     btn.disabled = false;
                     btn.innerText = newCount < currentTeamCount
                         ? "Potvrdiť zmenu (↓ uvoľňuješ miesto)"
-                        : "Potvrdiť účasť";
+                        : (isAlreadyConfirmed ? "Upraviť účasť" : "Potvrdiť účasť");
                 } else {
                     btn.disabled = true;
                     btn.innerText = "PLNO - zmeniť iba na menší počet";
                 }
             } else if (btn && remaining > 0) { 
                 btn.disabled = false; 
-                btn.innerText = "Potvrdiť účasť"; 
+                btn.innerText = isAlreadyConfirmed ? "Upraviť účasť" : "Potvrdiť účasť";
             }
             return true;
         }
