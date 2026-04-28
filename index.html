@@ -144,11 +144,11 @@
         };
 
         const app = initializeApp(firebaseConfig);
-        const db = getFirestore(app);
         initializeAppCheck(app, {
             provider: new ReCaptchaV3Provider('6Lci_cAsAAAAAL9VrBYxUUlUCVYw9gEyUPqy6Q8T'),
             isTokenAutoRefreshEnabled: true
         });
+        const db = getFirestore(app);
 
         // --- TOTO JE TO DÔLEŽITÉ PREPOJENIE PRE ADMIN.JS ---
         window.app = app;

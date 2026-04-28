@@ -23,6 +23,7 @@
     let app = null;
     let firebaseInitialized = false;
     let isEditingText = false; // Flag na kontrolu či user edituje text
+    const APPCHECK_SITE_KEY = '6Lci_cAsAAAAAL9VrBYxUUlUCVYw9gEyUPqy6Q8T';
     
     
     // Inicializácia Firebase (ak ešte nie je inicializované)
@@ -48,6 +49,7 @@
         if (!db) {
             try {
                 const { initializeApp } = await import("https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js");
+                const { initializeAppCheck, ReCaptchaV3Provider } = await import("https://www.gstatic.com/firebasejs/10.7.1/firebase-app-check.js");
                 const { getFirestore } = await import("https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js");
                 
                 const firebaseConfig = {
@@ -61,6 +63,10 @@
                 };
                 
                 app = initializeApp(firebaseConfig);
+                initializeAppCheck(app, {
+                    provider: new ReCaptchaV3Provider(APPCHECK_SITE_KEY),
+                    isTokenAutoRefreshEnabled: true
+                });
                 db = getFirestore(app);
                 window.app = app;
                 window.db = db;
