@@ -63,6 +63,7 @@
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { initializeAppCheck, ReCaptchaV3Provider } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app-check.js";
         import { getFirestore, doc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
         const firebaseConfig = {
@@ -76,6 +77,10 @@
         };
 
         const app = initializeApp(firebaseConfig);
+        initializeAppCheck(app, {
+            provider: new ReCaptchaV3Provider('6Lci_cAsAAAAAL9VrBYxUUlUCVYw9gEyUPqy6Q8T'),
+            isTokenAutoRefreshEnabled: true
+        });
         const db = getFirestore(app);
 
         // --- PREPOJENIE PRE ADMIN.JS ---
