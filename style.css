@@ -171,26 +171,6 @@ nav ul li a:hover, nav ul li a.active { color: #27ae60; }
     box-shadow: 0 4px 15px rgba(34, 36, 84, 0.18);
     background: #fff;
 }
-.app-store-card__qr-placeholder {
-    width: 100%;
-    height: 100%;
-    box-sizing: border-box;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    text-align: center;
-    padding: 14px;
-    font-size: 0.82rem;
-    line-height: 1.35;
-    color: #555;
-    border: 2px dashed rgba(34, 36, 84, 0.18);
-    border-radius: 10px;
-    background: #f9f9fb;
-}
-.app-store-card__qr-placeholder[hidden],
-.app-store-card__qr-img[hidden] {
-    display: none !important;
-}
 .app-store-card__qr-caption {
     margin-top: 12px;
     color: #666;
