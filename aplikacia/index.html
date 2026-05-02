@@ -60,8 +60,7 @@
                 <div class="app-store-card__row">
                     <div class="app-store-card__qr">
                         <div class="app-store-card__qr-frame">
-                            <img id="app_ios_qr_img" class="app-store-card__qr-img" alt="" hidden>
-                            <div id="app_ios_qr_placeholder" class="app-store-card__qr-placeholder">Tu sa zobrazí QR kód po zadaní odkazu App Store v administrácii, alebo nahraj súbor <strong>qr-code-ios.png</strong> do priečinka webu.</div>
+                            <img class="app-store-card__qr-img" src="../qr-code-ios.png" alt="QR kód na stiahnutie aplikácie z App Store">
                         </div>
                         <p id="app_ios_qr_text" class="app-store-card__qr-caption">Naskenujte QR kód</p>
                     </div>
@@ -148,22 +147,12 @@
         /** Použije sa, ak vo Firestore nie je vyplnené `app_ios_store_url`. */
         const QB_IOS_FALLBACK_STORE_URL = 'https://apps.apple.com/us/app/quizbrothers/id6763110176';
 
-        function applyIosStoreLinkAndQr(data) {
+        function applyIosStoreLink(data) {
             const fromFirestore = data.app_ios_store_url && String(data.app_ios_store_url).trim();
             const iosUrl = fromFirestore || QB_IOS_FALLBACK_STORE_URL.trim();
             const link = document.getElementById('app_ios_download_link');
-            const qr = document.getElementById('app_ios_qr_img');
-            const ph = document.getElementById('app_ios_qr_placeholder');
-            const qrApi = 'https://api.qrserver.com/v1/create-qr-code/?size=220x220&margin=8&data=';
-            link.onclick = null;
-            qr.onload = null;
-            qr.onerror = null;
             link.href = iosUrl;
             link.classList.remove('app-ios-btn--pending');
-            ph.hidden = true;
-            qr.hidden = false;
-            qr.alt = 'QR kód na stiahnutie aplikácie z App Store';
-            qr.src = qrApi + encodeURIComponent(iosUrl);
         }
 
         // --- PREPOJENIE PRE ADMIN.JS ---
@@ -203,7 +192,7 @@
                     if (data.app_step4) document.getElementById('app_step4').innerHTML = data.app_step4;
                     if (data.app_step5) document.getElementById('app_step5').innerHTML = data.app_step5;
                 }
-                applyIosStoreLinkAndQr(data);
+                applyIosStoreLink(data);
             });
         }
 
