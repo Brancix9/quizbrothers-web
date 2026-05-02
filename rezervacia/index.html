@@ -609,6 +609,14 @@
                     <textarea id="edit_app_download_description" class="admin-input" style="width: 100%; min-height: 60px; margin-bottom: 10px;"></textarea>
                     <label>Tlačidlo stiahnuť:</label>
                     <input type="text" id="edit_app_download_btn" class="admin-input" style="width: 100%; margin-bottom: 10px;">
+                    <label>iOS – Text pod QR:</label>
+                    <input type="text" id="edit_app_ios_qr_text" class="admin-input" style="width: 100%; margin-bottom: 10px;">
+                    <label>iOS – Nadpis:</label>
+                    <input type="text" id="edit_app_ios_download_title" class="admin-input" style="width: 100%; margin-bottom: 10px;">
+                    <label>iOS – Popis:</label>
+                    <textarea id="edit_app_ios_download_description" class="admin-input" style="width: 100%; min-height: 50px; margin-bottom: 10px;"></textarea>
+                    <label>iOS – URL App Store (celý odkaz „View on the App Store“):</label>
+                    <input type="url" id="edit_app_ios_store_url" class="admin-input" style="width: 100%; margin-bottom: 10px;" placeholder="https://apps.apple.com/sk/app/...">
                     <label>Prečo vlastná - Nadpis:</label>
                     <input type="text" id="edit_app_why_title" class="admin-input" style="width: 100%; margin-bottom: 10px;">
                     <label>Prečo vlastná - Text:</label>
@@ -2682,6 +2690,10 @@
                     app_download_title: "Stiahnuť aplikáciu",
                     app_download_description: "Aplikácia je dostupná na Google Play",
                     app_download_btn: "📱 Stiahnuť z Google Play",
+                    app_ios_qr_text: "Naskenujte QR kód",
+                    app_ios_download_title: "Stiahnuť pre iPhone a iPad",
+                    app_ios_download_description: "Tá istá aplikácia je dostupná na App Store.",
+                    app_ios_store_url: "",
                     app_why_title: "Prečo vlastná aplikácia?",
                     app_why_text: "Keďže žiadna z dostupných aplikácií na trhu nedokázala spraviť to, čo sme potrebovali, tak sme si spravili vlastnú. Kvízy teda fungujú úplne rovnako ako fungovali bez nej, avšak je to oveľa efektívnejšie. V aplikácii je zabudovaná aj detekcia podvádzania, takže to ani neskúšajte lebo prídete o body 😂. Cez aplikáciu vám tiež budeme posielať dôležité oznámenia ako napr. dátum ďalšieho kvízu.",
                     app_how_title: "Ako funguje aplikácia?",
@@ -2694,8 +2706,8 @@
                     app_feature4_title: "🔔 Dôležité oznámenia",
                     app_feature4_text: "Dostávajte upozornenia na dátum ďalšieho kvízu a ďalšie dôležité informácie.",
                     app_steps_title: "Ako postupovať?",
-                    app_step1: "<strong>Stiahnite si aplikáciu</strong> - použite QR kód vyššie alebo odkaz na Google Play",
-                    app_step2: "<strong>Nainštalujte</strong> aplikáciu na svoj Android telefón",
+                    app_step1: "<strong>Stiahnite si aplikáciu</strong> – použite QR kód vyššie alebo odkaz na Google Play / App Store",
+                    app_step2: "<strong>Nainštalujte</strong> aplikáciu na svoj telefón (Android alebo iPhone)",
                     app_step3: "<strong>Vypnite dáta a pripojte sa v bare na našu lokálnu sieť QuizBrothers</strong>",
                     app_step4: "<strong>Zadajte názov svojho tímu alebo kliknite na tlačidlo \"Vybrať tím\"</strong> - nájdite svoj tím v zozname a pripojte sa",
                     app_step5: "<strong>HOTOVO</strong> - môžete začať hrať! 🎉"
