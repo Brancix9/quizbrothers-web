@@ -104,7 +104,8 @@ nav ul li a:hover, nav ul li a.active { color: #27ae60; }
 
 /* Stránka Aplikácia – dva obchody vedľa seba */
 .app-stores-section {
-    margin-bottom: 48px;
+    margin-bottom: 0;
+    padding-bottom: 56px;
 }
 .app-stores-grid {
     display: grid;
@@ -221,6 +222,9 @@ nav ul li a:hover, nav ul li a.active { color: #27ae60; }
     .app-store-card__platform {
         align-self: center;
     }
+}
+.app-after-store-cards {
+    margin-top: 32px;
 }
 .app-store-card__info .btn {
     margin-top: 4px;
