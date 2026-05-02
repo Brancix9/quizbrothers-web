@@ -67,15 +67,15 @@
                     </div>
                     <div class="app-store-card__info">
                         <h2 id="app_ios_download_title" style="color: #222454;">iOS</h2>
-                        <p id="app_ios_download_description">Tá istá aplikácia je dostupná na App Store.</p>
-                        <a href="#" class="btn btn-primary app-ios-btn--pending" id="app_ios_download_link" target="_blank" rel="noopener noreferrer">Stiahnuť z App Store</a>
+                        <p id="app_ios_download_description">Aplikácia je dostupná na App Store.</p>
+                        <a href="https://apps.apple.com/us/app/quizbrothers/id6763110176" class="btn btn-primary" id="app_ios_download_link" target="_blank" rel="noopener noreferrer">Stiahnuť z App Store</a>
                     </div>
                 </div>
             </article>
         </section>
 
         <!-- Prečo vlastná aplikácia -->
-        <div class="card" style="margin-bottom: 40px; text-align: left;">
+        <div class="card app-after-store-cards" style="margin-bottom: 40px; text-align: left;">
             <h2 id="app_why_title" style="color: #222454; margin-bottom: 20px;">Prečo vlastná aplikácia?</h2>
             <p id="app_why_text" style="font-size: 1.1em; line-height: 1.8;">
                 Keďže žiadna z dostupných aplikácií na trhu nedokázala spraviť to, čo sme potrebovali, tak sme si spravili vlastnú. Kvízy teda fungujú úplne rovnako ako fungovali bez nej, avšak je to oveľa efektívnejšie. V aplikácii je zabudovaná aj detekcia podvádzania, takže to ani neskúšajte lebo prídete o body 😂. Cez aplikáciu vám tiež budeme posielať dôležité oznámenia ako napr. dátum ďalšieho kvízu.
@@ -145,43 +145,25 @@
         });
         const db = getFirestore(app);
 
-        /** Ak nie je URL vo Firestore (`app_ios_store_url`), doplň sem celý odkaz z App Store Connect. */
-        const QB_IOS_FALLBACK_STORE_URL = '';
+        /** Použije sa, ak vo Firestore nie je vyplnené `app_ios_store_url`. */
+        const QB_IOS_FALLBACK_STORE_URL = 'https://apps.apple.com/us/app/quizbrothers/id6763110176';
 
         function applyIosStoreLinkAndQr(data) {
-            const iosUrl = (data.app_ios_store_url && String(data.app_ios_store_url).trim())
-                || (QB_IOS_FALLBACK_STORE_URL && String(QB_IOS_FALLBACK_STORE_URL).trim());
+            const fromFirestore = data.app_ios_store_url && String(data.app_ios_store_url).trim();
+            const iosUrl = fromFirestore || QB_IOS_FALLBACK_STORE_URL.trim();
             const link = document.getElementById('app_ios_download_link');
             const qr = document.getElementById('app_ios_qr_img');
             const ph = document.getElementById('app_ios_qr_placeholder');
             const qrApi = 'https://api.qrserver.com/v1/create-qr-code/?size=220x220&margin=8&data=';
-            link.onclick = iosUrl ? null : function (e) { e.preventDefault(); };
+            link.onclick = null;
             qr.onload = null;
             qr.onerror = null;
-            if (iosUrl) {
-                link.href = iosUrl;
-                link.classList.remove('app-ios-btn--pending');
-                ph.hidden = true;
-                qr.hidden = false;
-                qr.alt = 'QR kód na stiahnutie aplikácie z App Store';
-                qr.src = qrApi + encodeURIComponent(iosUrl);
-            } else {
-                link.href = '#';
-                link.classList.add('app-ios-btn--pending');
-                ph.hidden = false;
-                qr.hidden = true;
-                qr.removeAttribute('alt');
-                qr.onload = function () {
-                    ph.hidden = true;
-                    qr.hidden = false;
-                    qr.alt = 'QR kód na stiahnutie aplikácie z App Store';
-                };
-                qr.onerror = function () {
-                    qr.hidden = true;
-                    ph.hidden = false;
-                };
-                qr.src = '../qr-code-ios.png';
-            }
+            link.href = iosUrl;
+            link.classList.remove('app-ios-btn--pending');
+            ph.hidden = true;
+            qr.hidden = false;
+            qr.alt = 'QR kód na stiahnutie aplikácie z App Store';
+            qr.src = qrApi + encodeURIComponent(iosUrl);
         }
 
         // --- PREPOJENIE PRE ADMIN.JS ---
