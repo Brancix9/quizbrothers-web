@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta property="og:type" content="website">
     <meta property="og:title" content="Aplikácia - QuizBrothers">
-    <meta property="og:description" content="Stiahni si našu vlastnú aplikáciu na Google Play a prinesi kvízvanie na novú úroveň!">
+    <meta property="og:description" content="Stiahni si QuizBrothers na Google Play alebo App Store a prines kvízovanie na novú úroveň.">
     <meta property="og:image" content="https://www.quizbrothers.sk/logo.png">
     <meta property="og:url" content="https://www.quizbrothers.sk/aplikacia/">
     <title>Aplikácia - QuizBrothers</title>
@@ -37,22 +37,39 @@
     <div class="container">
         <h1 id="app_main_title" style="text-align: center; margin-bottom: 20px;">Naša aplikácia</h1>
         
-        <!-- Stiahnutie aplikácie -->
-        <div style="text-align: center; margin-bottom: 50px;">
-            <div style="display: flex; justify-content: center; align-items: center; gap: 40px; flex-wrap: wrap; margin-bottom: 30px;">
-                <div>
-                    <img src="../qr-code.png" alt="QR kód na stiahnutie aplikácie" style="max-width: 250px; width: 100%; border-radius: 10px; box-shadow: 0 4px 15px rgba(34,36,84,0.2);">
-                    <p id="app_qr_text" style="margin-top: 15px; color: #666; font-size: 0.9em;">Naskenujte QR kód</p>
+        <!-- Stiahnutie aplikácie – Android a iOS -->
+        <section class="app-stores-section app-stores-grid" aria-label="Stiahnutie aplikácie">
+            <article class="app-store-card">
+                <span class="app-store-card__platform">Android · Google Play</span>
+                <div class="app-store-card__row">
+                    <div class="app-store-card__qr">
+                        <img src="../qr-code.png" alt="QR kód na stiahnutie aplikácie z Google Play">
+                        <p id="app_qr_text" class="app-store-card__qr-caption">Naskenujte QR kód</p>
+                    </div>
+                    <div class="app-store-card__info">
+                        <h2 id="app_download_title" style="color: #222454;">Stiahnuť aplikáciu</h2>
+                        <p id="app_download_description">Aplikácia je dostupná na Google Play</p>
+                        <a href="https://play.google.com/store/apps/details?id=sk.quizbrother.app" target="_blank" rel="noopener noreferrer" class="btn btn-primary" id="app_download_btn">📱 Stiahnuť z Google Play</a>
+                    </div>
                 </div>
-                <div style="text-align: left;">
-                    <h2 id="app_download_title" style="color: #222454; margin-bottom: 15px;">Stiahnuť aplikáciu</h2>
-                    <p id="app_download_description" style="margin-bottom: 20px; font-size: 1.1em;">Aplikácia je dostupná na Google Play</p>
-                    <a href="https://play.google.com/store/apps/details?id=sk.quizbrother.app" target="_blank" class="btn btn-primary" id="app_download_btn" style="display: inline-block;">
-                        📱 Stiahnuť z Google Play
-                    </a>
+            </article>
+            <article class="app-store-card">
+                <span class="app-store-card__platform">iOS · App Store</span>
+                <div class="app-store-card__row">
+                    <div class="app-store-card__qr">
+                        <img id="app_ios_qr_img" src="../qr-code-ios.png" alt="QR kód na stiahnutie aplikácie z App Store">
+                        <p id="app_ios_qr_text" class="app-store-card__qr-caption">Naskenujte QR kód</p>
+                    </div>
+                    <div class="app-store-card__info">
+                        <h2 id="app_ios_download_title" style="color: #222454;">Stiahnuť pre iPhone a iPad</h2>
+                        <p id="app_ios_download_description">Tá istá aplikácia je dostupná na App Store.</p>
+                        <a href="#" target="_blank" rel="noopener noreferrer" class="app-ios-store-link app-ios-store-link--pending" id="app_ios_download_link" aria-label="Stiahnuť z App Store">
+                            <img src="../Appstore.png" alt="Stiahnuť z App Store" class="app-store-badge-img">
+                        </a>
+                    </div>
                 </div>
-            </div>
-        </div>
+            </article>
+        </section>
 
         <!-- Prečo vlastná aplikácia -->
         <div class="card" style="margin-bottom: 40px; text-align: left;">
@@ -89,8 +106,8 @@
         <div class="card" style="background: linear-gradient(135deg, rgba(34,36,84,0.05) 0%, rgba(39,174,96,0.05) 100%); border: 2px solid rgba(34,36,84,0.1);">
             <h2 id="app_steps_title" style="color: #222454; margin-bottom: 30px; text-align: center;">Ako postupovať?</h2>
             <ol id="app_steps_list" style="font-size: 1.1em; line-height: 2.2; padding-left: 20px; max-width: 800px; margin: 0 auto;">
-                <li id="app_step1" style="margin-bottom: 15px;"><strong>Stiahnite si aplikáciu</strong> - použite QR kód vyššie alebo odkaz na Google Play</li>
-                <li id="app_step2" style="margin-bottom: 15px;"><strong>Nainštalujte</strong> aplikáciu na svoj Android telefón</li>
+                <li id="app_step1" style="margin-bottom: 15px;"><strong>Stiahnite si aplikáciu</strong> – použite QR kód vyššie alebo odkaz na Google Play / App Store</li>
+                <li id="app_step2" style="margin-bottom: 15px;"><strong>Nainštalujte</strong> aplikáciu na svoj telefón (Android alebo iPhone)</li>
                 <li id="app_step3" style="margin-bottom: 15px;"><strong>Vypnite dáta a pripojte sa v bare na našu lokálnu sieť QuizBrothers</strong></li>
                 <li id="app_step4" style="margin-bottom: 15px;"><strong>Zadajte názov svojho tímu alebo kliknite na tlačidlo "Vybrať tím"</strong> - nájdite svoj tím v zozname a pripojte sa</li>
                 <li id="app_step5" style="margin-bottom: 15px;"><strong>HOTOVO</strong> - môžete začať hrať! 🎉</li>
@@ -125,6 +142,28 @@
         });
         const db = getFirestore(app);
 
+        /** Ak nie je URL vo Firestore (`app_ios_store_url`), doplň sem celý odkaz z App Store Connect. */
+        const QB_IOS_FALLBACK_STORE_URL = '';
+
+        function applyIosStoreLinkAndQr(data) {
+            const iosUrl = (data.app_ios_store_url && String(data.app_ios_store_url).trim())
+                || (QB_IOS_FALLBACK_STORE_URL && String(QB_IOS_FALLBACK_STORE_URL).trim());
+            const link = document.getElementById('app_ios_download_link');
+            const qr = document.getElementById('app_ios_qr_img');
+            const qrApi = 'https://api.qrserver.com/v1/create-qr-code/?size=240x240&margin=10&data=';
+            if (iosUrl) {
+                link.href = iosUrl;
+                link.classList.remove('app-ios-store-link--pending');
+                qr.src = qrApi + encodeURIComponent(iosUrl);
+                qr.alt = 'QR kód na stiahnutie aplikácie z App Store';
+            } else {
+                link.href = '#';
+                link.classList.add('app-ios-store-link--pending');
+                qr.src = '../qr-code-ios.png';
+                qr.alt = 'QR kód na App Store';
+            }
+        }
+
         // --- PREPOJENIE PRE ADMIN.JS ---
         window.app = app;
         window.db = db;
@@ -133,13 +172,16 @@
         function loadWebContent() {
             const contentDoc = doc(db, "web_content", "app");
             onSnapshot(contentDoc, (docSnap) => {
+                const data = docSnap.exists() ? docSnap.data() : {};
                 if (docSnap.exists()) {
-                    const data = docSnap.data();
                     if (data.app_main_title) document.getElementById('app_main_title').textContent = data.app_main_title;
                     if (data.app_qr_text) document.getElementById('app_qr_text').textContent = data.app_qr_text;
                     if (data.app_download_title) document.getElementById('app_download_title').textContent = data.app_download_title;
                     if (data.app_download_description) document.getElementById('app_download_description').textContent = data.app_download_description;
                     if (data.app_download_btn) document.getElementById('app_download_btn').textContent = data.app_download_btn;
+                    if (data.app_ios_qr_text) document.getElementById('app_ios_qr_text').textContent = data.app_ios_qr_text;
+                    if (data.app_ios_download_title) document.getElementById('app_ios_download_title').textContent = data.app_ios_download_title;
+                    if (data.app_ios_download_description) document.getElementById('app_ios_download_description').textContent = data.app_ios_download_description;
                     if (data.app_why_title) document.getElementById('app_why_title').textContent = data.app_why_title;
                     if (data.app_why_text) document.getElementById('app_why_text').textContent = data.app_why_text;
                     if (data.app_how_title) document.getElementById('app_how_title').textContent = data.app_how_title;
@@ -158,6 +200,7 @@
                     if (data.app_step4) document.getElementById('app_step4').innerHTML = data.app_step4;
                     if (data.app_step5) document.getElementById('app_step5').innerHTML = data.app_step5;
                 }
+                applyIosStoreLinkAndQr(data);
             });
         }
 
