@@ -43,13 +43,15 @@
                 <span class="app-store-card__platform">Android · Google Play</span>
                 <div class="app-store-card__row">
                     <div class="app-store-card__qr">
-                        <img src="../qr-code.png" alt="QR kód na stiahnutie aplikácie z Google Play">
+                        <div class="app-store-card__qr-frame">
+                            <img class="app-store-card__qr-img" src="../qr-code.png" alt="QR kód na stiahnutie aplikácie z Google Play">
+                        </div>
                         <p id="app_qr_text" class="app-store-card__qr-caption">Naskenujte QR kód</p>
                     </div>
                     <div class="app-store-card__info">
-                        <h2 id="app_download_title" style="color: #222454;">Stiahnuť aplikáciu</h2>
+                        <h2 id="app_download_title" style="color: #222454;">Android</h2>
                         <p id="app_download_description">Aplikácia je dostupná na Google Play</p>
-                        <a href="https://play.google.com/store/apps/details?id=sk.quizbrother.app" target="_blank" rel="noopener noreferrer" class="btn btn-primary" id="app_download_btn">📱 Stiahnuť z Google Play</a>
+                        <a href="https://play.google.com/store/apps/details?id=sk.quizbrother.app" target="_blank" rel="noopener noreferrer" class="btn btn-primary" id="app_download_btn">Stiahnuť z Google Play</a>
                     </div>
                 </div>
             </article>
@@ -57,15 +59,16 @@
                 <span class="app-store-card__platform">iOS · App Store</span>
                 <div class="app-store-card__row">
                     <div class="app-store-card__qr">
-                        <img id="app_ios_qr_img" src="../qr-code-ios.png" alt="QR kód na stiahnutie aplikácie z App Store">
+                        <div class="app-store-card__qr-frame">
+                            <img id="app_ios_qr_img" class="app-store-card__qr-img" alt="" hidden>
+                            <div id="app_ios_qr_placeholder" class="app-store-card__qr-placeholder">Tu sa zobrazí QR kód po zadaní odkazu App Store v administrácii, alebo nahraj súbor <strong>qr-code-ios.png</strong> do priečinka webu.</div>
+                        </div>
                         <p id="app_ios_qr_text" class="app-store-card__qr-caption">Naskenujte QR kód</p>
                     </div>
                     <div class="app-store-card__info">
-                        <h2 id="app_ios_download_title" style="color: #222454;">Stiahnuť pre iPhone a iPad</h2>
+                        <h2 id="app_ios_download_title" style="color: #222454;">iOS</h2>
                         <p id="app_ios_download_description">Tá istá aplikácia je dostupná na App Store.</p>
-                        <a href="#" target="_blank" rel="noopener noreferrer" class="app-ios-store-link app-ios-store-link--pending" id="app_ios_download_link" aria-label="Stiahnuť z App Store">
-                            <img src="../Appstore.png" alt="Stiahnuť z App Store" class="app-store-badge-img">
-                        </a>
+                        <a href="#" class="btn btn-primary app-ios-btn--pending" id="app_ios_download_link" target="_blank" rel="noopener noreferrer">Stiahnuť z App Store</a>
                     </div>
                 </div>
             </article>
@@ -150,17 +153,34 @@
                 || (QB_IOS_FALLBACK_STORE_URL && String(QB_IOS_FALLBACK_STORE_URL).trim());
             const link = document.getElementById('app_ios_download_link');
             const qr = document.getElementById('app_ios_qr_img');
-            const qrApi = 'https://api.qrserver.com/v1/create-qr-code/?size=240x240&margin=10&data=';
+            const ph = document.getElementById('app_ios_qr_placeholder');
+            const qrApi = 'https://api.qrserver.com/v1/create-qr-code/?size=220x220&margin=8&data=';
+            link.onclick = iosUrl ? null : function (e) { e.preventDefault(); };
+            qr.onload = null;
+            qr.onerror = null;
             if (iosUrl) {
                 link.href = iosUrl;
-                link.classList.remove('app-ios-store-link--pending');
-                qr.src = qrApi + encodeURIComponent(iosUrl);
+                link.classList.remove('app-ios-btn--pending');
+                ph.hidden = true;
+                qr.hidden = false;
                 qr.alt = 'QR kód na stiahnutie aplikácie z App Store';
+                qr.src = qrApi + encodeURIComponent(iosUrl);
             } else {
                 link.href = '#';
-                link.classList.add('app-ios-store-link--pending');
+                link.classList.add('app-ios-btn--pending');
+                ph.hidden = false;
+                qr.hidden = true;
+                qr.removeAttribute('alt');
+                qr.onload = function () {
+                    ph.hidden = true;
+                    qr.hidden = false;
+                    qr.alt = 'QR kód na stiahnutie aplikácie z App Store';
+                };
+                qr.onerror = function () {
+                    qr.hidden = true;
+                    ph.hidden = false;
+                };
                 qr.src = '../qr-code-ios.png';
-                qr.alt = 'QR kód na App Store';
             }
         }
 
@@ -182,6 +202,7 @@
                     if (data.app_ios_qr_text) document.getElementById('app_ios_qr_text').textContent = data.app_ios_qr_text;
                     if (data.app_ios_download_title) document.getElementById('app_ios_download_title').textContent = data.app_ios_download_title;
                     if (data.app_ios_download_description) document.getElementById('app_ios_download_description').textContent = data.app_ios_download_description;
+                    if (data.app_ios_download_btn) document.getElementById('app_ios_download_link').textContent = data.app_ios_download_btn;
                     if (data.app_why_title) document.getElementById('app_why_title').textContent = data.app_why_title;
                     if (data.app_why_text) document.getElementById('app_why_text').textContent = data.app_why_text;
                     if (data.app_how_title) document.getElementById('app_how_title').textContent = data.app_how_title;
