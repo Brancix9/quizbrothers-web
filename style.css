@@ -153,13 +153,42 @@ nav ul li a:hover, nav ul li a.active { color: #27ae60; }
     flex: 0 0 auto;
     text-align: center;
 }
-.app-store-card__qr img {
+.app-store-card__qr-frame {
+    width: 220px;
+    height: 220px;
+    max-width: min(220px, calc(100vw - 48px));
+    max-height: min(220px, calc(100vw - 48px));
+    margin: 0 auto;
+    box-sizing: border-box;
+}
+.app-store-card__qr-img {
     display: block;
-    max-width: 220px;
     width: 100%;
-    height: auto;
+    height: 100%;
+    object-fit: contain;
     border-radius: 10px;
     box-shadow: 0 4px 15px rgba(34, 36, 84, 0.18);
+    background: #fff;
+}
+.app-store-card__qr-placeholder {
+    width: 100%;
+    height: 100%;
+    box-sizing: border-box;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 14px;
+    font-size: 0.82rem;
+    line-height: 1.35;
+    color: #555;
+    border: 2px dashed rgba(34, 36, 84, 0.18);
+    border-radius: 10px;
+    background: #f9f9fb;
+}
+.app-store-card__qr-placeholder[hidden],
+.app-store-card__qr-img[hidden] {
+    display: none !important;
 }
 .app-store-card__qr-caption {
     margin-top: 12px;
@@ -193,28 +222,12 @@ nav ul li a:hover, nav ul li a.active { color: #27ae60; }
         align-self: center;
     }
 }
-.app-ios-store-link {
-    display: inline-block;
-    line-height: 0;
+.app-store-card__info .btn {
     margin-top: 4px;
-    transition: transform 0.2s, opacity 0.2s;
 }
-.app-ios-store-link:hover {
-    transform: scale(1.03);
-    opacity: 0.95;
-}
-.app-ios-store-link img.app-store-badge-img {
-    height: 44px;
-    width: auto;
-    display: block;
-    border-radius: 0;
-    box-shadow: none;
-    margin: 0;
-}
-.app-ios-store-link--pending {
+.app-ios-btn--pending {
+    opacity: 0.72;
     cursor: not-allowed;
-    opacity: 0.55;
-    pointer-events: none;
 }
 
 /* Nadpisy */
