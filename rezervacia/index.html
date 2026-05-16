@@ -1580,13 +1580,12 @@
             const select = document.getElementById('teamSelect');
             select.innerHTML = '<option value="new">Vybrať tím</option>';
             
-            // ✅ ZMENA: Filtruj statické tímy podľa času uvoľnenia
-            const releaseInFuture = isReleaseTimeInFuture();
-            
+            // Predvolené tímy zo správy (isStatic !== false vrátane starších dokumentov bez poľa isStatic):
+            // v selecte majú byť VŽDY — aj po čase uvoľnenia slotov aj po zrušení účasti, aby išlo znova potvrdiť PINom.
+            // Kapacita a „rezervované“ grafika ostávajú oddelené (calculateOccupied / updateDashboard).
             teamsData.filter(t => {
-                if (t.confirmed) return true; // Potvrdené tímy vždy dostupné
-                if (t.isStatic && releaseInFuture) return true; // Statické tímy len ak je čas v budúcnosti
-                return false;
+                if (t.confirmed) return true;
+                return t.isStatic !== false;
             }).forEach(t => {
                 let opt = document.createElement('option');
                 opt.value = t.id; opt.innerText = t.id; select.appendChild(opt);
