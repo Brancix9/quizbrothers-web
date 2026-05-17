@@ -642,6 +642,18 @@ async function refreshDailyPlayStateFromServer(uid) {
   state.dailyLockWithoutSubmission = !!(lockSnap.exists && !subSnap.exists);
 }
 
+/** Načíta stav z Firestore a ak je zámok bez zápisu, ticho doplní 0 bodov (bez extra tlačidiel na hube). */
+async function refreshHubPlayStateAndResolveIncomplete(uid) {
+  await refreshDailyPlayStateFromServer(uid);
+  if (state.answeredToday || !state.dailyLockWithoutSubmission) return;
+  try {
+    await submitImplicitDailyForfeit(uid);
+  } catch (e) {
+    console.warn('[Daily] auto-forfeit po neúplnom kole', e);
+    await refreshDailyPlayStateFromServer(uid);
+  }
+}
+
 /** Jednorazový zápis zámku pred načítaním otázky (chráni pred zavretím karty bez odovzdania). */
 async function ensureDailyRoundLock(uid) {
   const today = todayStringBratislava();
@@ -735,9 +747,6 @@ function updateHubStartButton() {
   if (state.answeredToday) {
     btn.disabled = true;
     btn.textContent = 'Dnes už si odpovedal.';
-  } else if (state.dailyLockWithoutSubmission) {
-    btn.disabled = false;
-    btn.textContent = 'Uzavrieť neúplné kolo (0 bodov)';
   } else {
     btn.disabled = false;
     btn.textContent = 'Odpovedať na dennú otázku';
@@ -748,7 +757,7 @@ function updateHubStartButton() {
 async function syncHubAnswerState() {
   const uid = state.user?.uid;
   if (!uid) return;
-  await refreshDailyPlayStateFromServer(uid);
+  await refreshHubPlayStateAndResolveIncomplete(uid);
   updateHubStartButton();
 }
 
@@ -989,35 +998,19 @@ function showResultUI() {
 async function startQuestionFlow() {
   const uid = state.user.uid;
 
-  await refreshDailyPlayStateFromServer(uid);
+  await refreshHubPlayStateAndResolveIncomplete(uid);
   if (state.answeredToday) {
-    setStatus('Dnes už si odpovedal.');
+    setStatus('');
     showPanel('hub');
-    updateHubStartButton();
-    return;
-  }
-
-  if (state.dailyLockWithoutSubmission) {
-    setStatus('Rozbehnuté kolo bez výsledku – zapisujem neplatnú odpoveď…', 'progress');
-    showPanel('hub');
-    try {
-      await submitImplicitDailyForfeit(uid);
-      setStatus('Neúplné kolo bolo uzavreté (0 bodov).');
-    } catch (e) {
-      setStatus('Nepodarilo sa uložiť výsledok: ' + (e.message || 'chyba'));
-    }
     updateHubStartButton();
     return;
   }
 
   if (hasDailyQuestionDisplayedInSession(uid)) {
-    setStatus('Obnovenie počas rozbehnutej otázky…', 'progress');
     showPanel('hub');
+    setStatus('');
     try {
       await submitImplicitDailyForfeit(uid);
-      setStatus(
-        'Otázku v tejto relácii už nie je možné znova zobraziť. Zapísaná bola neplatná odpoveď (0 bodov).'
-      );
     } catch (e) {
       setStatus('Nepodarilo sa uložiť výsledok: ' + (e.message || 'chyba'));
     }
@@ -1431,7 +1424,7 @@ async function refreshUIForUser() {
     setStatus('');
   }
   try {
-    await Promise.all([loadUserProfileDoc(u.uid), refreshDailyPlayStateFromServer(u.uid)]);
+    await Promise.all([loadUserProfileDoc(u.uid), refreshHubPlayStateAndResolveIncomplete(u.uid)]);
 
     if (!profileComplete()) {
       await showProfilePanel({ fromHub: false });
@@ -1752,11 +1745,20 @@ async function boot() {
     });
   }
 
+  function trySyncHubAfterReturn() {
+    if (!auth.currentUser || state.activePanel !== 'hub') return;
+    syncHubAnswerState().catch((e) => console.warn('[Daily] hub sync po návrate', e));
+  }
+
   window.addEventListener('pageshow', () => {
     tryRefreshUiIfLoggedInButAuthPanel();
+    trySyncHubAfterReturn();
   });
   document.addEventListener('visibilitychange', () => {
-    if (document.visibilityState === 'visible') tryRefreshUiIfLoggedInButAuthPanel();
+    if (document.visibilityState === 'visible') {
+      tryRefreshUiIfLoggedInButAuthPanel();
+      trySyncHubAfterReturn();
+    }
   });
 
   setTimeout(() => tryRefreshUiIfLoggedInButAuthPanel(), 0);
