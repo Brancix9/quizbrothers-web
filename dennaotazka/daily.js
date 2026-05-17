@@ -647,17 +647,16 @@ async function ensureDailyRoundLock(uid) {
   const today = todayStringBratislava();
   const docId = `${today}_${uid}`;
   const ref = db.collection('daily_round_locks').doc(docId);
-  try {
-    await ref.create({
+  /* Web SDK nemá ref.create() (to je Admin SDK); transakcia = zápis len ak dokument ešte neexistuje. */
+  await db.runTransaction(async (tx) => {
+    const snap = await tx.get(ref);
+    if (snap.exists) return;
+    tx.set(ref, {
       userId: uid,
       date: today,
       timestamp: FieldValue.serverTimestamp()
     });
-  } catch (e) {
-    const code = e && e.code;
-    if (code === 'already-exists' || code === 'already_exists') return;
-    throw e;
-  }
+  });
 }
 
 /** Jedna relácia prehliadača/PWA: otázka sa nesmie znova načítať ten istý deň po prvom zobrazení (ochrana pred Späť + Google). */
