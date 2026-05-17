@@ -293,6 +293,8 @@ const state = {
   user: null,
   profile: { nickname: '', full_name: '', location: '', team: '', avatar_index: 0 },
   answeredToday: false,
+  /** Na serveri existuje daily_round_locks bez daily_submissions — treba uzavrieť 0 bodmi (napr. zavretá karta). */
+  dailyLockWithoutSubmission: false,
   activePanel: 'auth',
   question: null,
   shuffled: [],
@@ -629,10 +631,33 @@ async function loadTeamsForLocation(locationName) {
   if (state.profile.team && list.includes(state.profile.team)) sel.value = state.profile.team;
 }
 
-async function checkAnsweredToday(uid) {
-  const t = todayStringBratislava();
-  const snap = await db.collection('daily_submissions').doc(`${t}_${uid}`).get();
-  return snap.exists;
+async function refreshDailyPlayStateFromServer(uid) {
+  const today = todayStringBratislava();
+  const docId = `${today}_${uid}`;
+  const [subSnap, lockSnap] = await Promise.all([
+    db.collection('daily_submissions').doc(docId).get(),
+    db.collection('daily_round_locks').doc(docId).get()
+  ]);
+  state.answeredToday = subSnap.exists;
+  state.dailyLockWithoutSubmission = !!(lockSnap.exists && !subSnap.exists);
+}
+
+/** Jednorazový zápis zámku pred načítaním otázky (chráni pred zavretím karty bez odovzdania). */
+async function ensureDailyRoundLock(uid) {
+  const today = todayStringBratislava();
+  const docId = `${today}_${uid}`;
+  const ref = db.collection('daily_round_locks').doc(docId);
+  try {
+    await ref.create({
+      userId: uid,
+      date: today,
+      timestamp: FieldValue.serverTimestamp()
+    });
+  } catch (e) {
+    const code = e && e.code;
+    if (code === 'already-exists' || code === 'already_exists') return;
+    throw e;
+  }
 }
 
 /** Jedna relácia prehliadača/PWA: otázka sa nesmie znova načítať ten istý deň po prvom zobrazení (ochrana pred Späť + Google). */
@@ -677,6 +702,7 @@ async function submitImplicitDailyForfeit(uid) {
   };
   await db.collection('daily_submissions').doc(`${today}_${uid}`).set(data);
   state.answeredToday = true;
+  state.dailyLockWithoutSubmission = false;
   updateHubStartButton();
   const p = refreshLeaderboardsOnServer().catch((e) => {
     console.warn('[Daily] getLeaderboardRealtime po nútenom zápise', e);
@@ -693,6 +719,7 @@ function persistDailySubmissionThenRefresh(data) {
     .set(data)
     .then(() => {
       state.answeredToday = true;
+      state.dailyLockWithoutSubmission = false;
       updateHubStartButton();
       const p = refreshLeaderboardsOnServer().catch((e) => {
         console.warn('[Daily] getLeaderboardRealtime po odpovedi', e);
@@ -709,6 +736,9 @@ function updateHubStartButton() {
   if (state.answeredToday) {
     btn.disabled = true;
     btn.textContent = 'Dnes už si odpovedal.';
+  } else if (state.dailyLockWithoutSubmission) {
+    btn.disabled = false;
+    btn.textContent = 'Uzavrieť neúplné kolo (0 bodov)';
   } else {
     btn.disabled = false;
     btn.textContent = 'Odpovedať na dennú otázku';
@@ -719,7 +749,7 @@ function updateHubStartButton() {
 async function syncHubAnswerState() {
   const uid = state.user?.uid;
   if (!uid) return;
-  state.answeredToday = await checkAnsweredToday(uid);
+  await refreshDailyPlayStateFromServer(uid);
   updateHubStartButton();
 }
 
@@ -958,20 +988,30 @@ function showResultUI() {
 }
 
 async function startQuestionFlow() {
+  const uid = state.user.uid;
+
+  await refreshDailyPlayStateFromServer(uid);
   if (state.answeredToday) {
     setStatus('Dnes už si odpovedal.');
+    showPanel('hub');
+    updateHubStartButton();
     return;
   }
-  const uid = state.user.uid;
-  if (hasDailyQuestionDisplayedInSession(uid)) {
-    const serverDone = await checkAnsweredToday(uid);
-    if (serverDone) {
-      state.answeredToday = true;
-      updateHubStartButton();
-      setStatus('Dnes už si odpovedal.');
-      showPanel('hub');
-      return;
+
+  if (state.dailyLockWithoutSubmission) {
+    setStatus('Rozbehnuté kolo bez výsledku – zapisujem neplatnú odpoveď…', 'progress');
+    showPanel('hub');
+    try {
+      await submitImplicitDailyForfeit(uid);
+      setStatus('Neúplné kolo bolo uzavreté (0 bodov).');
+    } catch (e) {
+      setStatus('Nepodarilo sa uložiť výsledok: ' + (e.message || 'chyba'));
     }
+    updateHubStartButton();
+    return;
+  }
+
+  if (hasDailyQuestionDisplayedInSession(uid)) {
     setStatus('Obnovenie počas rozbehnutej otázky…', 'progress');
     showPanel('hub');
     try {
@@ -982,6 +1022,7 @@ async function startQuestionFlow() {
     } catch (e) {
       setStatus('Nepodarilo sa uložiť výsledok: ' + (e.message || 'chyba'));
     }
+    updateHubStartButton();
     return;
   }
 
@@ -992,6 +1033,7 @@ async function startQuestionFlow() {
   $('question-body').classList.add('hidden');
   $('btn-q-back').classList.add('hidden');
   try {
+    await ensureDailyRoundLock(uid);
     const q = await loadDailyQuestionForUser(uid);
     state.question = q;
     state.shuffled = shuffle(q.optionsFlat);
@@ -1390,8 +1432,7 @@ async function refreshUIForUser() {
     setStatus('');
   }
   try {
-    const [, answered] = await Promise.all([loadUserProfileDoc(u.uid), checkAnsweredToday(u.uid)]);
-    state.answeredToday = answered;
+    await Promise.all([loadUserProfileDoc(u.uid), refreshDailyPlayStateFromServer(u.uid)]);
 
     if (!profileComplete()) {
       await showProfilePanel({ fromHub: false });
