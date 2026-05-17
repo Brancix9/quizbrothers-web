@@ -635,6 +635,74 @@ async function checkAnsweredToday(uid) {
   return snap.exists;
 }
 
+/** Jedna relácia prehliadača/PWA: otázka sa nesmie znova načítať ten istý deň po prvom zobrazení (ochrana pred Späť + Google). */
+function dailyQuestionDisplayedStorageKey(uid) {
+  return `qb_daily_q_displayed_${todayStringBratislava()}_${uid}`;
+}
+
+function markDailyQuestionDisplayedInSession(uid) {
+  if (!uid) return;
+  try {
+    sessionStorage.setItem(dailyQuestionDisplayedStorageKey(uid), '1');
+  } catch (e) {
+    console.warn('[Daily] sessionStorage (napr. súkromné okno):', e);
+  }
+}
+
+function hasDailyQuestionDisplayedInSession(uid) {
+  if (!uid) return false;
+  try {
+    return sessionStorage.getItem(dailyQuestionDisplayedStorageKey(uid)) === '1';
+  } catch (e) {
+    return false;
+  }
+}
+
+/** Zapíše dokument bez držania textu otázky v pamäti (obnova stránky počas kola). */
+async function submitImplicitDailyForfeit(uid) {
+  const today = todayStringBratislava();
+  const timeMs = DEFAULT_TIMER_SEC * 1000;
+  const data = {
+    date: today,
+    userId: uid,
+    fullName: state.profile.full_name.trim(),
+    nickname: state.profile.nickname.trim(),
+    points: 0,
+    timeMs,
+    location: state.profile.location.trim(),
+    teamName: state.profile.team.trim(),
+    country: 'Svet',
+    avatar_index: Math.max(0, Math.min(AVATAR_MAX_INDEX, state.profile.avatar_index || 0)),
+    timestamp: FieldValue.serverTimestamp()
+  };
+  await db.collection('daily_submissions').doc(`${today}_${uid}`).set(data);
+  state.answeredToday = true;
+  updateHubStartButton();
+  const p = refreshLeaderboardsOnServer().catch((e) => {
+    console.warn('[Daily] getLeaderboardRealtime po nútenom zápise', e);
+  });
+  pendingLeaderboardRefreshPromise = p.finally(() => {
+    if (pendingLeaderboardRefreshPromise === p) pendingLeaderboardRefreshPromise = null;
+  });
+}
+
+function persistDailySubmissionThenRefresh(data) {
+  return db
+    .collection('daily_submissions')
+    .doc(`${data.date}_${data.userId}`)
+    .set(data)
+    .then(() => {
+      state.answeredToday = true;
+      updateHubStartButton();
+      const p = refreshLeaderboardsOnServer().catch((e) => {
+        console.warn('[Daily] getLeaderboardRealtime po odpovedi', e);
+      });
+      pendingLeaderboardRefreshPromise = p.finally(() => {
+        if (pendingLeaderboardRefreshPromise === p) pendingLeaderboardRefreshPromise = null;
+      });
+    });
+}
+
 function updateHubStartButton() {
   const btn = $('btn-start');
   if (!btn) return;
@@ -781,6 +849,7 @@ function clearTimer() {
 
 function renderQuestionUI() {
   const q = state.question;
+  if (state.user?.uid) markDailyQuestionDisplayedInSession(state.user.uid);
   $('question-loading').classList.add('hidden');
   $('question-error').classList.add('hidden');
   $('question-body').classList.remove('hidden');
@@ -815,27 +884,32 @@ function renderQuestionUI() {
     $('question-timer').textContent = String(Math.max(0, left));
     if (left <= 0) {
       clearTimer();
-      submitAnswer();
+      submitAnswer({});
     }
   }, 1000);
 }
 
-function submitAnswer() {
+/**
+ * @param {{ abandon?: boolean }} opts — abandon: Späť počas otázky → rovnako ako pri vypršaní času bez výberu (plný čas, 0 bodov).
+ */
+function submitAnswer(opts) {
+  const abandon = opts && opts.abandon === true;
   if (state.answerLocked || !state.question) return;
   state.answerLocked = true;
   clearTimer();
   const q = state.question;
   const maxMs = q.time * 1000;
-  const elapsed = Math.min(Date.now() - state.questionStartMs, maxMs);
+  const elapsed = abandon ? maxMs : Math.min(Date.now() - state.questionStartMs, maxMs);
+  const letterCommitted = abandon ? null : state.selectedLetter;
   const correct =
-    state.selectedLetter != null && q.correct_answers.includes(state.selectedLetter);
+    letterCommitted != null && q.correct_answers.includes(letterCommitted);
   const points = correct ? q.points : 0;
   state.result = {
     correct,
     points,
     timeMs: elapsed,
     correctLetter: q.correct_answers[0] || 'A',
-    selectedLetter: state.selectedLetter,
+    selectedLetter: letterCommitted,
     explanation: q.explanation
   };
   const uid = state.user.uid;
@@ -853,22 +927,9 @@ function submitAnswer() {
     avatar_index: Math.max(0, Math.min(AVATAR_MAX_INDEX, state.profile.avatar_index || 0)),
     timestamp: FieldValue.serverTimestamp()
   };
-  db.collection('daily_submissions')
-    .doc(`${today}_${uid}`)
-    .set(data)
-    .then(() => {
-      state.answeredToday = true;
-      updateHubStartButton();
-      const p = refreshLeaderboardsOnServer().catch((e) => {
-        console.warn('[Daily] getLeaderboardRealtime po odpovedi', e);
-      });
-      pendingLeaderboardRefreshPromise = p.finally(() => {
-        if (pendingLeaderboardRefreshPromise === p) pendingLeaderboardRefreshPromise = null;
-      });
-    })
-    .catch((e) => {
-      setStatus('Odpoveď sa nepodarilo uložiť: ' + (e.message || 'chyba'));
-    });
+  persistDailySubmissionThenRefresh(data).catch((e) => {
+    setStatus('Odpoveď sa nepodarilo uložiť: ' + (e.message || 'chyba'));
+  });
   showResultUI();
 }
 
@@ -901,6 +962,29 @@ async function startQuestionFlow() {
     setStatus('Dnes už si odpovedal.');
     return;
   }
+  const uid = state.user.uid;
+  if (hasDailyQuestionDisplayedInSession(uid)) {
+    const serverDone = await checkAnsweredToday(uid);
+    if (serverDone) {
+      state.answeredToday = true;
+      updateHubStartButton();
+      setStatus('Dnes už si odpovedal.');
+      showPanel('hub');
+      return;
+    }
+    setStatus('Obnovenie počas rozbehnutej otázky…', 'progress');
+    showPanel('hub');
+    try {
+      await submitImplicitDailyForfeit(uid);
+      setStatus(
+        'Otázku v tejto relácii už nie je možné znova zobraziť. Zapísaná bola neplatná odpoveď (0 bodov).'
+      );
+    } catch (e) {
+      setStatus('Nepodarilo sa uložiť výsledok: ' + (e.message || 'chyba'));
+    }
+    return;
+  }
+
   setStatus('');
   showPanel('question');
   $('question-loading').classList.remove('hidden');
@@ -908,7 +992,7 @@ async function startQuestionFlow() {
   $('question-body').classList.add('hidden');
   $('btn-q-back').classList.add('hidden');
   try {
-    const q = await loadDailyQuestionForUser(state.user.uid);
+    const q = await loadDailyQuestionForUser(uid);
     state.question = q;
     state.shuffled = shuffle(q.optionsFlat);
     state.selectedLetter = null;
@@ -1441,6 +1525,10 @@ function wireEvents() {
   };
 
   $('btn-q-back').onclick = async () => {
+    if (state.question && !state.answerLocked) {
+      submitAnswer({ abandon: true });
+      return;
+    }
     clearTimer();
     showPanel('hub');
     await syncHubAnswerState();
@@ -1449,7 +1537,7 @@ function wireEvents() {
 
   $('btn-q-submit').onclick = () => {
     if (state.answerLocked || !state.selectedLetter) return;
-    submitAnswer();
+    submitAnswer({});
   };
 
   $('btn-result-lb').onclick = () => openLeaderboards();
