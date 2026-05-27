@@ -91,6 +91,9 @@ googleProvider.setCustomParameters({ prompt: 'select_account' });
 const TZ = 'Europe/Bratislava';
 /** Cloud Functions región projektu (Callable getLeaderboardRealtime) – zhodné s settings.json / deploy. */
 const FUNCTIONS_REGION_DEFAULT = 'us-central1';
+/** Musí sedieť s MIN_WEB_DAILY_VERSION v Cloud Function registerDailyClient. */
+const DAILY_CLIENT_WEB_VERSION = '2026-05-26';
+const DAILY_CLIENT_SCHEMA_VERSION = 2;
 const LEADERBOARD_MAX = 50;
 /** Poradie záložiek rebríčkov – musí sedieť s data-lb v HTML (swipe vľavo = ďalšia) */
 const LB_TAB_ORDER = ['day', 'week', 'month', 'streak', 'badges', 'myteam'];
@@ -336,6 +339,23 @@ async function refreshLeaderboardsOnServer() {
   if (!fns) return;
   const callable = fns.httpsCallable('getLeaderboardRealtime');
   await callable({});
+}
+
+/**
+ * Custom claim dq_v – Firestore rules pre daily_questions / daily_submissions.
+ * Anonymný mobilný účet ostáva; web ide cez Google Auth.
+ */
+async function ensureDailyQuestionClientRegistered() {
+  const user = auth.currentUser;
+  if (!user) throw new Error('Nie ste prihlásený.');
+  const tokenResult = await user.getIdTokenResult(false);
+  const dqV = tokenResult.claims && tokenResult.claims.dq_v;
+  if (typeof dqV === 'number' && dqV >= DAILY_CLIENT_SCHEMA_VERSION) return;
+  const fns = getFunctionsCompat();
+  if (!fns) throw new Error('Cloud Functions nie sú dostupné.');
+  const callable = fns.httpsCallable('registerDailyClient');
+  await callable({ platform: 'web', webVersion: DAILY_CLIENT_WEB_VERSION });
+  await user.getIdToken(true);
 }
 
 /** @param {'progress' | undefined} tone — progress = tmavomodrá (nie chybová červená) */
@@ -724,10 +744,13 @@ async function submitImplicitDailyForfeit(uid) {
 }
 
 function persistDailySubmissionThenRefresh(data) {
-  return db
-    .collection('daily_submissions')
-    .doc(`${data.date}_${data.userId}`)
-    .set(data)
+  return ensureDailyQuestionClientRegistered()
+    .then(() =>
+      db
+        .collection('daily_submissions')
+        .doc(`${data.date}_${data.userId}`)
+        .set(data)
+    )
     .then(() => {
       state.answeredToday = true;
       state.dailyLockWithoutSubmission = false;
@@ -1025,6 +1048,7 @@ async function startQuestionFlow() {
   $('question-body').classList.add('hidden');
   $('btn-q-back').classList.add('hidden');
   try {
+    await ensureDailyQuestionClientRegistered();
     await ensureDailyRoundLock(uid);
     const q = await loadDailyQuestionForUser(uid);
     state.question = q;
@@ -1424,6 +1448,7 @@ async function refreshUIForUser() {
     setStatus('');
   }
   try {
+    await ensureDailyQuestionClientRegistered();
     await Promise.all([loadUserProfileDoc(u.uid), refreshHubPlayStateAndResolveIncomplete(u.uid)]);
 
     if (!profileComplete()) {
