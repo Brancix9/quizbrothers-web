@@ -1036,7 +1036,7 @@ async function startQuestionFlow() {
     const loaded = await loadDailyQuestionForUser(uid);
     state.question = loaded.question;
     state.questionDocId = loaded.docId;
-    state.shuffled = shuffle(q.optionsFlat);
+    state.shuffled = shuffle(loaded.question.optionsFlat);
     state.selectedLetter = null;
     state.answerLocked = false;
     state.questionStartMs = Date.now();
