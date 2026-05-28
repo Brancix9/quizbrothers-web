@@ -92,7 +92,7 @@ const TZ = 'Europe/Bratislava';
 /** Cloud Functions región projektu (Callable getLeaderboardRealtime) – zhodné s settings.json / deploy. */
 const FUNCTIONS_REGION_DEFAULT = 'us-central1';
 /** Musí sedieť s MIN_WEB_DAILY_VERSION v Cloud Function registerDailyClient. */
-const DAILY_CLIENT_WEB_VERSION = '2026-05-26';
+const DAILY_CLIENT_WEB_VERSION = '2026-05-28';
 const DAILY_CLIENT_SCHEMA_VERSION = 2;
 const LEADERBOARD_MAX = 50;
 /** Poradie záložiek rebríčkov – musí sedieť s data-lb v HTML (swipe vľavo = ďalšia) */
@@ -300,6 +300,7 @@ const state = {
   dailyLockWithoutSubmission: false,
   activePanel: 'auth',
   question: null,
+  questionDocId: null,
   shuffled: [],
   selectedLetter: null,
   answerLocked: false,
@@ -714,54 +715,42 @@ function hasDailyQuestionDisplayedInSession(uid) {
   }
 }
 
-/** Zapíše dokument bez držania textu otázky v pamäti (obnova stránky počas kola). */
-async function submitImplicitDailyForfeit(uid) {
-  const today = todayStringBratislava();
-  const timeMs = DEFAULT_TIMER_SEC * 1000;
-  const data = {
-    date: today,
-    userId: uid,
-    fullName: state.profile.full_name.trim(),
-    nickname: state.profile.nickname.trim(),
-    points: 0,
-    timeMs,
-    location: state.profile.location.trim(),
-    teamName: state.profile.team.trim(),
-    country: 'Svet',
-    avatar_index: Math.max(0, Math.min(AVATAR_MAX_INDEX, state.profile.avatar_index || 0)),
-    timestamp: FieldValue.serverTimestamp()
-  };
-  await db.collection('daily_submissions').doc(`${today}_${uid}`).set(data);
+/** Zápis dennej odpovede cez Cloud Function (profil a meno doplní server). */
+async function submitDailySubmissionCallable(payload) {
+  await ensureDailyQuestionClientRegistered();
+  const fns = getFunctionsCompat();
+  if (!fns) throw new Error('Cloud Functions nie sú dostupné.');
+  const callable = fns.httpsCallable('submitDailySubmission');
+  const res = await callable(payload);
+  return res.data;
+}
+
+function afterDailySubmissionCommitted() {
   state.answeredToday = true;
   state.dailyLockWithoutSubmission = false;
   updateHubStartButton();
   const p = refreshLeaderboardsOnServer().catch((e) => {
-    console.warn('[Daily] getLeaderboardRealtime po nútenom zápise', e);
+    console.warn('[Daily] getLeaderboardRealtime po odpovedi', e);
   });
   pendingLeaderboardRefreshPromise = p.finally(() => {
     if (pendingLeaderboardRefreshPromise === p) pendingLeaderboardRefreshPromise = null;
   });
 }
 
-function persistDailySubmissionThenRefresh(data) {
-  return ensureDailyQuestionClientRegistered()
-    .then(() =>
-      db
-        .collection('daily_submissions')
-        .doc(`${data.date}_${data.userId}`)
-        .set(data)
-    )
-    .then(() => {
-      state.answeredToday = true;
-      state.dailyLockWithoutSubmission = false;
-      updateHubStartButton();
-      const p = refreshLeaderboardsOnServer().catch((e) => {
-        console.warn('[Daily] getLeaderboardRealtime po odpovedi', e);
-      });
-      pendingLeaderboardRefreshPromise = p.finally(() => {
-        if (pendingLeaderboardRefreshPromise === p) pendingLeaderboardRefreshPromise = null;
-      });
-    });
+/** Zapíše dokument bez držania textu otázky v pamäti (obnova stránky počas kola). */
+async function submitImplicitDailyForfeit(uid) {
+  await submitDailySubmissionCallable({
+    timeMs: DEFAULT_TIMER_SEC * 1000,
+    forcedWrong: true,
+    questionDocId: state.questionDocId || undefined
+  });
+  afterDailySubmissionCommitted();
+}
+
+function persistDailySubmissionThenRefresh(payload) {
+  return submitDailySubmissionCallable(payload).then(() => {
+    afterDailySubmissionCommitted();
+  });
 }
 
 function updateHubStartButton() {
@@ -898,7 +887,7 @@ async function loadDailyQuestionForUser(uid) {
   if (!qsnap.exists) throw new Error('Otázka pre tento deň ešte nie je dostupná.');
   const q = parseQuestionData(qsnap.data());
   if (!q) throw new Error('Otázku sa nepodarilo spracovať.');
-  return q;
+  return { question: q, docId: qid };
 }
 
 function clearTimer() {
@@ -975,20 +964,14 @@ function submitAnswer(opts) {
   };
   const uid = state.user.uid;
   const today = todayStringBratislava();
-  const data = {
-    date: today,
-    userId: uid,
-    fullName: state.profile.full_name.trim(),
-    nickname: state.profile.nickname.trim(),
-    points,
+  const payload = {
     timeMs: elapsed,
-    location: state.profile.location.trim(),
-    teamName: state.profile.team.trim(),
-    country: 'Svet',
-    avatar_index: Math.max(0, Math.min(AVATAR_MAX_INDEX, state.profile.avatar_index || 0)),
-    timestamp: FieldValue.serverTimestamp()
+    forcedWrong: abandon,
+    questionDocId: state.questionDocId || undefined,
+    questionText: q.question
   };
-  persistDailySubmissionThenRefresh(data).catch((e) => {
+  if (!abandon && letterCommitted) payload.selectedAnswer = letterCommitted;
+  persistDailySubmissionThenRefresh(payload).catch((e) => {
     setStatus('Odpoveď sa nepodarilo uložiť: ' + (e.message || 'chyba'));
   });
   showResultUI();
@@ -1050,8 +1033,9 @@ async function startQuestionFlow() {
   try {
     await ensureDailyQuestionClientRegistered();
     await ensureDailyRoundLock(uid);
-    const q = await loadDailyQuestionForUser(uid);
-    state.question = q;
+    const loaded = await loadDailyQuestionForUser(uid);
+    state.question = loaded.question;
+    state.questionDocId = loaded.docId;
     state.shuffled = shuffle(q.optionsFlat);
     state.selectedLetter = null;
     state.answerLocked = false;
