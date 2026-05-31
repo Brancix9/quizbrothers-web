@@ -92,7 +92,7 @@ const TZ = 'Europe/Bratislava';
 /** Cloud Functions región projektu (Callable getLeaderboardRealtime) – zhodné s settings.json / deploy. */
 const FUNCTIONS_REGION_DEFAULT = 'us-central1';
 /** Musí sedieť s MIN_WEB_DAILY_VERSION v Cloud Function registerDailyClient. */
-const DAILY_CLIENT_WEB_VERSION = '2026-05-28';
+const DAILY_CLIENT_WEB_VERSION = '2026-05-31';
 const DAILY_CLIENT_SCHEMA_VERSION = 2;
 const LEADERBOARD_MAX = 50;
 /** Poradie záložiek rebríčkov – musí sedieť s data-lb v HTML (swipe vľavo = ďalšia) */
@@ -747,12 +747,6 @@ async function submitImplicitDailyForfeit(uid) {
   afterDailySubmissionCommitted();
 }
 
-function persistDailySubmissionThenRefresh(payload) {
-  return submitDailySubmissionCallable(payload).then(() => {
-    afterDailySubmissionCommitted();
-  });
-}
-
 function updateHubStartButton() {
   const btn = $('btn-start');
   if (!btn) return;
@@ -875,19 +869,44 @@ async function ensureQuestionOrder(uid, ym) {
   return pickedIds;
 }
 
-async function loadDailyQuestionForUser(uid) {
-  const ym = yearMonthBratislava();
-  const dom = dayOfMonthBratislava();
-  const dim = daysInMonthForYearMonth(ym);
-  const idx = Math.min(Math.max(dom - 1, 0), dim - 1);
-  const docIds = await ensureQuestionOrder(uid, ym);
-  if (!docIds || docIds.length <= idx) throw new Error('Nepodarilo sa získať poradie otázok.');
-  const qid = docIds[idx];
-  const qsnap = await db.collection('daily_questions').doc(qid).get();
-  if (!qsnap.exists) throw new Error('Otázka pre tento deň ešte nie je dostupná.');
-  const q = parseQuestionData(qsnap.data());
+/**
+ * Otázka zo servera (getDailyQuestion) – BEZ správnych odpovedí a vysvetlenia.
+ * Tie dorazia až v odpovedi submitDailySubmission, takže ich tu nepoznáme.
+ */
+function parseServerQuestion(sq) {
+  if (!sq || typeof sq.question !== 'string') return null;
+  const optionsFlat = buildOptionsList(sq.options);
+  if (optionsFlat.length === 0) return null;
+  const points = sq.points != null ? Number(sq.points) : 1;
+  const timeSec = sq.timeSec != null ? Math.max(1, Number(sq.timeSec)) : DEFAULT_TIMER_SEC;
+  return {
+    question: sq.question,
+    points: Number.isFinite(points) ? points : 1,
+    time: Number.isFinite(timeSec) ? timeSec : DEFAULT_TIMER_SEC,
+    explanation: '',
+    correct_answers: null,
+    optionsFlat
+  };
+}
+
+/** Dnešnú otázku určuje a podáva server (Europe/Bratislava) – nedá sa pozrieť dopredu. */
+async function getDailyQuestionFromServer() {
+  const fns = getFunctionsCompat();
+  if (!fns) throw new Error('Cloud Functions nie sú dostupné.');
+  const callable = fns.httpsCallable('getDailyQuestion');
+  const res = await callable({});
+  return res.data;
+}
+
+async function loadDailyQuestionForUser() {
+  const data = await getDailyQuestionFromServer();
+  if (data && data.alreadyAnswered) {
+    return { alreadyAnswered: true };
+  }
+  if (!data || !data.question) throw new Error('Nepodarilo sa načítať otázku.');
+  const q = parseServerQuestion(data.question);
   if (!q) throw new Error('Otázku sa nepodarilo spracovať.');
-  return { question: q, docId: qid };
+  return { question: q, docId: data.questionDocId || null };
 }
 
 function clearTimer() {
@@ -942,7 +961,7 @@ function renderQuestionUI() {
 /**
  * @param {{ abandon?: boolean }} opts — abandon: Späť počas otázky → rovnako ako pri vypršaní času bez výberu (plný čas, 0 bodov).
  */
-function submitAnswer(opts) {
+async function submitAnswer(opts) {
   const abandon = opts && opts.abandon === true;
   if (state.answerLocked || !state.question) return;
   state.answerLocked = true;
@@ -951,19 +970,7 @@ function submitAnswer(opts) {
   const maxMs = q.time * 1000;
   const elapsed = abandon ? maxMs : Math.min(Date.now() - state.questionStartMs, maxMs);
   const letterCommitted = abandon ? null : state.selectedLetter;
-  const correct =
-    letterCommitted != null && q.correct_answers.includes(letterCommitted);
-  const points = correct ? q.points : 0;
-  state.result = {
-    correct,
-    points,
-    timeMs: elapsed,
-    correctLetter: q.correct_answers[0] || 'A',
-    selectedLetter: letterCommitted,
-    explanation: q.explanation
-  };
-  const uid = state.user.uid;
-  const today = todayStringBratislava();
+
   const payload = {
     timeMs: elapsed,
     forcedWrong: abandon,
@@ -971,10 +978,31 @@ function submitAnswer(opts) {
     questionText: q.question
   };
   if (!abandon && letterCommitted) payload.selectedAnswer = letterCommitted;
-  persistDailySubmissionThenRefresh(payload).catch((e) => {
-    setStatus('Odpoveď sa nepodarilo uložiť: ' + (e.message || 'chyba'));
-  });
-  showResultUI();
+
+  // Skóre, správnu odpoveď aj vysvetlenie určuje server (klient ich nemá vopred).
+  setStatus('Vyhodnocujem odpoveď…', 'progress');
+  try {
+    const res = await submitDailySubmissionCallable(payload);
+    afterDailySubmissionCommitted();
+    const correctAnswers = Array.isArray(res && res.correctAnswers) ? res.correctAnswers : [];
+    const correctLetter = correctAnswers.length
+      ? String(correctAnswers[0]).toUpperCase()
+      : 'A';
+    state.result = {
+      correct: !!(res && res.correct),
+      points: res && res.points != null ? Number(res.points) : 0,
+      timeMs: res && res.timeMs != null ? Number(res.timeMs) : elapsed,
+      correctLetter,
+      selectedLetter: letterCommitted,
+      explanation: res && res.explanation ? String(res.explanation) : ''
+    };
+    setStatus('');
+    showResultUI();
+  } catch (e) {
+    // Zápis zlyhal (napr. sieť) – povolíme opätovný pokus bez reštartu časovača.
+    state.answerLocked = false;
+    setStatus('Odpoveď sa nepodarilo uložiť, skús znova: ' + (e.message || 'chyba'));
+  }
 }
 
 function showResultUI() {
@@ -1034,6 +1062,13 @@ async function startQuestionFlow() {
     await ensureDailyQuestionClientRegistered();
     await ensureDailyRoundLock(uid);
     const loaded = await loadDailyQuestionForUser(uid);
+    if (loaded.alreadyAnswered) {
+      state.answeredToday = true;
+      setStatus('');
+      showPanel('hub');
+      updateHubStartButton();
+      return;
+    }
     state.question = loaded.question;
     state.questionDocId = loaded.docId;
     state.shuffled = shuffle(loaded.question.optionsFlat);
