@@ -879,15 +879,12 @@ function parseServerQuestion(sq) {
   if (optionsFlat.length === 0) return null;
   const points = sq.points != null ? Number(sq.points) : 1;
   const timeSec = sq.timeSec != null ? Math.max(1, Number(sq.timeSec)) : DEFAULT_TIMER_SEC;
-  const correct = Array.isArray(sq.correct_answers)
-    ? sq.correct_answers.map((x) => String(x).toUpperCase())
-    : ['A'];
   return {
     question: sq.question,
     points: Number.isFinite(points) ? points : 1,
     time: Number.isFinite(timeSec) ? timeSec : DEFAULT_TIMER_SEC,
-    explanation: sq.explanation != null ? String(sq.explanation) : '',
-    correct_answers: correct,
+    explanation: '',
+    correct_answers: [],
     optionsFlat
   };
 }
@@ -974,20 +971,6 @@ function submitAnswer(opts) {
   const elapsed = abandon ? maxMs : Math.min(Date.now() - state.questionStartMs, maxMs);
   const letterCommitted = abandon ? null : state.selectedLetter;
 
-  // Výsledok ukážeme hneď z otázky (getDailyQuestion vracia správnu odpoveď);
-  // záväzné skóre do rebríčka prepočíta server v submitDailySubmission na pozadí.
-  const correctList = Array.isArray(q.correct_answers) ? q.correct_answers : ['A'];
-  const correct = letterCommitted != null && correctList.includes(letterCommitted);
-  const points = correct ? q.points : 0;
-  state.result = {
-    correct,
-    points,
-    timeMs: elapsed,
-    correctLetter: correctList[0] || 'A',
-    selectedLetter: letterCommitted,
-    explanation: q.explanation || ''
-  };
-
   const payload = {
     timeMs: elapsed,
     forcedWrong: abandon,
@@ -996,12 +979,26 @@ function submitAnswer(opts) {
   };
   if (!abandon && letterCommitted) payload.selectedAnswer = letterCommitted;
   submitDailySubmissionCallable(payload)
-    .then(() => afterDailySubmissionCommitted())
+    .then((data) => {
+      const correctList = Array.isArray(data && data.correctAnswers)
+        ? data.correctAnswers.map((x) => String(x).toUpperCase())
+        : [];
+      const correct = !!(data && data.correct);
+      state.result = {
+        correct,
+        points: data && data.points != null ? Number(data.points) : 0,
+        timeMs: data && data.timeMs != null ? Number(data.timeMs) : elapsed,
+        correctLetter: correctList[0] || null,
+        selectedLetter: letterCommitted,
+        explanation: data && data.explanation != null ? String(data.explanation) : ''
+      };
+      showResultUI();
+      afterDailySubmissionCommitted();
+    })
     .catch((e) => {
+      state.answerLocked = false;
       setStatus('Odpoveď sa nepodarilo uložiť: ' + (e.message || 'chyba'));
     });
-
-  showResultUI();
 }
 
 function showResultUI() {
