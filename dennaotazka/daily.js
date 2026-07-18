@@ -304,6 +304,8 @@ const state = {
   shuffled: [],
   selectedLetter: null,
   answerLocked: false,
+  submittingAnswer: false,
+  frozenTimerSec: null,
   timerId: null,
   questionStartMs: 0,
   result: null,
@@ -916,6 +918,59 @@ function clearTimer() {
   }
 }
 
+function getQuestionTimeRemainingSec() {
+  if (!state.question) return 0;
+  const maxMs = state.question.time * 1000;
+  const elapsed = Date.now() - state.questionStartMs;
+  return Math.max(0, Math.ceil((maxMs - elapsed) / 1000));
+}
+
+function updateTimerDisplay() {
+  const el = $('question-timer');
+  if (!el) return;
+  if (state.submittingAnswer && state.frozenTimerSec != null) {
+    el.textContent = String(state.frozenTimerSec);
+    return;
+  }
+  el.textContent = String(getQuestionTimeRemainingSec());
+}
+
+function updateQuestionSubmittingUI() {
+  const submitBtn = $('btn-q-submit');
+  if (submitBtn) {
+    submitBtn.disabled = state.answerLocked || state.submittingAnswer || !state.selectedLetter;
+    submitBtn.textContent = state.submittingAnswer ? 'Vyhodnocujem…' : 'Odoslať otázku';
+    submitBtn.setAttribute('aria-busy', state.submittingAnswer ? 'true' : 'false');
+  }
+  const timerWrap = document.querySelector('.daily-timer-wrap');
+  if (timerWrap) {
+    timerWrap.classList.toggle('daily-timer-frozen', !!state.submittingAnswer);
+  }
+  const opts = $('question-options');
+  if (opts) {
+    opts.querySelectorAll('button').forEach((btn) => {
+      btn.disabled = state.answerLocked || state.submittingAnswer;
+    });
+  }
+  const backBtn = $('btn-q-back');
+  if (backBtn) {
+    backBtn.disabled = state.submittingAnswer;
+  }
+}
+
+function startQuestionTimer() {
+  clearTimer();
+  updateTimerDisplay();
+  state.timerId = setInterval(() => {
+    if (state.answerLocked || state.submittingAnswer) return;
+    updateTimerDisplay();
+    if (getQuestionTimeRemainingSec() <= 0) {
+      clearTimer();
+      submitAnswer({});
+    }
+  }, 250);
+}
+
 function renderQuestionUI() {
   const q = state.question;
   if (state.user?.uid) markDailyQuestionDisplayedInSession(state.user.uid);
@@ -932,30 +987,20 @@ function renderQuestionUI() {
     btn.type = 'button';
     btn.textContent = `${displayLetter}: ${opt.text}`;
     if (state.selectedLetter === opt.letter) btn.classList.add('daily-opt-selected');
-    btn.disabled = state.answerLocked;
+    btn.disabled = state.answerLocked || state.submittingAnswer;
     btn.onclick = () => {
-      if (state.answerLocked) return;
+      if (state.answerLocked || state.submittingAnswer) return;
       state.selectedLetter = opt.letter;
       renderQuestionUI();
     };
     opts.appendChild(btn);
   });
-  const submitBtn = $('btn-q-submit');
-  if (submitBtn) {
-    submitBtn.disabled = state.answerLocked || !state.selectedLetter;
+  updateQuestionSubmittingUI();
+  if (!state.timerId && !state.answerLocked && !state.submittingAnswer) {
+    startQuestionTimer();
+  } else {
+    updateTimerDisplay();
   }
-  let left = q.time;
-  $('question-timer').textContent = String(left);
-  clearTimer();
-  state.timerId = setInterval(() => {
-    if (state.answerLocked) return;
-    left -= 1;
-    $('question-timer').textContent = String(Math.max(0, left));
-    if (left <= 0) {
-      clearTimer();
-      submitAnswer({});
-    }
-  }, 1000);
 }
 
 /**
@@ -963,9 +1008,13 @@ function renderQuestionUI() {
  */
 function submitAnswer(opts) {
   const abandon = opts && opts.abandon === true;
-  if (state.answerLocked || !state.question) return;
+  if (state.answerLocked || state.submittingAnswer || !state.question) return;
   state.answerLocked = true;
+  state.frozenTimerSec = getQuestionTimeRemainingSec();
+  state.submittingAnswer = true;
   clearTimer();
+  updateQuestionSubmittingUI();
+  updateTimerDisplay();
   const q = state.question;
   const maxMs = q.time * 1000;
   const elapsed = abandon ? maxMs : Math.min(Date.now() - state.questionStartMs, maxMs);
@@ -980,6 +1029,7 @@ function submitAnswer(opts) {
   if (!abandon && letterCommitted) payload.selectedAnswer = letterCommitted;
   submitDailySubmissionCallable(payload)
     .then((data) => {
+      state.submittingAnswer = false;
       const correctList = Array.isArray(data && data.correctAnswers)
         ? data.correctAnswers.map((x) => String(x).toUpperCase())
         : [];
@@ -997,6 +1047,12 @@ function submitAnswer(opts) {
     })
     .catch((e) => {
       state.answerLocked = false;
+      state.submittingAnswer = false;
+      state.frozenTimerSec = null;
+      updateQuestionSubmittingUI();
+      if (getQuestionTimeRemainingSec() > 0) {
+        startQuestionTimer();
+      }
       setStatus('Odpoveď sa nepodarilo uložiť: ' + (e.message || 'chyba'));
     });
 }
@@ -1070,6 +1126,8 @@ async function startQuestionFlow() {
     state.shuffled = shuffle(loaded.question.optionsFlat);
     state.selectedLetter = null;
     state.answerLocked = false;
+    state.submittingAnswer = false;
+    state.frozenTimerSec = null;
     state.questionStartMs = Date.now();
     renderQuestionUI();
   } catch (e) {
@@ -1598,7 +1656,7 @@ function wireEvents() {
   };
 
   $('btn-q-back').onclick = async () => {
-    if (state.question && !state.answerLocked) {
+    if (state.question && !state.answerLocked && !state.submittingAnswer) {
       submitAnswer({ abandon: true });
       return;
     }
@@ -1609,7 +1667,7 @@ function wireEvents() {
   };
 
   $('btn-q-submit').onclick = () => {
-    if (state.answerLocked || !state.selectedLetter) return;
+    if (state.answerLocked || state.submittingAnswer || !state.selectedLetter) return;
     submitAnswer({});
   };
 
