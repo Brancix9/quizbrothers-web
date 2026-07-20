@@ -54,6 +54,13 @@
         <p id="about_journey_text3"><strong>2024 – súčasnosť:</strong> Naša nová základňa v Lukia's Lounge & More.</p>
         
         <p id="about_final_text" style="margin-top: 30px; font-size: 1.1em; font-weight: bold; color: #222454;">Príďte si vyvetrať hlavu, niečo nové sa naučiť a ukázať, že váš tím na to má. Vidíme sa pri ďalšom kole!</p>
+
+        <section class="about-pro-cta" aria-labelledby="about_pro_title">
+            <p class="about-pro-cta__eyebrow">QuizBrothers Pro</p>
+            <h2 id="about_pro_title">Staňte sa súčasťou QuizBrothers</h2>
+            <p id="about_pro_text">Okrem našich kvízov v Rožňave sme vyvinuli aj QuizBrothers Pro — kompletnú platformu pre kvízmajstrov, puby a eventy. Ak chcete viesť vlastné kvízy s našou technológiou, stiahnite si softvér, kúpte kredit a spustite živý kvíz cez Wi‑Fi alebo PIN.</p>
+            <a id="about_pro_btn" class="btn btn-primary about-pro-cta__btn" href="https://quizbrothers.app/" target="_blank" rel="noopener noreferrer">Prejsť na quizbrothers.app</a>
+        </section>
     </div>
 
     <footer>
@@ -107,6 +114,9 @@
                     if (data.about_journey_text2) document.getElementById('about_journey_text2').innerHTML = data.about_journey_text2;
                     if (data.about_journey_text3) document.getElementById('about_journey_text3').innerHTML = data.about_journey_text3;
                     if (data.about_final_text) document.getElementById('about_final_text').textContent = data.about_final_text;
+                    if (data.about_pro_title) document.getElementById('about_pro_title').textContent = data.about_pro_title;
+                    if (data.about_pro_text) document.getElementById('about_pro_text').textContent = data.about_pro_text;
+                    if (data.about_pro_btn) document.getElementById('about_pro_btn').textContent = data.about_pro_btn;
                 }
             });
         }
