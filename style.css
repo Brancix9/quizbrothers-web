@@ -269,6 +269,52 @@ h1, h2 { color: #222454; }
     text-decoration: underline;
 }
 
+/* O nás – CTA na quizbrothers.app (Pro produkt) */
+.about-pro-cta {
+    margin-top: 48px;
+    padding: 32px 28px;
+    border-radius: 14px;
+    background: linear-gradient(135deg, #222454 0%, #2d3168 100%);
+    color: #fff;
+    text-align: center;
+    box-shadow: 0 8px 32px rgba(34, 36, 84, 0.2);
+}
+.about-pro-cta__eyebrow {
+    display: inline-block;
+    margin: 0 0 12px;
+    padding: 4px 12px;
+    border-radius: 999px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: #27ae60;
+    background: rgba(39, 174, 96, 0.15);
+}
+.about-pro-cta h2 {
+    margin: 0 0 14px;
+    font-size: 1.65rem;
+    color: #fff;
+}
+.about-pro-cta p {
+    max-width: 640px;
+    margin: 0 auto 22px;
+    font-size: 1.05rem;
+    line-height: 1.65;
+    color: rgba(255, 255, 255, 0.92);
+}
+.about-pro-cta__btn {
+    margin: 0;
+}
+@media (max-width: 600px) {
+    .about-pro-cta {
+        padding: 26px 18px;
+    }
+    .about-pro-cta h2 {
+        font-size: 1.35rem;
+    }
+}
+
 /* P?ti?ka */
 footer { 
     background: #222454; 
