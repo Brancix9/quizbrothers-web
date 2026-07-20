@@ -966,7 +966,11 @@ function startQuestionTimer() {
     updateTimerDisplay();
     if (getQuestionTimeRemainingSec() <= 0) {
       clearTimer();
-      submitAnswer({});
+      if (state.selectedLetter) {
+        submitAnswer({});
+      } else {
+        submitAnswer({ abandon: true });
+      }
     }
   }, 250);
 }
@@ -1046,6 +1050,10 @@ function submitAnswer(opts) {
       afterDailySubmissionCommitted();
     })
     .catch((e) => {
+      if (getQuestionTimeRemainingSec() <= 0 && !state.selectedLetter) {
+        submitAnswer({ abandon: true });
+        return;
+      }
       state.answerLocked = false;
       state.submittingAnswer = false;
       state.frozenTimerSec = null;
