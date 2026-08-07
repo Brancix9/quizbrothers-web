@@ -296,7 +296,7 @@ const state = {
   user: null,
   profile: { nickname: '', full_name: '', location: '', team: '', avatar_index: 0 },
   answeredToday: false,
-  /** Na serveri existuje daily_round_locks bez daily_submissions — treba uzavrieť 0 bodmi (napr. zavretá karta). */
+  /** Na serveri existuje daily_round_locks bez daily_submissions (informatívne; forfeit len pri aktívnom štarte). */
   dailyLockWithoutSubmission: false,
   activePanel: 'auth',
   question: null,
@@ -319,6 +319,12 @@ const state = {
 
 /** Promise prebiehajúceho prepočtu rebríčkov po odoslaní odpovede (getLeaderboardRealtime). */
 let pendingLeaderboardRefreshPromise = null;
+/** Zlučuje paralelné načítania stavu huby (auth + pageshow). */
+let pendingHubPlayStateRefresh = null;
+/** Jeden implicitný forfeit naraz – bráni duplicitným submitDailySubmission. */
+let pendingImplicitForfeitSubmit = null;
+/** Jeden refreshUIForUser naraz – bráni dvojitému auto-forfeitu pri boote. */
+let refreshUIForUserPromise = null;
 
 function getFunctionsCompat() {
   if (typeof firebase === 'undefined' || typeof firebase.app !== 'function') return null;
@@ -665,16 +671,43 @@ async function refreshDailyPlayStateFromServer(uid) {
   state.dailyLockWithoutSubmission = !!(lockSnap.exists && !subSnap.exists);
 }
 
-/** Načíta stav z Firestore a ak je zámok bez zápisu, ticho doplní 0 bodov (bez extra tlačidiel na hube). */
-async function refreshHubPlayStateAndResolveIncomplete(uid) {
-  await refreshDailyPlayStateFromServer(uid);
-  if (state.answeredToday || !state.dailyLockWithoutSubmission) return;
-  try {
-    await submitImplicitDailyForfeit(uid);
-  } catch (e) {
-    console.warn('[Daily] auto-forfeit po neúplnom kole', e);
-    await refreshDailyPlayStateFromServer(uid);
+/** Zlučí paralelné volania refreshDailyPlayStateFromServer (auth + pageshow + sync hub). */
+async function refreshDailyPlayStateFromServerCoalesced(uid) {
+  if (pendingHubPlayStateRefresh && pendingHubPlayStateRefresh.uid === uid) {
+    return pendingHubPlayStateRefresh.promise;
   }
+  const promise = refreshDailyPlayStateFromServer(uid);
+  pendingHubPlayStateRefresh = { uid, promise };
+  try {
+    await promise;
+  } finally {
+    if (pendingHubPlayStateRefresh && pendingHubPlayStateRefresh.promise === promise) {
+      pendingHubPlayStateRefresh = null;
+    }
+  }
+}
+
+function isDailyQuestionAlreadyIssuedError(e) {
+  const code = e && e.code;
+  const msg = ((e && e.message) || '').toLowerCase();
+  return (
+    code === 'functions/failed-precondition' &&
+    (msg.includes('vydan') || msg.includes('already been issued') || msg.includes('už bola'))
+  );
+}
+
+/**
+ * Forfeit len keď hráč aktívne skúša hrať (Štart), nie pri pasívnom načítaní huby po prihlásení.
+ * Samotný daily_round_locks bez session flagu nestačí – inak trestá aj osirelé zámky / nikdy nezobrazenú otázku.
+ */
+async function resolveIncompleteDailyRoundOnActivePlay(uid) {
+  await refreshDailyPlayStateFromServerCoalesced(uid);
+  if (state.answeredToday) return 'answered';
+  if (hasDailyQuestionDisplayedInSession(uid)) {
+    await submitImplicitDailyForfeit(uid);
+    return 'forfeited';
+  }
+  return 'can_play';
 }
 
 /** Jednorazový zápis zámku pred načítaním otázky (chráni pred zavretím karty bez odovzdania). */
@@ -741,12 +774,18 @@ function afterDailySubmissionCommitted() {
 
 /** Zapíše dokument bez držania textu otázky v pamäti (obnova stránky počas kola). */
 async function submitImplicitDailyForfeit(uid) {
-  await submitDailySubmissionCallable({
-    timeMs: DEFAULT_TIMER_SEC * 1000,
-    forcedWrong: true,
-    questionDocId: state.questionDocId || undefined
+  if (pendingImplicitForfeitSubmit) return pendingImplicitForfeitSubmit;
+  pendingImplicitForfeitSubmit = (async () => {
+    await submitDailySubmissionCallable({
+      timeMs: DEFAULT_TIMER_SEC * 1000,
+      forcedWrong: true,
+      questionDocId: state.questionDocId || undefined
+    });
+    afterDailySubmissionCommitted();
+  })().finally(() => {
+    pendingImplicitForfeitSubmit = null;
   });
-  afterDailySubmissionCommitted();
+  return pendingImplicitForfeitSubmit;
 }
 
 function updateHubStartButton() {
@@ -765,7 +804,7 @@ function updateHubStartButton() {
 async function syncHubAnswerState() {
   const uid = state.user?.uid;
   if (!uid) return;
-  await refreshHubPlayStateAndResolveIncomplete(uid);
+  await refreshDailyPlayStateFromServerCoalesced(uid);
   updateHubStartButton();
 }
 
@@ -1092,22 +1131,10 @@ function showResultUI() {
 async function startQuestionFlow() {
   const uid = state.user.uid;
 
-  await refreshHubPlayStateAndResolveIncomplete(uid);
-  if (state.answeredToday) {
+  const playState = await resolveIncompleteDailyRoundOnActivePlay(uid);
+  if (playState === 'answered' || playState === 'forfeited') {
     setStatus('');
     showPanel('hub');
-    updateHubStartButton();
-    return;
-  }
-
-  if (hasDailyQuestionDisplayedInSession(uid)) {
-    showPanel('hub');
-    setStatus('');
-    try {
-      await submitImplicitDailyForfeit(uid);
-    } catch (e) {
-      setStatus('Nepodarilo sa uložiť výsledok: ' + (e.message || 'chyba'));
-    }
     updateHubStartButton();
     return;
   }
@@ -1120,7 +1147,6 @@ async function startQuestionFlow() {
   $('btn-q-back').classList.add('hidden');
   try {
     await ensureDailyQuestionClientRegistered();
-    await ensureDailyRoundLock(uid);
     const loaded = await loadDailyQuestionForUser(uid);
     if (loaded.alreadyAnswered) {
       state.answeredToday = true;
@@ -1129,6 +1155,7 @@ async function startQuestionFlow() {
       updateHubStartButton();
       return;
     }
+    await ensureDailyRoundLock(uid);
     state.question = loaded.question;
     state.questionDocId = loaded.docId;
     state.shuffled = shuffle(loaded.question.optionsFlat);
@@ -1139,6 +1166,20 @@ async function startQuestionFlow() {
     state.questionStartMs = Date.now();
     renderQuestionUI();
   } catch (e) {
+    if (isDailyQuestionAlreadyIssuedError(e)) {
+      try {
+        await submitImplicitDailyForfeit(uid);
+        setStatus('');
+        showPanel('hub');
+        updateHubStartButton();
+        return;
+      } catch (e2) {
+        setStatus('Nepodarilo sa uložiť výsledok: ' + (e2.message || 'chyba'));
+        showPanel('hub');
+        updateHubStartButton();
+        return;
+      }
+    }
     $('question-loading').classList.add('hidden');
     $('question-error').classList.remove('hidden');
     $('question-error').textContent = userVisibleFirestoreError(e, 'Nepodarilo sa načítať otázku.');
@@ -1517,7 +1558,7 @@ async function openLeaderboards() {
   await switchLeaderboardTab('day');
 }
 
-async function refreshUIForUser() {
+async function refreshUIForUserImpl() {
   const u = state.user;
   if (!u) {
     showPanel('auth');
@@ -1530,7 +1571,7 @@ async function refreshUIForUser() {
   }
   try {
     await ensureDailyQuestionClientRegistered();
-    await Promise.all([loadUserProfileDoc(u.uid), refreshHubPlayStateAndResolveIncomplete(u.uid)]);
+    await Promise.all([loadUserProfileDoc(u.uid), refreshDailyPlayStateFromServerCoalesced(u.uid)]);
 
     if (!profileComplete()) {
       await showProfilePanel({ fromHub: false });
@@ -1551,6 +1592,14 @@ async function refreshUIForUser() {
     console.error('[Daily] refreshUIForUser', err);
     setStatus('Chyba pri načítaní účtu: ' + userVisibleFirestoreError(err, 'skús znova obnoviť stránku.'));
   }
+}
+
+function refreshUIForUser() {
+  if (refreshUIForUserPromise) return refreshUIForUserPromise;
+  refreshUIForUserPromise = refreshUIForUserImpl().finally(() => {
+    refreshUIForUserPromise = null;
+  });
+  return refreshUIForUserPromise;
 }
 
 function formatAuthError(e) {
@@ -1866,8 +1915,6 @@ async function boot() {
       trySyncHubAfterReturn();
     }
   });
-
-  setTimeout(() => tryRefreshUiIfLoggedInButAuthPanel(), 0);
 }
 
 boot();
