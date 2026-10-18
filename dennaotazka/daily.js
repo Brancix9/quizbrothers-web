@@ -101,6 +101,29 @@ const DEFAULT_TIMER_SEC = 15;
 /** Rovnaký rozsah ako v Android appke (avatar_0 … avatar_230 v drawable). */
 const AVATAR_MAX_INDEX = 230;
 
+/**
+ * Denná otázka má zatiaľ slovenský a anglický obsah.
+ * Čeština používa slovenský obsah; ostatné jazyky anglický fallback.
+ */
+function resolveDailyQuestionContentLanguage(languageCode) {
+  const baseCode = String(languageCode || 'en')
+    .trim()
+    .replace(/_/g, '-')
+    .split('-', 1)[0]
+    .toLowerCase();
+  return baseCode === 'sk' || baseCode === 'cs' ? 'sk' : 'en';
+}
+
+function getDailyQuestionContentLanguage() {
+  const browserLanguage =
+    typeof navigator !== 'undefined' && Array.isArray(navigator.languages) && navigator.languages.length
+      ? navigator.languages[0]
+      : typeof navigator !== 'undefined'
+        ? navigator.language
+        : 'en';
+  return resolveDailyQuestionContentLanguage(browserLanguage);
+}
+
 let avatarPickerBuilt = false;
 
 function getAvatarBase() {
@@ -173,6 +196,36 @@ function $(id) {
 
 function todayStringBratislava() {
   return new Intl.DateTimeFormat('en-CA', { timeZone: TZ }).format(new Date());
+}
+
+function yesterdayStringBratislava() {
+  const [y, m, d] = todayStringBratislava().split('-').map(Number);
+  const dt = new Date(Date.UTC(y, m - 1, d));
+  dt.setUTCDate(dt.getUTCDate() - 1);
+  return dt.toISOString().slice(0, 10);
+}
+
+function secondsSinceMidnightBratislava() {
+  try {
+    const parts = new Intl.DateTimeFormat('en-GB', {
+      timeZone: TZ,
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+      hourCycle: 'h23'
+    }).formatToParts(new Date());
+    const n = (type) => parseInt((parts.find((p) => p.type === type) || {}).value || '0', 10);
+    return n('hour') * 3600 + n('minute') * 60 + n('second');
+  } catch (e) {
+    return 12 * 3600;
+  }
+}
+
+/** Neodoslaná odpoveď z kola pred polnocou sa ešte odošle, kým prepočet o 00:01 neskončí. */
+const MIDNIGHT_PENDING_CARRY_SECONDS = 90;
+
+function isYesterdayPendingStillOpen(date) {
+  return date === yesterdayStringBratislava() && secondsSinceMidnightBratislava() <= MIDNIGHT_PENDING_CARRY_SECONDS;
 }
 
 function yearMonthBratislava() {
@@ -301,10 +354,13 @@ const state = {
   activePanel: 'auth',
   question: null,
   questionDocId: null,
+  /** Deň, na ktorý server otázku vydal. Cez polnoc sa nemení s hodinami prehliadača. */
+  roundDate: null,
   shuffled: [],
   selectedLetter: null,
   answerLocked: false,
   submittingAnswer: false,
+  startingQuestion: false,
   frozenTimerSec: null,
   timerId: null,
   questionStartMs: 0,
@@ -750,6 +806,70 @@ function hasDailyQuestionDisplayedInSession(uid) {
   }
 }
 
+/** Trvalý prvý payload: refresh, výpadok siete ani ďalší klik nesmú zmeniť odpoveď alebo čas. */
+function committedSubmissionStorageKey(uid, date) {
+  return `qb_daily_committed_${date}_${uid}`;
+}
+
+function readCommittedDailySubmission(uid, date) {
+  if (!uid || !date) return null;
+  try {
+    const raw = localStorage.getItem(committedSubmissionStorageKey(uid, date));
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    if (!parsed || parsed.uid !== uid || parsed.date !== date || !parsed.payload) return null;
+    return parsed.payload;
+  } catch (e) {
+    console.warn('[Daily] committed submission localStorage:', e);
+    return null;
+  }
+}
+
+/** Dnešná fronta, alebo včerajšia ešte 90 s po polnoci. */
+function activeCommittedDate(uid) {
+  const today = todayStringBratislava();
+  if (readCommittedDailySubmission(uid, today)) return today;
+  const yesterday = yesterdayStringBratislava();
+  if (isYesterdayPendingStillOpen(yesterday) && readCommittedDailySubmission(uid, yesterday)) return yesterday;
+  return null;
+}
+
+function loadCommittedDailySubmission(uid) {
+  const date = activeCommittedDate(uid);
+  return date ? readCommittedDailySubmission(uid, date) : null;
+}
+
+function commitDailySubmissionPayload(uid, payload) {
+  const existing = loadCommittedDailySubmission(uid);
+  if (existing) return existing;
+  const date = state.roundDate || todayStringBratislava();
+  try {
+    localStorage.setItem(
+      committedSubmissionStorageKey(uid, date),
+      JSON.stringify({ uid, date, payload })
+    );
+  } catch (e) {
+    console.warn('[Daily] committed submission localStorage write:', e);
+  }
+  return payload;
+}
+
+function clearCommittedDailySubmission(uid, date) {
+  if (!uid) return;
+  const dates = date ? [date] : [todayStringBratislava(), yesterdayStringBratislava()];
+  try {
+    dates.forEach((d) => localStorage.removeItem(committedSubmissionStorageKey(uid, d)));
+  } catch (e) {
+    console.warn('[Daily] committed submission localStorage remove:', e);
+  }
+}
+
+function isAlreadySubmittedError(e) {
+  const code = e && e.code;
+  const msg = ((e && e.message) || '').toLowerCase();
+  return code === 'functions/already-exists' || msg.includes('už si odpovedal') || msg.includes('already answered');
+}
+
 /** Zápis dennej odpovede cez Cloud Function (profil a meno doplní server). */
 async function submitDailySubmissionCallable(payload) {
   await ensureDailyQuestionClientRegistered();
@@ -760,8 +880,10 @@ async function submitDailySubmissionCallable(payload) {
   return res.data;
 }
 
-function afterDailySubmissionCommitted() {
-  state.answeredToday = true;
+function afterDailySubmissionCommitted(roundDate) {
+  const date = roundDate || state.roundDate || todayStringBratislava();
+  clearCommittedDailySubmission(state.user && state.user.uid, date);
+  if (date === todayStringBratislava()) state.answeredToday = true;
   state.dailyLockWithoutSubmission = false;
   updateHubStartButton();
   const p = refreshLeaderboardsOnServer().catch((e) => {
@@ -779,6 +901,7 @@ async function submitImplicitDailyForfeit(uid) {
     await submitDailySubmissionCallable({
       timeMs: DEFAULT_TIMER_SEC * 1000,
       forcedWrong: true,
+      forfeitCause: 'reload',
       questionDocId: state.questionDocId || undefined
     });
     afterDailySubmissionCommitted();
@@ -791,9 +914,12 @@ async function submitImplicitDailyForfeit(uid) {
 function updateHubStartButton() {
   const btn = $('btn-start');
   if (!btn) return;
-  if (state.answeredToday) {
+  if (state.answeredToday || loadCommittedDailySubmission(state.user && state.user.uid)) {
     btn.disabled = true;
-    btn.textContent = 'Dnes už si odpovedal.';
+    btn.textContent = state.answeredToday ? 'Dnes už si odpovedal.' : 'Odpoveď čaká na odoslanie.';
+  } else if (state.startingQuestion) {
+    btn.disabled = true;
+    btn.textContent = 'Načítavam otázku…';
   } else {
     btn.disabled = false;
     btn.textContent = 'Odpovedať na dennú otázku';
@@ -935,7 +1061,7 @@ async function getDailyQuestionFromServer() {
   const fns = getFunctionsCompat();
   if (!fns) throw new Error('Cloud Functions nie sú dostupné.');
   const callable = fns.httpsCallable('getDailyQuestion');
-  const res = await callable({});
+  const res = await callable({ language: getDailyQuestionContentLanguage() });
   return res.data;
 }
 
@@ -947,6 +1073,7 @@ async function loadDailyQuestionForUser() {
   if (!data || !data.question) throw new Error('Nepodarilo sa načítať otázku.');
   const q = parseServerQuestion(data.question);
   if (!q) throw new Error('Otázku sa nepodarilo spracovať.');
+  state.roundDate = (data.date && String(data.date).length === 10) ? String(data.date) : todayStringBratislava();
   return { question: q, docId: data.questionDocId || null };
 }
 
@@ -1008,7 +1135,7 @@ function startQuestionTimer() {
       if (state.selectedLetter) {
         submitAnswer({});
       } else {
-        submitAnswer({ abandon: true });
+        submitAnswer({ timeout: true });
       }
     }
   }, 250);
@@ -1047,10 +1174,13 @@ function renderQuestionUI() {
 }
 
 /**
- * @param {{ abandon?: boolean }} opts — abandon: Späť počas otázky → rovnako ako pri vypršaní času bez výberu (plný čas, 0 bodov).
+ * @param {{ abandon?: boolean, timeout?: boolean }} opts
+ * abandon: Späť počas otázky → 0 bodov, čas 15,5 s (podvod).
+ * timeout: vypršal čas bez výberu → 0 bodov, čas otázky (15,0 s).
  */
 function submitAnswer(opts) {
   const abandon = opts && opts.abandon === true;
+  const timedOut = opts && opts.timeout === true;
   if (state.answerLocked || state.submittingAnswer || !state.question) return;
   state.answerLocked = true;
   state.frozenTimerSec = getQuestionTimeRemainingSec();
@@ -1061,15 +1191,23 @@ function submitAnswer(opts) {
   const q = state.question;
   const maxMs = q.time * 1000;
   const elapsed = abandon ? maxMs : Math.min(Date.now() - state.questionStartMs, maxMs);
-  const letterCommitted = abandon ? null : state.selectedLetter;
+  const letterCommitted = abandon || timedOut ? null : state.selectedLetter;
 
-  const payload = {
+  const proposedPayload = {
     timeMs: elapsed,
-    forcedWrong: abandon,
+    forcedWrong: abandon || timedOut,
     questionDocId: state.questionDocId || undefined,
     questionText: q.question
   };
-  if (!abandon && letterCommitted) payload.selectedAnswer = letterCommitted;
+  if (timedOut) proposedPayload.forfeitCause = 'timeout';
+  else if (abandon) proposedPayload.forfeitCause = 'back';
+  if (!abandon && !timedOut && letterCommitted) proposedPayload.selectedAnswer = letterCommitted;
+  const payload = commitDailySubmissionPayload(state.user && state.user.uid, proposedPayload);
+  // Po prvom odoslaní už otázku vôbec nezobrazujeme — ani počas timeoutu, ani po chybe.
+  $('question-body').classList.add('hidden');
+  $('question-error').classList.add('hidden');
+  $('question-loading').textContent = 'Vyhodnocujem…';
+  $('question-loading').classList.remove('hidden');
   submitDailySubmissionCallable(payload)
     .then((data) => {
       state.submittingAnswer = false;
@@ -1080,28 +1218,53 @@ function submitAnswer(opts) {
       state.result = {
         correct,
         points: data && data.points != null ? Number(data.points) : 0,
-        timeMs: data && data.timeMs != null ? Number(data.timeMs) : elapsed,
+        timeMs: data && data.timeMs != null ? Number(data.timeMs) : Number(payload.timeMs),
         correctLetter: correctList[0] || null,
-        selectedLetter: letterCommitted,
+        selectedLetter: payload.forcedWrong ? null : (payload.selectedAnswer || null),
         explanation: data && data.explanation != null ? String(data.explanation) : ''
       };
       showResultUI();
-      afterDailySubmissionCommitted();
+      const scoredDate = (data && data.date && String(data.date).length === 10) ? String(data.date) : (state.roundDate || todayStringBratislava());
+      afterDailySubmissionCommitted(scoredDate);
     })
     .catch((e) => {
-      if (getQuestionTimeRemainingSec() <= 0 && !state.selectedLetter) {
-        submitAnswer({ abandon: true });
+      state.submittingAnswer = false;
+      if (isAlreadySubmittedError(e)) {
+        afterDailySubmissionCommitted(state.roundDate);
+        setStatus('Dnes už si odpovedal. Pôvodná odpoveď zostala uložená.');
+        showPanel('hub');
+        updateHubStartButton();
         return;
       }
-      state.answerLocked = false;
-      state.submittingAnswer = false;
-      state.frozenTimerSec = null;
-      updateQuestionSubmittingUI();
-      if (getQuestionTimeRemainingSec() > 0) {
-        startQuestionTimer();
-      }
-      setStatus('Odpoveď sa nepodarilo uložiť: ' + (e.message || 'chyba'));
+      state.answerLocked = true;
+      $('question-loading').classList.add('hidden');
+      $('question-error').classList.remove('hidden');
+      $('question-error').textContent =
+        'Odpoveď je uzamknutá a bezpečne uložená v tomto zariadení. Po obnovení pripojenia odošleme presne tú istú odpoveď; zmeniť ju už nie je možné.';
+      $('btn-q-back').classList.remove('hidden');
+      setStatus('Odpoveď čaká na odoslanie.');
     });
+}
+
+async function flushCommittedDailySubmission(uid) {
+  const roundDate = activeCommittedDate(uid);
+  const payload = roundDate ? readCommittedDailySubmission(uid, roundDate) : null;
+  if (!payload || (state.answeredToday && roundDate === todayStringBratislava())) return;
+  try {
+    const data = await submitDailySubmissionCallable(payload);
+    const scoredDate = (data && data.date && String(data.date).length === 10) ? String(data.date) : roundDate;
+    afterDailySubmissionCommitted(scoredDate);
+    setStatus('Odpoveď bola uložená.');
+  } catch (e) {
+    if (isAlreadySubmittedError(e)) {
+      afterDailySubmissionCommitted(roundDate);
+      setStatus('Dnes už si odpovedal. Pôvodná odpoveď zostala uložená.');
+      return;
+    }
+    setStatus('Odpoveď je uzamknutá a čaká na obnovenie pripojenia.');
+  } finally {
+    updateHubStartButton();
+  }
 }
 
 function showResultUI() {
@@ -1129,10 +1292,22 @@ function showResultUI() {
 }
 
 async function startQuestionFlow() {
+  if (state.startingQuestion || state.answeredToday || loadCommittedDailySubmission(state.user && state.user.uid)) return;
+  state.startingQuestion = true;
+  updateHubStartButton();
   const uid = state.user.uid;
 
-  const playState = await resolveIncompleteDailyRoundOnActivePlay(uid);
+  let playState;
+  try {
+    playState = await resolveIncompleteDailyRoundOnActivePlay(uid);
+  } catch (e) {
+    state.startingQuestion = false;
+    updateHubStartButton();
+    setStatus(userVisibleFirestoreError(e, 'Nepodarilo sa overiť stav dnešnej otázky.'));
+    return;
+  }
   if (playState === 'answered' || playState === 'forfeited') {
+    state.startingQuestion = false;
     setStatus('');
     showPanel('hub');
     updateHubStartButton();
@@ -1142,6 +1317,7 @@ async function startQuestionFlow() {
   setStatus('');
   showPanel('question');
   $('question-loading').classList.remove('hidden');
+  $('question-loading').textContent = 'Načítavam otázku…';
   $('question-error').classList.add('hidden');
   $('question-body').classList.add('hidden');
   $('btn-q-back').classList.add('hidden');
@@ -1183,6 +1359,9 @@ async function startQuestionFlow() {
     $('question-loading').classList.add('hidden');
     $('question-error').classList.remove('hidden');
     $('question-error').textContent = userVisibleFirestoreError(e, 'Nepodarilo sa načítať otázku.');
+  } finally {
+    state.startingQuestion = false;
+    updateHubStartButton();
   }
 }
 
@@ -1585,6 +1764,10 @@ async function refreshUIForUserImpl() {
     $('hub-greeting').textContent = `Ahoj, ${state.profile.nickname}!${mail ? ` (${mail})` : ''}`;
     updateHubStartButton();
     setStatus('');
+    if (!state.answeredToday && loadCommittedDailySubmission(u.uid)) {
+      setStatus('Odpoveď je uzamknutá a čaká na odoslanie.');
+      flushCommittedDailySubmission(u.uid).catch((e) => console.warn('[Daily] retry committed submission', e));
+    }
     loadBadgesForCongratsAndMaybeShow().catch((e) => {
       console.warn('[Daily] badges po hube', e);
     });
