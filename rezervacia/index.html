@@ -319,6 +319,7 @@
         
         #loadingOverlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: white; z-index: 9999; display: flex; justify-content: center; align-items: center; font-size: 20px; color: #222454; font-weight: bold; }
     </style>
+    <link rel="stylesheet" href="room-map.css">
 </head>
 <body>
 
@@ -506,27 +507,15 @@
             </div>
         </div>
 
-        <div style="max-width: 95%; width: 95%; margin: 20px auto; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
-            <button onclick="openMapFullscreen()" class="btn-expand-map">🔍 Rozkliknúť mapu</button>
-            <button onclick="clearAllTableAssignments()" class="btn-stop" style="padding: 10px 20px; font-size: 13px;">🗑️ Vyčistiť všetky stoly</button>
-        </div>
-
-        <div class="room-map">
-            <div id="t1" class="table rect status-reserved" style="top:60px; left:80px;" onclick="adminEdit(this)" data-table-num="1"><span class="table-number">1</span>PUŠKY<div class="cap-info">? os.</div></div>
-            <div id="t2" class="table rect status-reserved" style="top:60px; left:210px;" onclick="adminEdit(this)" data-table-num="2"><span class="table-number">2</span>GURU TEAM<div class="cap-info">? os.</div></div>
-            <div id="t3" class="table rect status-reserved" style="top:60px; left:340px;" onclick="adminEdit(this)" data-table-num="3"><span class="table-number">3</span>PIČI ZLA<div class="cap-info">? os.</div></div>
-            <div id="t4" class="table rect status-reserved" style="top:60px; left:470px;" onclick="adminEdit(this)" data-table-num="4"><span class="table-number">4</span>MUŠKY<div class="cap-info">? os.</div></div>
-            <div id="t5" class="table circle status-reserved" style="top:250px; left:120px;" onclick="adminEdit(this)" data-table-num="5"><span class="table-number">5</span>STIBU<div class="cap-info">? os.</div></div>
-            <div id="t6" class="table circle status-reserved" style="top:250px; left:240px;" onclick="adminEdit(this)" data-table-num="6"><span class="table-number">6</span>SPROSTÁCI<div class="cap-info">? os.</div></div>
-            <div id="t7" class="table circle status-reserved" style="top:250px; left:360px;" onclick="adminEdit(this)" data-table-num="7"><span class="table-number">7</span>FÉNIXOV RÁD<div class="cap-info">? os.</div></div>
-            <div id="t8" class="table circle-small status-reserved" style="top:260px; left:480px;" onclick="adminEdit(this)" data-table-num="8"><span class="table-number">8</span>GEN Z<div class="cap-info">? os.</div></div>
-            <div id="t9" class="table circle-small status-reserved" style="top:230px; left:570px;" onclick="adminEdit(this)" data-table-num="9"><span class="table-number">9</span>NEVÍDALI<div class="cap-info">? os.</div></div>
-            <div id="t10" class="table circle-small status-reserved" style="top:100px; left:700px;" onclick="adminEdit(this)" data-table-num="10"><span class="table-number">10</span>ŽOLÍCI<div class="cap-info">? os.</div></div>
-            <div id="t11" class="table circle-small status-reserved" style="top:80px; left:830px;" onclick="adminEdit(this)" data-table-num="11"><span class="table-number">11</span>FONTÁNA<div class="cap-info">? os.</div></div>
-            <div id="t12" class="table circle status-free" style="top:330px; left:760px;" onclick="adminEdit(this)" data-table-num="12"><span class="table-number">12</span>Voľný<div class="cap-info">0 os.</div></div>
-            <div id="t13" class="table rect status-free" style="top:450px; left:680px;" onclick="adminEdit(this)" data-table-num="13"><span class="table-number">13</span>Voľný<div class="cap-info">0 os.</div></div>
-            <div id="t14" class="table rect status-free" style="top:500px; left:850px;" onclick="adminEdit(this)" data-table-num="14"><span class="table-number">14</span>Voľný<div class="cap-info">0 os.</div></div>
-        </div>
+        <section class="seating-card" aria-labelledby="seatingTitle">
+            <div class="seating-heading">
+                <div><div class="seating-eyebrow">QUIZBROTHERS / REZERVÁCIE</div><h3 id="seatingTitle">Zasadací poriadok</h3><p>Klikni na stôl a vyber tím. Horné stoly môžeš rozdeliť alebo spojiť.</p></div>
+                <div class="seating-actions"><button class="seating-expand" onclick="openMapFullscreen()">⤢ Zväčšiť mapu</button><button class="seating-clear" onclick="clearAllTableAssignments()">Vyčistiť stoly</button></div>
+            </div>
+            <div class="seating-meta"><div class="seating-legend"><span><i class="confirmed"></i>Potvrdený tím</span><span><i class="reserved"></i>Rezervovaný tím</span><span><i></i>Voľný stôl</span></div><span id="seatingSummary"></span></div>
+            <div class="seating-scroll"><div id="roomMap" class="seating-viewport" aria-label="Mapa miestnosti a stolov"></div></div>
+            <div class="seating-footer"><span>Na menšej obrazovke posuň mapu do strany.</span><span id="seatingSaveStatus" role="status" aria-live="polite">Načítavam zasadací poriadok…</span></div>
+        </section>
 
         <!-- Web Content Editor -->
         <div class="pin-manager">
@@ -667,6 +656,7 @@
         </div>
     </div>
 
+    <script src="room-map.js"></script>
     <script type="module">
         // 📊 LOGGING: Performance tracking
         const perf = {
@@ -690,7 +680,7 @@
         console.log("✅ Firebase App module imported");
         
         perf.mark('firestore-import-start');
-        import { getFirestore, collection, doc, setDoc, getDoc, updateDoc, onSnapshot, deleteDoc, writeBatch } 
+        import { getFirestore, collection, doc, setDoc, getDoc, updateDoc, onSnapshot, deleteDoc, writeBatch, runTransaction } 
         from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
         perf.mark('firestore-import-end');
         
@@ -2414,235 +2404,199 @@
             }
         }
         
-        // Table assignments storage
-        let tableAssignments = {}; // { tableNum: teamId }
-        
-        // Load table assignments from Firebase
+        // Existing numeric assignment keys remain compatible. Split B halves use 1b…4b.
+        let tableAssignments = {};
+        let splitTables = { 3: true };
+        let seatingListener = null;
+        let seatingBusy = false;
+        let seatingLoaded = false;
+        let seatingLastFocus = null;
+        let seatingBodyOverflow = '';
+
+        const canEditSeating = () => Boolean(window.rezervaciaHasAdminAccess?.());
+        function seatingStatus(message, state = '') {
+            const status = document.getElementById('seatingSaveStatus');
+            status.textContent = message;
+            status.dataset.state = state;
+        }
+        function seatingState(data = {}) {
+            return { assignments: { ...(data.assignments || {}) }, splits: { 3: true, ...(data.splitTables || {}) } };
+        }
         async function loadTableAssignments() {
-            try {
-                const assignDoc = await getDoc(doc(db, "config", "table_assignments"));
-                if (assignDoc.exists()) {
-                    tableAssignments = assignDoc.data().assignments || {};
-                    updateMapVisuals();
-                }
-            } catch (err) {
-                console.error("Chyba pri načítaní priradení stolov:", err);
-            }
+            if (seatingListener) return;
+            seatingListener = onSnapshot(doc(db, 'config', 'table_assignments'), snapshot => {
+                const state = seatingState(snapshot.exists() ? snapshot.data() : {});
+                tableAssignments = state.assignments;
+                splitTables = state.splits;
+                seatingLoaded = true;
+                updateMapVisuals();
+                if (!seatingBusy) seatingStatus('Zasadací poriadok je aktuálny');
+            }, error => {
+                console.error('Mapa stolov:', error);
+                seatingLoaded = false;
+                seatingStatus('Mapu sa nepodarilo načítať. Obnov stránku.', 'error');
+            });
         }
-        
-        // Save table assignments to Firebase
-        async function saveTableAssignments() {
+
+        // Read the latest document inside a transaction to preserve other admins' edits.
+        async function changeSeating(change) {
+            if (!canEditSeating() || seatingBusy || !seatingLoaded) return false;
+            seatingBusy = true;
+            seatingStatus('Ukladám zmenu…', 'saving');
             try {
-                await setDoc(doc(db, "config", "table_assignments"), {
-                    assignments: tableAssignments
+                const state = await runTransaction(db, async transaction => {
+                    const ref = doc(db, 'config', 'table_assignments');
+                    const snapshot = await transaction.get(ref);
+                    const next = seatingState(snapshot.exists() ? snapshot.data() : {});
+                    change(next);
+                    const fields = { assignments: next.assignments, splitTables: next.splits };
+                    if (snapshot.exists()) transaction.update(ref, fields);
+                    else transaction.set(ref, fields);
+                    return next;
                 });
-                console.log("✅ Priradenia stolov uložené");
-            } catch (err) {
-                console.error("❌ Chyba pri ukladaní priradení:", err);
-                alert("Chyba pri ukladaní: " + err.message);
+                tableAssignments = state.assignments;
+                splitTables = state.splits;
+                updateMapVisuals();
+                seatingStatus('Všetky zmeny sú uložené');
+                return true;
+            } catch (error) {
+                seatingStatus('Zmena sa neuložila. Skús to znova.', 'error');
+                alert(error.message || 'Zmenu sa nepodarilo uložiť.');
+                return false;
+            } finally {
+                seatingBusy = false;
             }
         }
-        
-        // Open modal to assign team to table
-        window.adminEdit = function(el) {
-            if (!window.rezervaciaHasAdminAccess || !window.rezervaciaHasAdminAccess()) {
-                alert("Mapu upravuješ cez zoznam tímov nižšie.");
-                return;
-            }
-            
-            const tableNum = el.getAttribute('data-table-num');
-            if (!tableNum) return;
-            
-            const modal = document.getElementById('tableAssignModal');
-            const overlay = document.getElementById('tableAssignOverlay');
-            const title = document.getElementById('modalTableTitle');
-            const teamList = document.getElementById('modalTeamList');
-            
-            title.innerText = `Stôl ${tableNum}`;
-            modal.setAttribute('data-current-table', tableNum);
-            
-            // Build team list
-            teamList.innerHTML = '';
-            
-            // Sort teams: confirmed first, then reserved, then by name
-            const sortedTeams = [...teamsData].sort((a, b) => {
-                if (a.confirmed && !b.confirmed) return -1;
-                if (!a.confirmed && b.confirmed) return 1;
-                return a.id.localeCompare(b.id);
-            });
-            
-            sortedTeams.forEach(team => {
-                const option = document.createElement('div');
-                option.className = 'team-option';
-                if (team.confirmed) option.classList.add('confirmed');
-                else if (team.isStatic) option.classList.add('reserved');
-                
-                const namePart = document.createElement('span');
-                namePart.className = 'team-name';
-                namePart.innerText = team.id;
-                
-                const countPart = document.createElement('span');
-                countPart.className = 'team-count';
-                const status = team.confirmed ? '✅' : (team.isStatic ? '⏳' : '');
-                countPart.innerText = `${status} ${team.current} os.`;
-                
-                option.appendChild(namePart);
-                option.appendChild(countPart);
-                
-                option.onclick = function() {
-                    assignTeamToTable(tableNum, team.id);
-                    closeTableAssignModal();
-                };
-                
-                teamList.appendChild(option);
-            });
-            
-            modal.style.display = 'block';
-            overlay.style.display = 'block';
-        };
-        
-        window.closeTableAssignModal = function() {
-            const modal = document.getElementById('tableAssignModal');
-            const overlay = document.getElementById('tableAssignOverlay');
-            modal.style.display = 'none';
-            overlay.style.display = 'none';
-        };
-        
-        function assignTeamToTable(tableNum, teamId) {
-            tableAssignments[tableNum] = teamId;
-            saveTableAssignments();
-            updateMapVisuals();
-            updateFullscreenMapVisuals();
-        }
-        
-        window.clearTableAssignment = function() {
-            const modal = document.getElementById('tableAssignModal');
-            const tableNum = modal.getAttribute('data-current-table');
-            if (tableNum && tableAssignments[tableNum]) {
-                delete tableAssignments[tableNum];
-                saveTableAssignments();
-                updateMapVisuals();
-                updateFullscreenMapVisuals();
-                window.closeTableAssignModal();
-            }
-        };
-        
-        window.clearAllTableAssignments = function() {
-            if (confirm('⚠️ Naozaj chcete vyčistiť všetky stoly? Všetky priradenia budú odstránené.')) {
-                tableAssignments = {};
-                saveTableAssignments();
-                updateMapVisuals();
-                updateFullscreenMapVisuals();
-                alert('✅ Všetky stoly boli vyčistené.');
-            }
-        };
-        
-        window.openMapFullscreen = function() {
-            const overlay = document.getElementById('mapFullscreenOverlay');
-            overlay.style.display = 'block';
-            updateFullscreenMapVisuals();
-        };
-        
-        window.closeMapFullscreen = function() {
-            const overlay = document.getElementById('mapFullscreenOverlay');
-            overlay.style.display = 'none';
-        };
-        
-        function updateFullscreenMapVisuals() {
-            // Update fullscreen map tables
-            for (let i = 1; i <= 14; i++) {
-                const tableEl = document.querySelector(`#mapFullscreen [data-table-num="${i}"]`);
-                if (!tableEl) continue;
-                
-                const teamId = tableAssignments[i];
-                const tableNumber = tableEl.querySelector('.table-number');
-                
-                if (teamId) {
-                    const team = teamsData.find(t => t.id === teamId);
-                    if (team) {
-                        tableEl.innerHTML = '';
-                        if (tableNumber) tableEl.appendChild(tableNumber);
-                        tableEl.appendChild(document.createTextNode(team.id));
-                        
-                        const newCapInfo = document.createElement('div');
-                        newCapInfo.className = 'cap-info';
-                        newCapInfo.innerText = `${team.current} os.`;
-                        tableEl.appendChild(newCapInfo);
-                        
-                        tableEl.classList.remove('status-free', 'status-reserved', 'status-confirmed');
-                        if (team.confirmed) {
-                            tableEl.classList.add('status-confirmed');
-                        } else if (team.isStatic) {
-                            tableEl.classList.add('status-reserved');
-                        } else {
-                            tableEl.classList.add('status-free');
-                        }
-                    }
+
+        window.toggleSeatingSplit = async function(id) {
+            await changeSeating(state => {
+                if (state.splits[id]) {
+                    const a = state.assignments[id], b = state.assignments[`${id}b`];
+                    if (a && b && a !== b) throw new Error('Každá polovica má iný tím. Pred spojením zruš priradenie na jednej polovici.');
+                    if (!a && b) state.assignments[id] = b;
+                    delete state.assignments[`${id}b`];
+                    state.splits[id] = false;
                 } else {
-                    tableEl.innerHTML = '';
-                    if (tableNumber) tableEl.appendChild(tableNumber);
-                    tableEl.appendChild(document.createTextNode('Voľný'));
-                    
-                    const newCapInfo = document.createElement('div');
-                    newCapInfo.className = 'cap-info';
-                    newCapInfo.innerText = '0 os.';
-                    tableEl.appendChild(newCapInfo);
-                    
-                    tableEl.classList.remove('status-reserved', 'status-confirmed');
-                    tableEl.classList.add('status-free');
+                    state.splits[id] = true;
                 }
-            }
+            });
+        };
+
+        function drawSeating(rootId) {
+            const root = document.getElementById(rootId);
+            if (!root) return;
+            // Preserve keyboard focus when a realtime update replaces the tables.
+            const active = root.contains(document.activeElement) ? document.activeElement : null;
+            const focusKey = active?.dataset.tableNum;
+            const focusSplit = active?.getAttribute('aria-label');
+            window.QuizRoomMap.render(root, {
+                assignments: tableAssignments, splits: splitTables, teams: teamsData,
+                onTable: window.adminEdit, onSplit: window.toggleSeatingSplit
+            });
+            if (focusKey) root.querySelector(`[data-table-num="${focusKey}"]`)?.focus({ preventScroll: true });
+            else if (focusSplit) [...root.querySelectorAll('.seating-split')].find(b => b.getAttribute('aria-label') === focusSplit)?.focus({ preventScroll: true });
         }
-        
         function updateMapVisuals() {
-            // Update all table displays based on assignments
-            for (let i = 1; i <= 14; i++) {
-                const tableEl = document.querySelector(`[data-table-num="${i}"]`);
-                if (!tableEl) continue;
-                
-                const teamId = tableAssignments[i];
-                const tableNumber = tableEl.querySelector('.table-number');
-                
-                if (teamId) {
-                    const team = teamsData.find(t => t.id === teamId);
-                    if (team) {
-                        // Update table text to show assigned team
-                        tableEl.innerHTML = '';
-                        if (tableNumber) tableEl.appendChild(tableNumber);
-                        tableEl.appendChild(document.createTextNode(team.id));
-                        
-                        const newCapInfo = document.createElement('div');
-                        newCapInfo.className = 'cap-info';
-                        newCapInfo.innerText = `${team.current} os.`;
-                        tableEl.appendChild(newCapInfo);
-                        
-                        // Update status class
-                        tableEl.classList.remove('status-free', 'status-reserved', 'status-confirmed');
-                        if (team.confirmed) {
-                            tableEl.classList.add('status-confirmed');
-                        } else if (team.isStatic) {
-                            tableEl.classList.add('status-reserved');
-                        } else {
-                            tableEl.classList.add('status-free');
-                        }
-                    }
-                } else {
-                    // No team assigned - reset to "Voľný"
-                    tableEl.innerHTML = '';
-                    if (tableNumber) tableEl.appendChild(tableNumber);
-                    tableEl.appendChild(document.createTextNode('Voľný'));
-                    
-                    const newCapInfo = document.createElement('div');
-                    newCapInfo.className = 'cap-info';
-                    newCapInfo.innerText = '0 os.';
-                    tableEl.appendChild(newCapInfo);
-                    
-                    // Set as free
-                    tableEl.classList.remove('status-reserved', 'status-confirmed');
-                    tableEl.classList.add('status-free');
-                }
-            }
+            drawSeating('roomMap');
+            updateFullscreenMapVisuals();
+            const keys = Object.keys(tableAssignments).filter(key => teamsData.some(t => t.id === tableAssignments[key]));
+            const total = 14 + [1, 2, 3, 4].filter(id => splitTables[id]).length;
+            const uniqueTeams = new Set(keys.map(key => tableAssignments[key]));
+            const people = teamsData.filter(t => uniqueTeams.has(t.id)).reduce((n, t) => n + Number(t.current || 0), 0);
+            document.getElementById('seatingSummary').textContent = `${keys.length} / ${total} stolov obsadených · ${people} osôb`;
         }
+        function updateFullscreenMapVisuals() { drawSeating('mapFullscreen'); }
+
+        window.adminEdit = function(el) {
+            if (!canEditSeating() || !seatingLoaded || seatingBusy) return;
+            const modal = document.getElementById('tableAssignModal');
+            seatingLastFocus = el;
+            const key = el.dataset.tableNum;
+            modal.dataset.currentTable = key;
+            document.getElementById('modalTableTitle').textContent = `Stôl ${el.dataset.tableLabel}`;
+            const search = document.getElementById('seatingTeamSearch');
+            search.value = '';
+            const normalize = text => text.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLocaleLowerCase('sk');
+            const renderOptions = () => {
+                const list = document.getElementById('modalTeamList');
+                list.replaceChildren();
+                const sorted = [...teamsData].filter(t => normalize(t.id).includes(normalize(search.value))).sort((a, b) => Number(b.confirmed) - Number(a.confirmed) || a.id.localeCompare(b.id, 'sk'));
+                sorted.forEach(team => {
+                    const option = document.createElement('button');
+                    option.type = 'button';
+                    option.className = `team-option ${team.confirmed ? 'confirmed' : team.isStatic ? 'reserved' : ''}`;
+                    const name = document.createElement('span');
+                    name.className = 'team-name';
+                    name.textContent = team.id;
+                    const info = document.createElement('span');
+                    info.className = 'team-count';
+                    const assigned = Object.entries(tableAssignments).filter(([, id]) => id === team.id).map(([n]) => splitTables[n] ? `${n}A` : n.replace('b', 'B'));
+                    info.textContent = `${team.current || 0} os.${assigned.length ? ` · stôl ${assigned.join(', ')}` : ''}`;
+                    option.append(name, info);
+                    option.onclick = async () => {
+                        if (await changeSeating(state => {
+                            if (key.endsWith('b') && !state.splits[key[0]]) throw new Error('Stôl bol medzitým spojený. Vyber ho znova na mape.');
+                            state.assignments[key] = team.id;
+                        })) closeTableAssignModal();
+                    };
+                    list.append(option);
+                });
+                if (!sorted.length) list.textContent = 'Žiadny tím sa nenašiel.';
+            };
+            search.oninput = renderOptions;
+            renderOptions();
+            modal.style.display = 'block';
+            document.getElementById('tableAssignOverlay').style.display = 'block';
+            search.focus();
+        };
+        window.closeTableAssignModal = function() {
+            document.getElementById('tableAssignModal').style.display = 'none';
+            document.getElementById('tableAssignOverlay').style.display = 'none';
+            const root = document.getElementById(document.getElementById('mapFullscreenOverlay').style.display === 'block' ? 'mapFullscreen' : 'roomMap');
+            const key = seatingLastFocus?.dataset.tableNum;
+            if (key) root.querySelector(`[data-table-num="${key}"]`)?.focus({ preventScroll: true });
+        };
+        window.clearTableAssignment = async function() {
+            const key = document.getElementById('tableAssignModal').dataset.currentTable;
+            if (await changeSeating(state => { delete state.assignments[key]; })) closeTableAssignModal();
+        };
+        window.clearAllTableAssignments = async function() {
+            if (!canEditSeating() || seatingBusy) return;
+            if (confirm('Vyčistiť priradenia všetkých tímov? Rozdelenie stolov zostane zachované.')) {
+                await changeSeating(state => { state.assignments = {}; });
+            }
+        };
+        window.openMapFullscreen = function() {
+            seatingBodyOverflow = document.body.style.overflow;
+            document.body.style.overflow = 'hidden';
+            document.getElementById('mapFullscreenOverlay').style.display = 'block';
+            updateFullscreenMapVisuals();
+            document.querySelector('.btn-close-fullscreen').focus();
+        };
+        window.closeMapFullscreen = function() {
+            document.getElementById('mapFullscreenOverlay').style.display = 'none';
+            document.body.style.overflow = seatingBodyOverflow;
+            document.querySelector('.seating-expand').focus();
+        };
+        document.addEventListener('keydown', event => {
+            const modal = document.getElementById('tableAssignModal');
+            const fullscreen = document.getElementById('mapFullscreenOverlay');
+            const activeDialog = modal?.style.display === 'block' ? modal : fullscreen?.style.display === 'block' ? fullscreen : null;
+            if (!activeDialog) return;
+            if (event.key === 'Escape') {
+                event.preventDefault();
+                if (activeDialog === modal) closeTableAssignModal(); else closeMapFullscreen();
+            }
+            if (event.key === 'Tab') {
+                const nodes = [...activeDialog.querySelectorAll('button, input, [tabindex="0"]')].filter(el => !el.disabled);
+                const first = nodes[0], last = nodes[nodes.length - 1];
+                if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last?.focus(); }
+                else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first?.focus(); }
+            }
+        });
+        // The module runs after the complete document (including the dialogs) is parsed.
+        updateMapVisuals();
+
 
         function loadWebContentToEditor(page) {
             const contentDoc = doc(db, "web_content", page);
@@ -2848,9 +2802,11 @@
 
     <!-- Table Assignment Modal -->
     <div id="tableAssignOverlay" class="table-assign-modal-overlay" onclick="closeTableAssignModal()"></div>
-    <div id="tableAssignModal" class="table-assign-modal">
+    <div id="tableAssignModal" class="table-assign-modal" role="dialog" aria-modal="true" aria-labelledby="modalTableTitle" tabindex="-1">
         <h3 id="modalTableTitle">Stôl</h3>
         <p style="text-align:center; color:#666; margin-bottom:15px; font-size:13px;">Vyberte tím pre priradenie k stolu:</p>
+        <input id="seatingTeamSearch" type="search" placeholder="Hľadať tím…" aria-label="Hľadať tím">
+        <p id="seatingModalHint">Tím môže byť priradený aj k viacerým stolom.</p>
         <div id="modalTeamList" style="max-height: 400px; overflow-y: auto;"></div>
         <button class="btn-clear" onclick="clearTableAssignment()">🗑️ Zrušiť priradenie</button>
         <button class="btn-close" onclick="closeTableAssignModal()">Zavrieť</button>
@@ -2863,22 +2819,8 @@
                 <h3>🗺️ Mapa stolov</h3>
                 <button class="btn-close-fullscreen" onclick="closeMapFullscreen()">✕ Zavrieť</button>
             </div>
-            <div id="mapFullscreen" class="room-map-fullscreen">
-                <div id="ft1" class="table rect status-reserved" style="top:60px; left:80px;" onclick="adminEdit(this)" data-table-num="1"><span class="table-number">1</span>PUŠKY<div class="cap-info">? os.</div></div>
-                <div id="ft2" class="table rect status-reserved" style="top:60px; left:210px;" onclick="adminEdit(this)" data-table-num="2"><span class="table-number">2</span>GURU TEAM<div class="cap-info">? os.</div></div>
-                <div id="ft3" class="table rect status-reserved" style="top:60px; left:340px;" onclick="adminEdit(this)" data-table-num="3"><span class="table-number">3</span>PIČI ZLA<div class="cap-info">? os.</div></div>
-                <div id="ft4" class="table rect status-reserved" style="top:60px; left:470px;" onclick="adminEdit(this)" data-table-num="4"><span class="table-number">4</span>MUŠKY<div class="cap-info">? os.</div></div>
-                <div id="ft5" class="table circle status-reserved" style="top:250px; left:120px;" onclick="adminEdit(this)" data-table-num="5"><span class="table-number">5</span>STIBU<div class="cap-info">? os.</div></div>
-                <div id="ft6" class="table circle status-reserved" style="top:250px; left:240px;" onclick="adminEdit(this)" data-table-num="6"><span class="table-number">6</span>SPROSTÁCI<div class="cap-info">? os.</div></div>
-                <div id="ft7" class="table circle status-reserved" style="top:250px; left:360px;" onclick="adminEdit(this)" data-table-num="7"><span class="table-number">7</span>FÉNIXOV RÁD<div class="cap-info">? os.</div></div>
-                <div id="ft8" class="table circle-small status-reserved" style="top:260px; left:480px;" onclick="adminEdit(this)" data-table-num="8"><span class="table-number">8</span>GEN Z<div class="cap-info">? os.</div></div>
-                <div id="ft9" class="table circle-small status-reserved" style="top:230px; left:570px;" onclick="adminEdit(this)" data-table-num="9"><span class="table-number">9</span>NEVÍDALI<div class="cap-info">? os.</div></div>
-                <div id="ft10" class="table circle-small status-reserved" style="top:100px; left:700px;" onclick="adminEdit(this)" data-table-num="10"><span class="table-number">10</span>ŽOLÍCI<div class="cap-info">? os.</div></div>
-                <div id="ft11" class="table circle-small status-reserved" style="top:80px; left:830px;" onclick="adminEdit(this)" data-table-num="11"><span class="table-number">11</span>FONTÁNA<div class="cap-info">? os.</div></div>
-                <div id="ft12" class="table circle status-free" style="top:330px; left:760px;" onclick="adminEdit(this)" data-table-num="12"><span class="table-number">12</span>Voľný<div class="cap-info">0 os.</div></div>
-                <div id="ft13" class="table rect status-free" style="top:450px; left:680px;" onclick="adminEdit(this)" data-table-num="13"><span class="table-number">13</span>Voľný<div class="cap-info">0 os.</div></div>
-                <div id="ft14" class="table rect status-free" style="top:500px; left:850px;" onclick="adminEdit(this)" data-table-num="14"><span class="table-number">14</span>Voľný<div class="cap-info">0 os.</div></div>
-            </div>
+            <div class="seating-meta"><div class="seating-legend"><span><i class="confirmed"></i>Potvrdený tím</span><span><i class="reserved"></i>Rezervovaný tím</span><span><i></i>Voľný stôl</span></div><span>Klikni na stôl a priraď tím · Horné stoly sa dajú rozdeliť</span></div>
+            <div class="seating-scroll"><div id="mapFullscreen" class="seating-viewport" aria-label="Zväčšená mapa miestnosti"></div></div>
         </div>
     </div>
 </body>
