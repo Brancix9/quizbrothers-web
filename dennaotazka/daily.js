@@ -96,6 +96,18 @@ const DAILY_CLIENT_WEB_VERSION = '2026-05-31';
 const DAILY_CLIENT_SCHEMA_VERSION = 2;
 const LEADERBOARD_MAX = 50;
 /** Poradie záložiek rebríčkov – musí sedieť s data-lb v HTML (swipe vľavo = ďalšia) */
+const PROFILE_WORLD = '__world__';
+const PROFILE_NONE = '__none__';
+const hasProfileTeam = (value) => !!String(value || '').trim() && value !== PROFILE_NONE;
+const assignmentLabel = (value) => value === PROFILE_WORLD
+  ? (getDailyQuestionContentLanguage() === 'sk' ? 'Svet' : 'World')
+  : value === PROFILE_NONE
+    ? (getDailyQuestionContentLanguage() === 'sk' ? 'Bez tímu' : 'No team') : value;
+const noTeamHint = () => getDailyQuestionContentLanguage() === 'sk'
+  ? 'Nemáš vybraný tím. Môžeš si ho zvoliť v profile.'
+  : 'You have no team selected. You can choose one in your profile.';
+let profileEditBase = null;
+
 const LB_TAB_ORDER = ['day', 'week', 'month', 'streak', 'badges', 'myteam'];
 const DEFAULT_TIMER_SEC = 15;
 /** Rovnaký rozsah ako v Android appke (avatar_0 … avatar_230 v drawable). */
@@ -196,36 +208,6 @@ function $(id) {
 
 function todayStringBratislava() {
   return new Intl.DateTimeFormat('en-CA', { timeZone: TZ }).format(new Date());
-}
-
-function yesterdayStringBratislava() {
-  const [y, m, d] = todayStringBratislava().split('-').map(Number);
-  const dt = new Date(Date.UTC(y, m - 1, d));
-  dt.setUTCDate(dt.getUTCDate() - 1);
-  return dt.toISOString().slice(0, 10);
-}
-
-function secondsSinceMidnightBratislava() {
-  try {
-    const parts = new Intl.DateTimeFormat('en-GB', {
-      timeZone: TZ,
-      hour: '2-digit',
-      minute: '2-digit',
-      second: '2-digit',
-      hourCycle: 'h23'
-    }).formatToParts(new Date());
-    const n = (type) => parseInt((parts.find((p) => p.type === type) || {}).value || '0', 10);
-    return n('hour') * 3600 + n('minute') * 60 + n('second');
-  } catch (e) {
-    return 12 * 3600;
-  }
-}
-
-/** Neodoslaná odpoveď z kola pred polnocou sa ešte odošle, kým prepočet o 00:01 neskončí. */
-const MIDNIGHT_PENDING_CARRY_SECONDS = 90;
-
-function isYesterdayPendingStillOpen(date) {
-  return date === yesterdayStringBratislava() && secondsSinceMidnightBratislava() <= MIDNIGHT_PENDING_CARRY_SECONDS;
 }
 
 function yearMonthBratislava() {
@@ -347,15 +329,13 @@ function parseChampion(docSnap) {
 
 const state = {
   user: null,
-  profile: { nickname: '', full_name: '', location: '', team: '', avatar_index: 0 },
+  profile: { nickname: '', full_name: '', location: PROFILE_WORLD, team: PROFILE_NONE, avatar_index: 0 },
   answeredToday: false,
   /** Na serveri existuje daily_round_locks bez daily_submissions (informatívne; forfeit len pri aktívnom štarte). */
   dailyLockWithoutSubmission: false,
   activePanel: 'auth',
   question: null,
   questionDocId: null,
-  /** Deň, na ktorý server otázku vydal. Cez polnoc sa nemení s hodinami prehliadača. */
-  roundDate: null,
   shuffled: [],
   selectedLetter: null,
   answerLocked: false,
@@ -631,15 +611,15 @@ async function loadBadgesForCongratsAndMaybeShow() {
 async function loadUserProfileDoc(uid) {
   const snap = await db.collection('users').doc(uid).get();
   if (!snap.exists) {
-    state.profile = { nickname: '', full_name: '', location: '', team: '', avatar_index: 0 };
+    state.profile = { nickname: '', full_name: '', location: PROFILE_WORLD, team: PROFILE_NONE, avatar_index: 0 };
     return;
   }
   const d = snap.data();
   state.profile = {
     nickname: String(d.nickname || '').trim(),
     full_name: String(d.full_name || d.fullName || '').trim(),
-    location: String(d.location || '').trim(),
-    team: String(d.team || d.teamName || '').trim(),
+    location: String(d.location || PROFILE_WORLD).trim(),
+    team: String(d.team ?? d.teamName ?? PROFILE_NONE).trim() || PROFILE_NONE,
     avatar_index: d.avatar_index != null ? Number(d.avatar_index) : 0
   };
 }
@@ -647,20 +627,32 @@ async function loadUserProfileDoc(uid) {
 async function saveUserProfileDoc() {
   const uid = state.user?.uid;
   if (!uid) return;
-  const p = state.profile;
-  await db
-    .collection('users')
-    .doc(uid)
-    .set(
-      {
-        nickname: p.nickname.trim(),
-        full_name: p.full_name.trim(),
-        location: p.location.trim(),
-        team: p.team.trim(),
-        avatar_index: Math.max(0, Math.min(AVATAR_MAX_INDEX, p.avatar_index || 0))
-      },
-      { merge: true }
-    );
+  const desired = { ...state.profile };
+  const base = profileEditBase || desired;
+  const ref = db.collection('users').doc(uid);
+  const canonical = await db.runTransaction(async (tx) => {
+    const snap = await tx.get(ref);
+    const raw = snap.exists ? snap.data() : {};
+    const remote = {
+      nickname: String(raw.nickname ?? desired.nickname).trim(),
+      full_name: String(raw.full_name ?? raw.fullName ?? desired.full_name).trim(),
+      location: String(raw.location || PROFILE_WORLD).trim(),
+      team: String(raw.team ?? raw.teamName ?? PROFILE_NONE).trim() || PROFILE_NONE,
+      avatar_index: Math.max(0, Math.min(AVATAR_MAX_INDEX, Number(raw.avatar_index) || 0))
+    };
+    const merged = snap.exists ? { ...remote } : { ...desired };
+    for (const key of Object.keys(desired)) {
+      if (!snap.exists || (desired[key] !== base[key] && remote[key] === base[key])) merged[key] = desired[key];
+    }
+    if (merged.location === PROFILE_WORLD) merged.team = PROFILE_NONE;
+    const patch = Object.fromEntries(Object.entries(merged).filter(([key, value]) => raw[key] !== value));
+    if ('teamName' in raw && raw.teamName !== merged.team) patch.teamName = merged.team;
+    if (Object.keys(patch).length) tx.set(ref, patch, { merge: true });
+    return merged;
+  });
+  if (state.user?.uid !== uid) return;
+  state.profile = canonical;
+  profileEditBase = { ...canonical };
 }
 
 function fillProfileBasics() {
@@ -677,43 +669,27 @@ function fillProfileBasics() {
 
 async function loadLocationsSelect() {
   const sel = $('pf-location');
-  const current = state.profile.location;
-  const snap = await db.collection('locations').get();
-  const ids = snap.docs.map((d) => d.id).filter(Boolean).sort();
-  sel.innerHTML = '<option value="">— vyber lokáciu —</option>';
-  ids.forEach((id) => {
-    const o = document.createElement('option');
-    o.value = id;
-    o.textContent = id;
-    sel.appendChild(o);
-  });
-  if (current && ids.includes(current)) sel.value = current;
-  state.locationsLoaded = true;
+  const current = state.profile.location || PROFILE_WORLD;
+  sel.innerHTML = '';
+  const append = (id) => { const o = document.createElement('option'); o.value = id; o.textContent = assignmentLabel(id); sel.appendChild(o); };
+  append(PROFILE_WORLD);
+  try {
+    const snap = await db.collection('locations').get();
+    [...new Set(snap.docs.map((d) => d.id).filter((id) => id && id !== PROFILE_WORLD))].sort().forEach(append);
+    state.locationsLoaded = true;
+  } finally { sel.value = [...sel.options].some((o) => o.value === current) ? current : PROFILE_WORLD; }
 }
 
 async function loadTeamsForLocation(locationName) {
   const sel = $('pf-team');
-  if (!locationName) {
-    sel.innerHTML = '<option value="">— najprv vyber lokáciu —</option>';
-    return;
-  }
+  sel.innerHTML = '';
+  const append = (id) => { const o = document.createElement('option'); o.value = id; o.textContent = assignmentLabel(id); sel.appendChild(o); };
+  append(PROFILE_NONE);
+  if (!locationName || locationName === PROFILE_WORLD) return;
   const snap = await db.collection('locations').doc(locationName).get();
-  if (!snap.exists) {
-    sel.innerHTML = '<option value="">(žiadne tímy)</option>';
-    return;
-  }
-  const teams = snap.data().teams;
-  const list = Array.isArray(teams)
-    ? teams.map((t) => String(t).trim()).filter(Boolean).sort()
-    : [];
-  sel.innerHTML = '<option value="">— vyber tím —</option>';
-  list.forEach((t) => {
-    const o = document.createElement('option');
-    o.value = t;
-    o.textContent = t;
-    sel.appendChild(o);
-  });
-  if (state.profile.team && list.includes(state.profile.team)) sel.value = state.profile.team;
+  const teams = snap.exists ? snap.data().teams : [];
+  [...new Set((Array.isArray(teams) ? teams : []).map(String).map((t) => t.trim()).filter(hasProfileTeam))].sort().forEach(append);
+  sel.value = [...sel.options].some((o) => o.value === state.profile.team) ? state.profile.team : PROFILE_NONE;
 }
 
 async function refreshDailyPlayStateFromServer(uid) {
@@ -807,17 +783,17 @@ function hasDailyQuestionDisplayedInSession(uid) {
 }
 
 /** Trvalý prvý payload: refresh, výpadok siete ani ďalší klik nesmú zmeniť odpoveď alebo čas. */
-function committedSubmissionStorageKey(uid, date) {
-  return `qb_daily_committed_${date}_${uid}`;
+function committedSubmissionStorageKey(uid) {
+  return `qb_daily_committed_${todayStringBratislava()}_${uid}`;
 }
 
-function readCommittedDailySubmission(uid, date) {
-  if (!uid || !date) return null;
+function loadCommittedDailySubmission(uid) {
+  if (!uid) return null;
   try {
-    const raw = localStorage.getItem(committedSubmissionStorageKey(uid, date));
+    const raw = localStorage.getItem(committedSubmissionStorageKey(uid));
     if (!raw) return null;
     const parsed = JSON.parse(raw);
-    if (!parsed || parsed.uid !== uid || parsed.date !== date || !parsed.payload) return null;
+    if (!parsed || parsed.uid !== uid || parsed.date !== todayStringBratislava() || !parsed.payload) return null;
     return parsed.payload;
   } catch (e) {
     console.warn('[Daily] committed submission localStorage:', e);
@@ -825,28 +801,13 @@ function readCommittedDailySubmission(uid, date) {
   }
 }
 
-/** Dnešná fronta, alebo včerajšia ešte 90 s po polnoci. */
-function activeCommittedDate(uid) {
-  const today = todayStringBratislava();
-  if (readCommittedDailySubmission(uid, today)) return today;
-  const yesterday = yesterdayStringBratislava();
-  if (isYesterdayPendingStillOpen(yesterday) && readCommittedDailySubmission(uid, yesterday)) return yesterday;
-  return null;
-}
-
-function loadCommittedDailySubmission(uid) {
-  const date = activeCommittedDate(uid);
-  return date ? readCommittedDailySubmission(uid, date) : null;
-}
-
 function commitDailySubmissionPayload(uid, payload) {
   const existing = loadCommittedDailySubmission(uid);
   if (existing) return existing;
-  const date = state.roundDate || todayStringBratislava();
   try {
     localStorage.setItem(
-      committedSubmissionStorageKey(uid, date),
-      JSON.stringify({ uid, date, payload })
+      committedSubmissionStorageKey(uid),
+      JSON.stringify({ uid, date: todayStringBratislava(), payload })
     );
   } catch (e) {
     console.warn('[Daily] committed submission localStorage write:', e);
@@ -854,11 +815,10 @@ function commitDailySubmissionPayload(uid, payload) {
   return payload;
 }
 
-function clearCommittedDailySubmission(uid, date) {
+function clearCommittedDailySubmission(uid) {
   if (!uid) return;
-  const dates = date ? [date] : [todayStringBratislava(), yesterdayStringBratislava()];
   try {
-    dates.forEach((d) => localStorage.removeItem(committedSubmissionStorageKey(uid, d)));
+    localStorage.removeItem(committedSubmissionStorageKey(uid));
   } catch (e) {
     console.warn('[Daily] committed submission localStorage remove:', e);
   }
@@ -880,10 +840,9 @@ async function submitDailySubmissionCallable(payload) {
   return res.data;
 }
 
-function afterDailySubmissionCommitted(roundDate) {
-  const date = roundDate || state.roundDate || todayStringBratislava();
-  clearCommittedDailySubmission(state.user && state.user.uid, date);
-  if (date === todayStringBratislava()) state.answeredToday = true;
+function afterDailySubmissionCommitted() {
+  clearCommittedDailySubmission(state.user && state.user.uid);
+  state.answeredToday = true;
   state.dailyLockWithoutSubmission = false;
   updateHubStartButton();
   const p = refreshLeaderboardsOnServer().catch((e) => {
@@ -1073,7 +1032,6 @@ async function loadDailyQuestionForUser() {
   if (!data || !data.question) throw new Error('Nepodarilo sa načítať otázku.');
   const q = parseServerQuestion(data.question);
   if (!q) throw new Error('Otázku sa nepodarilo spracovať.');
-  state.roundDate = (data.date && String(data.date).length === 10) ? String(data.date) : todayStringBratislava();
   return { question: q, docId: data.questionDocId || null };
 }
 
@@ -1224,13 +1182,12 @@ function submitAnswer(opts) {
         explanation: data && data.explanation != null ? String(data.explanation) : ''
       };
       showResultUI();
-      const scoredDate = (data && data.date && String(data.date).length === 10) ? String(data.date) : (state.roundDate || todayStringBratislava());
-      afterDailySubmissionCommitted(scoredDate);
+      afterDailySubmissionCommitted();
     })
     .catch((e) => {
       state.submittingAnswer = false;
       if (isAlreadySubmittedError(e)) {
-        afterDailySubmissionCommitted(state.roundDate);
+        afterDailySubmissionCommitted();
         setStatus('Dnes už si odpovedal. Pôvodná odpoveď zostala uložená.');
         showPanel('hub');
         updateHubStartButton();
@@ -1247,17 +1204,15 @@ function submitAnswer(opts) {
 }
 
 async function flushCommittedDailySubmission(uid) {
-  const roundDate = activeCommittedDate(uid);
-  const payload = roundDate ? readCommittedDailySubmission(uid, roundDate) : null;
-  if (!payload || (state.answeredToday && roundDate === todayStringBratislava())) return;
+  const payload = loadCommittedDailySubmission(uid);
+  if (!payload || state.answeredToday) return;
   try {
-    const data = await submitDailySubmissionCallable(payload);
-    const scoredDate = (data && data.date && String(data.date).length === 10) ? String(data.date) : roundDate;
-    afterDailySubmissionCommitted(scoredDate);
+    await submitDailySubmissionCallable(payload);
+    afterDailySubmissionCommitted();
     setStatus('Odpoveď bola uložená.');
   } catch (e) {
     if (isAlreadySubmittedError(e)) {
-      afterDailySubmissionCommitted(roundDate);
+      afterDailySubmissionCommitted();
       setStatus('Dnes už si odpovedal. Pôvodná odpoveď zostala uložená.');
       return;
     }
@@ -1424,9 +1379,9 @@ async function renderLeaderboardTab(forTab) {
       content.innerHTML = renderBadges(d);
     } else if (forTab === 'myteam') {
       const loc = state.profile.location.trim();
-      if (!loc) {
+      if (!loc || loc === PROFILE_WORLD || !hasProfileTeam(state.profile.team)) {
         if (!lbLeaderboardRenderStillValid(forTab)) return;
-        content.innerHTML = '<p>Nemáš vyplnenú lokáciu v profile.</p>';
+        content.textContent = noTeamHint();
         return;
       }
       const lDoc = await db.collection('locations').doc(loc).get();
@@ -1452,7 +1407,9 @@ function escapeHtml(s) {
 
 async function showProfilePanel(opts) {
   const fromHub = opts && opts.fromHub;
-  if (fromHub && state.user) await loadUserProfileDoc(state.user.uid);
+  if (!state.user) return;
+  await loadUserProfileDoc(state.user.uid);
+  profileEditBase = { ...state.profile };
   if (!state.locationsLoaded) await loadLocationsSelect();
   fillProfileBasics();
   await loadTeamsForLocation($('pf-location').value || state.profile.location);
@@ -1475,8 +1432,8 @@ function renderHubProfileDetails() {
   const rows = [
     ['Prezývka', p.nickname || ''],
     ['Celé meno', p.full_name || ''],
-    ['Lokácia', p.location || ''],
-    ['Tím', p.team || '']
+    ['Lokácia', assignmentLabel(p.location || PROFILE_WORLD)],
+    ['Tím', assignmentLabel(p.team || PROFILE_NONE)]
   ];
   wrap.innerHTML = rows
     .map(([k, v]) => {
@@ -1539,7 +1496,7 @@ function renderMyTeam(raw, profileTeamName) {
       const m = item && typeof item === 'object' ? item : null;
       if (!m) return null;
       const team = String(m.team || '').trim();
-      if (!team) return null;
+      if (!hasProfileTeam(team)) return null;
       const pts =
         m.totalPoints != null
           ? Number(m.totalPoints)
@@ -1867,7 +1824,8 @@ function wireEvents() {
   $('pf-location').onchange = async () => {
     const loc = $('pf-location').value;
     state.profile.location = loc;
-    $('pf-team').value = '';
+    state.profile.team = PROFILE_NONE;
+    $('pf-team').value = PROFILE_NONE;
     await loadTeamsForLocation(loc);
   };
 
